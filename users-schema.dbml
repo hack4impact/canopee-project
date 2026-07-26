@@ -1,0 +1,27 @@
+
+Enum user_role {
+  volunteer
+  pro
+  admin
+}
+
+Enum user_status {
+  pending
+  approved
+  rejected
+}
+
+Table users {
+  id uuid [pk]
+  auth_user_id uuid [not null, unique, note: 'FK to auth.users.id (Supabase Auth)']
+  email text [not null, unique]
+  role user_role [not null, default: 'volunteer']
+  status user_status [not null, default: 'pending']
+  created_at timestamptz [not null, default: `now()`]
+  
+  Note: '''
+  Application user profile. Passwords live in `auth.users` (Supabase Auth).
+  Citizens are not users, see `reports.reporter_email`.
+  See docs/schema.md for business rules and status behaviour.
+  '''
+}
