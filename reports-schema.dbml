@@ -1,0 +1,22 @@
+Table reports {
+  id uuid [pk]
+  event_number integer [unique, increment, note: 'Auto-incremented by DB, human-readable, never set manually']
+  user_id uuid [note: 'Nullable FK -> users.id. Filled if reporter has an account']  
+  reporter_email text [note: 'Nullable. Filled if reporter is a citizen (no account)']
+  category report_category [not null, note: 'Enum TBD with Canopée - will include fauna/flora observation types']
+  description text [note: 'Nullable']
+  photo_url text [note: 'Nullable. Required for fauna/flora categories - enforced at app level']
+  latitude decimal [not null]
+  longitude decimal [not null]
+  resolved_at timestamptz [note: 'Nullable. null = open, populated = resolved']
+  created_at timestamptz [not null, default: `now()`]
+
+  Note: '''
+  Constraint (app/DB level): one of user_id or reporter_email must be present.
+  '''
+}
+
+Enum report_category {
+  general
+  // TBD with Canopée - will add fauna/flora observation types
+}
