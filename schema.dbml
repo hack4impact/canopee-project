@@ -13,13 +13,24 @@ Enum user_status {
 }
 
 Enum report_category {
-  dangerous_tree        // dangerous trees or branches
+  dangerous_tree_or_branch        
+  littering
+  unaccessible_path
+  damaged_path
+  fix_gateway
+  fix_signage
+  damaged_site
   damaged_infrastructure
+  bicycle
+  motorized_vehicle
   fauna_observation
   flora_observation
   unleashed_dog
+  campfire
+  others
   // Tentative list from PRD, pending Canopée confirmation before Sprint 1
 }
+
 
 // Users schema
 
