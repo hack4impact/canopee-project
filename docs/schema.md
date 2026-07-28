@@ -7,7 +7,7 @@ Business rules, conventions, and open questions for the Canopée database.
 - Business rules and conventions → this file
 - SQL constraints not expressible in DBML → migrations (once Sprint 1 begins)
 
-Visual: [dbdiagram.io view](https://dbdiagram.io/d/database-schemas-6a683325067336e1de092bcc)
+Visual: [dbdiagram.io view](https://dbdiagram.io/d/database-schemas-6a692a67067336e1de14d56f)
 
 ## Stack
 
@@ -204,5 +204,5 @@ alter table patrol_points
 
 ## Links
 
-- **dbdiagram view:** https://dbdiagram.io/d/database-schemas-6a683325067336e1de092bcc
+- **dbdiagram view:** https://dbdiagram.io/d/database-schemas-6a692a67067336e1de14d56f
 - **DBML source:** [`schema.dbml`](../schema.dbml)
