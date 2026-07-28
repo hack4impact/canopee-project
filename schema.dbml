@@ -1,0 +1,107 @@
+// Enums
+
+Enum user_role {
+  volunteer
+  pro
+  admin
+}
+
+Enum user_status {
+  pending
+  approved
+  rejected
+}
+
+Enum report_category {
+  dangerous_tree        // dangerous trees or branches
+  damaged_infrastructure
+  fauna_observation
+  flora_observation
+  unleashed_dog
+  // Tentative list from PRD, pending Canopée confirmation before Sprint 1
+}
+
+// Users schema
+
+Table users {
+  id uuid [pk]
+  auth_user_id uuid [not null, unique, note: 'FK to auth.users.id (Supabase Auth)']
+  email text [not null, unique]
+  role user_role [not null, default: 'volunteer']
+  status user_status [not null, default: 'pending']
+  created_at timestamptz [not null, default: `now()`]
+
+  Note: '''
+  Application user profile. Passwords live in `auth.users` (Supabase Auth).
+  Citizens are not users, see `reports.reporter_email`.
+  See docs/schema.md for business rules and status behaviour.
+  '''
+}
+
+// Reports schema
+
+Table reports {
+  id uuid [pk]
+  event_number integer [unique, increment, note: 'Auto-incremented by DB, human-readable, never set manually']
+  user_id uuid [note: 'Nullable FK -> users.id. Filled if reporter has an account']
+  reporter_email text [note: 'Nullable. Filled if reporter is a citizen (no account)']
+  category report_category [not null, note: 'Tentative list from PRD — pending Canopée confirmation']
+  description text
+  photo_url text [note: 'Required for fauna/flora categories — enforced at app level']
+  latitude decimal(9,6) [not null]
+  longitude decimal(9,6) [not null]
+  resolved_at timestamptz [note: 'null = open, populated = resolved']
+  created_at timestamptz [not null, default: `now()`]
+
+  Note: '''
+  Constraint (DB level): exactly one of user_id or reporter_email must be present.
+  See docs/schema.md for full rules.
+  '''
+}
+
+// Patrols schema
+
+Table patrols {
+  id uuid [pk]
+  user_id uuid [not null, note: 'FK -> users.id. Must be an authenticated user (never a citizen).']
+  started_at timestamptz [not null, default: `now()`, note: 'When the patroller pressed start (client-recorded).']
+  ended_at timestamptz [note: 'null = patrol currently active, populated = completed.']
+  created_at timestamptz [not null, default: `now()`, note: 'When the row was inserted (may differ from started_at for offline syncs).']
+
+  Note: '''
+  A single Strava-style patrol session. GPS points live in `patrol_points`.
+  Only volunteers, pros, and admins can create patrols. Citizens cannot.
+  Live visibility: patrols with ended_at = null appear as active to other users.
+  See docs/schema.md for business rules.
+  '''
+
+  indexes {
+    (user_id, started_at) [note: 'Patrol history per user, most recent first']
+    started_at [note: 'Time-window queries (default 2-month visibility)']
+    ended_at [note: 'Fast lookup of active patrols']
+  }
+}
+
+Table patrol_points {
+  id uuid [pk]
+  patrol_id uuid [not null, note: 'FK -> patrols.id']
+  latitude decimal(9,6) [not null]
+  longitude decimal(9,6) [not null]
+  recorded_at timestamptz [not null, note: 'Client-recorded timestamp for this GPS point.']
+
+  Note: '''
+  Ordered GPS point in a patrol route. Rendered as a polyline for completed routes
+  and aggregated into a frequency heatmap.
+  Deleted on cascade if the parent patrol is deleted.
+  '''
+
+  indexes {
+    (patrol_id, recorded_at) [note: 'Every route render orders points by this.']
+  }
+}
+
+// Relationships
+
+Ref: users.id < reports.user_id
+Ref: users.id < patrols.user_id
+Ref: patrols.id < patrol_points.patrol_id
