@@ -37,3 +37,25 @@ Commit the generated files in `drizzle/`. `npm run db:studio` opens Drizzle Stud
 ## Deploying
 
 Vercel is wired up to the repo. `develop` is the production branch; every PR gets a preview URL. `DATABASE_URL` needs to be set in the Vercel project for both Production and Preview.
+
+## User roles and status
+
+### `role`
+Permission level, assigned at signup (defaults to `volunteer`) or manually by an admin. Hierarchy: Admin > Pro > Volunteer.
+
+| Value | Meaning |
+|---|---|
+| `volunteer` | Default role for public signups. |
+| `pro` | Assigned manually by an admin. |
+| `admin` | Full permissions, assigned manually by another admin. |
+
+### `status`
+Approval state. Applies to volunteers and pros — admins are always `approved`.
+
+| Value | Meaning |
+|---|---|
+| `pending` | Default for public signups. |
+| `approved` | Active account. |
+| `rejected` | Denied by an admin. |
+
+Public signups create a `volunteer` account with `pending` status. `pro`/`admin` are never set through the signup form. Passwords are handled by Supabase Auth, not stored here.
