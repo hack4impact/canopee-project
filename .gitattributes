@@ -1,0 +1,9 @@
+# Normalize to LF everywhere. Keeps Windows checkouts from fighting Prettier,
+# whose endOfLine default is "lf", and keeps the Husky hook executable.
+* text=auto eol=lf
+
+# Never touch binaries
+*.ico binary
+*.png binary
+*.jpg binary
+*.woff2 binary
