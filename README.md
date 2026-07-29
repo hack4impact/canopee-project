@@ -34,6 +34,25 @@ npm run db:migrate    # applies it
 
 Commit the generated files in `drizzle/`. `npm run db:studio` opens Drizzle Studio if you want to poke around.
 
+## Linting and formatting
+
+ESLint covers correctness, Prettier covers style. They don't overlap:
+`eslint-config-prettier` turns off the ESLint rules that would argue with
+Prettier.
+
+```bash
+npm run lint           # ESLint
+npm run format         # Prettier, rewrites files
+npm run format:check   # Prettier, reports only
+```
+
+You won't usually run these by hand. A Husky pre-commit hook runs lint-staged on
+your staged files. Formatting gets fixed and re-staged automatically; lint errors
+that ESLint can't fix will reject the commit until you sort them out.
+
+The hook installs itself on `npm install` via the `prepare` script, so there's
+nothing to set up. `git commit --no-verify` skips it if you need an escape hatch.
+
 ## Deploying
 
 Vercel is wired up to the repo. `develop` is the production branch; every PR gets a preview URL. `DATABASE_URL` needs to be set in the Vercel project for both Production and Preview.

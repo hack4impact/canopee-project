@@ -4,7 +4,9 @@ import { db, users } from './index'
 async function seed() {
   const existing = await db.select().from(users)
   if (existing.length > 0) {
-    console.log(`users table already has ${existing.length} row(s), skipping seed`)
+    console.log(
+      `users table already has ${existing.length} row(s), skipping seed`,
+    )
     process.exit(0)
   }
 

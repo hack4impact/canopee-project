@@ -3,6 +3,7 @@
 Business rules, conventions, and open questions for the Canopée database.
 
 **Sources of truth:**
+
 - Column structure, types, and constraints → [`schema.dbml`](../schema.dbml)
 - Business rules and conventions → this file
 - SQL constraints not expressible in DBML → migrations (once Sprint 1 begins)
@@ -36,33 +37,36 @@ Apply to every table unless a specific table's doc calls out an exception.
 ## Enums
 
 ### `user_role`
+
 Permission level. Assigned at signup (defaults to `volunteer`) or manually by an admin.
 
-| Value | Meaning |
-|---|---|
-| `volunteer` | Default role for public signups |
-| `pro` | Professional user, assigned manually by an admin |
-| `admin` | Full permissions, assigned manually by another admin |
+| Value       | Meaning                                              |
+| ----------- | ---------------------------------------------------- |
+| `volunteer` | Default role for public signups                      |
+| `pro`       | Professional user, assigned manually by an admin     |
+| `admin`     | Full permissions, assigned manually by another admin |
 
 ### `user_status`
+
 Approval state for the account.
 
-| Value | Meaning |
-|---|---|
-| `pending` | Awaiting admin review (default for public signups) |
-| `approved` | Active account |
-| `rejected` | Denied by an admin |
+| Value      | Meaning                                            |
+| ---------- | -------------------------------------------------- |
+| `pending`  | Awaiting admin review (default for public signups) |
+| `approved` | Active account                                     |
+| `rejected` | Denied by an admin                                 |
 
 ### `report_category`
+
 Type of report. Tentative list from PRD — **pending Canopée confirmation before Sprint 1**.
 
-| Value | Meaning |
-|---|---|
-| `dangerous_tree` | Dangerous trees or branches (fall risk, dead wood, etc.) |
-| `damaged_infrastructure` | Damaged benches, signs, fences, paths, etc. |
-| `fauna_observation` | Wildlife sighting. Only visible on the map to pros and admins. |
-| `flora_observation` | Plant sighting. Only visible on the map to pros and admins. |
-| `unleashed_dog` | Off-leash dog observed on the site. |
+| Value                    | Meaning                                                        |
+| ------------------------ | -------------------------------------------------------------- |
+| `dangerous_tree`         | Dangerous trees or branches (fall risk, dead wood, etc.)       |
+| `damaged_infrastructure` | Damaged benches, signs, fences, paths, etc.                    |
+| `fauna_observation`      | Wildlife sighting. Only visible on the map to pros and admins. |
+| `flora_observation`      | Plant sighting. Only visible on the map to pros and admins.    |
+| `unleashed_dog`          | Off-leash dog observed on the site.                            |
 
 ## Tables
 
@@ -72,14 +76,14 @@ Application user profile. One row per non-citizen user. Linked one-to-one with a
 
 **Column descriptions**
 
-| Column | Description |
-|---|---|
-| `id` | Internal user id |
-| `auth_user_id` | Links this profile to the Supabase Auth user. Cascade delete. |
-| `email` | Contact email. Duplicated from `auth.users.email` for convenience. |
-| `role` | Permission level. See `user_role` enum. |
-| `status` | Approval state. See `user_status` enum. |
-| `created_at` | Row creation time |
+| Column         | Description                                                        |
+| -------------- | ------------------------------------------------------------------ |
+| `id`           | Internal user id                                                   |
+| `auth_user_id` | Links this profile to the Supabase Auth user. Cascade delete.      |
+| `email`        | Contact email. Duplicated from `auth.users.email` for convenience. |
+| `role`         | Permission level. See `user_role` enum.                            |
+| `status`       | Approval state. See `user_status` enum.                            |
+| `created_at`   | Row creation time                                                  |
 
 **Business rules**
 
@@ -107,18 +111,18 @@ Issue or observation submitted by either a user or a citizen (no account).
 
 **Column descriptions**
 
-| Column | Description |
-|---|---|
-| `id` | Internal report id |
-| `event_number` | Human-readable auto-incremented number. Used in URLs and support conversations. |
-| `user_id` | Set if the reporter has an account. |
-| `reporter_email` | Set if the reporter is a citizen without an account. |
-| `category` | Report type. See `report_category` enum. |
-| `description` | Free-text description of the report. |
-| `photo_url` | Photo attached to the report. Required for fauna/flora categories. |
-| `latitude` / `longitude` | Location of the observation. |
-| `resolved_at` | `null` = open, timestamp = resolved. |
-| `created_at` | Row creation time. |
+| Column                   | Description                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `id`                     | Internal report id                                                              |
+| `event_number`           | Human-readable auto-incremented number. Used in URLs and support conversations. |
+| `user_id`                | Set if the reporter has an account.                                             |
+| `reporter_email`         | Set if the reporter is a citizen without an account.                            |
+| `category`               | Report type. See `report_category` enum.                                        |
+| `description`            | Free-text description of the report.                                            |
+| `photo_url`              | Photo attached to the report. Required for fauna/flora categories.              |
+| `latitude` / `longitude` | Location of the observation.                                                    |
+| `resolved_at`            | `null` = open, timestamp = resolved.                                            |
+| `created_at`             | Row creation time.                                                              |
 
 **Business rules**
 
@@ -146,13 +150,13 @@ A single Strava-style patrol session. A patroller presses "start", walks a route
 
 **Column descriptions**
 
-| Column | Description |
-|---|---|
-| `id` | Internal patrol id |
-| `user_id` | The patroller. Always an authenticated user. |
+| Column       | Description                                                                        |
+| ------------ | ---------------------------------------------------------------------------------- |
+| `id`         | Internal patrol id                                                                 |
+| `user_id`    | The patroller. Always an authenticated user.                                       |
 | `started_at` | When the patroller pressed start (client-recorded). Defaults to `now()` at insert. |
-| `ended_at` | `null` = patrol currently active, timestamp = completed. |
-| `created_at` | Row insertion time (may differ from `started_at` for offline syncs). |
+| `ended_at`   | `null` = patrol currently active, timestamp = completed.                           |
+| `created_at` | Row insertion time (may differ from `started_at` for offline syncs).               |
 
 **Business rules**
 
@@ -176,12 +180,12 @@ An ordered stream of GPS coordinates belonging to a patrol. Rendered as a polyli
 
 **Column descriptions**
 
-| Column | Description |
-|---|---|
-| `id` | Internal point id |
-| `patrol_id` | The patrol this point belongs to. |
-| `latitude` / `longitude` | GPS coordinates. |
-| `recorded_at` | Client-recorded timestamp for this GPS point. |
+| Column                   | Description                                   |
+| ------------------------ | --------------------------------------------- |
+| `id`                     | Internal point id                             |
+| `patrol_id`              | The patrol this point belongs to.             |
+| `latitude` / `longitude` | GPS coordinates.                              |
+| `recorded_at`            | Client-recorded timestamp for this GPS point. |
 
 **Business rules**
 

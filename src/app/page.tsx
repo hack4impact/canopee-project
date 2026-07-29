@@ -15,15 +15,15 @@ export default async function Home() {
             Canopée
           </h1>
           <p className="text-zinc-600 dark:text-zinc-400">
-            {allUsers.length} user{allUsers.length === 1 ? '' : 's'} fetched from
-            Supabase Postgres through Drizzle.
+            {allUsers.length} user{allUsers.length === 1 ? '' : 's'} fetched
+            from Supabase Postgres through Drizzle.
           </p>
         </header>
 
         {allUsers.length === 0 ? (
           <p className="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-zinc-500 dark:border-zinc-700">
-            No users yet. Run <code className="font-mono">npm run db:seed</code> to
-            add some.
+            No users yet. Run <code className="font-mono">npm run db:seed</code>{' '}
+            to add some.
           </p>
         ) : (
           <ul className="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
