@@ -11,9 +11,23 @@ async function seed() {
   }
 
   await db.insert(users).values([
-    { fullName: 'Ada Lovelace', phone: '+1-555-0100' },
-    { fullName: 'Alan Turing', phone: '+1-555-0101' },
-    { fullName: 'Grace Hopper', phone: '+1-555-0102' },
+    {
+      authUserId: crypto.randomUUID(),
+      email: 'ada@example.com',
+      role: 'admin',
+      status: 'approved',
+    },
+    {
+      authUserId: crypto.randomUUID(),
+      email: 'alan@example.com',
+      role: 'pro',
+      status: 'approved',
+    },
+    {
+      authUserId: crypto.randomUUID(),
+      email: 'grace@example.com',
+      role: 'volunteer',
+    },
   ])
 
   console.log('Seeded 3 users')
