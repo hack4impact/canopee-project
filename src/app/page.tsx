@@ -33,10 +33,10 @@ export default async function Home() {
                 className="flex items-center justify-between px-4 py-3"
               >
                 <span className="font-medium text-black dark:text-zinc-50">
-                  {user.fullName ?? 'Unnamed'}
+                  {user.email}
                 </span>
                 <span className="font-mono text-sm text-zinc-500">
-                  {user.phone ?? '—'}
+                  {user.role}
                 </span>
               </li>
             ))}
