@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { ensureUserProfile } from '@/lib/auth/ensure-profile'
+import { REDIRECT_PARAM, safeRedirectPath } from '@/lib/auth/routes'
 import { isValid, validateLogin, type LoginErrors } from '@/lib/auth/validation'
 import { createClient } from '@/lib/supabase/server'
 
@@ -32,6 +33,12 @@ export async function login(
     return { errors }
   }
 
+  // Re-validated here rather than trusted from the form: this is a POST
+  // endpoint, and a caller can put anything in the field.
+  const redirectTo = safeRedirectPath(
+    String(formData.get(REDIRECT_PARAM) ?? ''),
+  )
+
   const email = input.email.trim().toLowerCase()
   const supabase = await createClient()
 
@@ -59,5 +66,5 @@ export async function login(
     }
   }
 
-  redirect('/')
+  redirect(redirectTo)
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
+import { REDIRECT_PARAM } from '@/lib/auth/routes'
 import {
   isValid,
   validateLogin,
@@ -16,7 +17,16 @@ const emptyInput: LoginInput = {
   password: '',
 }
 
-export function LoginForm() {
+type LoginFormProps = {
+  /**
+   * Where to send the user once they are signed in. Already validated by the
+   * page; the action validates it again, because a Server Action is a POST
+   * endpoint and nothing forces a caller to go through this form.
+   */
+  redirectTo: string
+}
+
+export function LoginForm({ redirectTo }: LoginFormProps) {
   const [state, formAction, pending] = useActionState(login, initialState)
   const [input, setInput] = useState(emptyInput)
   const [clientErrors, setClientErrors] = useState<LoginErrors>({})
@@ -40,6 +50,8 @@ export function LoginForm() {
 
   return (
     <form action={submit} noValidate className="flex flex-col gap-4">
+      <input type="hidden" name={REDIRECT_PARAM} value={redirectTo} />
+
       <div className="flex flex-col gap-1">
         <label htmlFor="email">Email</label>
         <input
