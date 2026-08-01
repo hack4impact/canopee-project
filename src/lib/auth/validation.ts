@@ -9,8 +9,15 @@ export type SignupInput = {
   confirmPassword: string
 }
 
+/** The raw login form values, before any of them are trusted. */
+export type LoginInput = {
+  email: string
+  password: string
+}
+
 /** One message per field that failed. An empty object means the form is fine. */
 export type SignupErrors = Partial<Record<keyof SignupInput, string>>
+export type LoginErrors = Partial<Record<keyof LoginInput, string>>
 
 // Deliberately loose: something, an @, something, a dot, something. A real
 // RFC 5322 pattern is enormous and still can't tell you the address exists.
@@ -47,7 +54,24 @@ export function validateSignup(input: SignupInput): SignupErrors {
   return errors
 }
 
-/** True when `validateSignup` found nothing to complain about. */
-export function isValid(errors: SignupErrors): boolean {
+export function validateLogin(input: LoginInput): LoginErrors {
+  const errors: LoginErrors = {}
+  const email = input.email.trim()
+
+  if (!email) {
+    errors.email = 'Enter your email address.'
+  } else if (!EMAIL_PATTERN.test(email)) {
+    errors.email = 'Enter a valid email address.'
+  }
+
+  if (!input.password) {
+    errors.password = 'Enter your password.'
+  }
+
+  return errors
+}
+
+/** True when validation found nothing to complain about. */
+export function isValid(errors: SignupErrors | LoginErrors): boolean {
   return Object.keys(errors).length === 0
 }
