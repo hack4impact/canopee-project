@@ -4,6 +4,7 @@ import { and, desc, eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { db, users } from '@/db'
 import { requireAdmin } from '@/lib/auth/current-user'
+import { sendApprovalEmail, sendRejectionEmail } from '@/lib/plunk'
 
 export type VolunteerActionState = {
   message?: string
@@ -31,10 +32,16 @@ async function updatePendingUser(
     .update(users)
     .set(update)
     .where(and(eq(users.id, userId), eq(users.status, 'pending')))
-    .returning({ id: users.id })
+    .returning({ id: users.id, email: users.email })
 
   if (!updated) {
     return { message: 'User not found or no longer pending.' }
+  }
+
+  if (update.status === 'approved') {
+    await sendApprovalEmail(updated.email)
+  } else {
+    await sendRejectionEmail(updated.email)
   }
 
   revalidatePath('/admin/volunteers')
