@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { db, users } from '@/db'
 
 // This page reads live data from Postgres on every request, so it must not be
@@ -11,9 +12,17 @@ export default async function Home() {
     <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="flex w-full max-w-2xl flex-col gap-8 px-6 py-24">
         <header className="flex flex-col gap-2">
-          <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-            Canopée
-          </h1>
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
+              Canopée
+            </h1>
+            <Link
+              href="/login"
+              className="text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
+            >
+              Log in
+            </Link>
+          </div>
           <p className="text-zinc-600 dark:text-zinc-400">
             {allUsers.length} user{allUsers.length === 1 ? '' : 's'} fetched
             from Supabase Postgres through Drizzle.
