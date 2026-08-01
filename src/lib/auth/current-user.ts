@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 export type UserProfile = typeof users.$inferSelect
 
 /** Loads the signed-in user's application profile, or null when unauthenticated (or when the profile row is missing). */
+export async function getCurrentUserProfile(): Promise<UserProfile | null> {
   const supabase = await createClient()
   const {
     data: { user },
