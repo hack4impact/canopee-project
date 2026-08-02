@@ -55,7 +55,7 @@ export async function login(
     profile = await ensureUserProfile(data.user.id, email)
   } catch (cause) {
     console.error('Login succeeded in Supabase but the users row failed', cause)
-
+    await supabase.auth.signOut()
     return {
       message:
         'You are signed in but your profile is missing. Contact an admin.',
@@ -66,6 +66,12 @@ export async function login(
   // in, but can't use the app. Send it straight to the screen that says so
   // rather than bouncing it off the home page gate.
   redirect(isApproved(profile) ? '/' : '/pending')
+}
+
+export async function logout() {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect('/')
 }
 
 export async function logout() {
