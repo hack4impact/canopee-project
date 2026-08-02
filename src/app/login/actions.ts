@@ -1,10 +1,9 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { ensureUserProfile } from '@/lib/auth/ensure-profile'
-import { REDIRECT_PARAM, safeRedirectPath } from '@/lib/auth/routes'
 import { ensureUserProfile, type UserProfile } from '@/lib/auth/ensure-profile'
 import { isApproved } from '@/lib/auth/roles'
+import { REDIRECT_PARAM, safeRedirectPath } from '@/lib/auth/routes'
 import { isValid, validateLogin, type LoginErrors } from '@/lib/auth/validation'
 import { createClient } from '@/lib/supabase/server'
 
