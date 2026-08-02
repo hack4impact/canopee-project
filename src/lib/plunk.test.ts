@@ -31,7 +31,9 @@ describe('plunk email helpers', () => {
     sendMock.mockRejectedValueOnce(new Error('boom'))
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    await expect(sendRejectionEmail('user@example.com')).resolves.toBeUndefined()
+    await expect(
+      sendRejectionEmail('user@example.com'),
+    ).resolves.toBeUndefined()
     expect(consoleError).toHaveBeenCalled()
   })
 })
