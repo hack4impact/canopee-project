@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_REDIRECT,
+  getPostLoginRedirect,
   isPublicRoute,
   LOGIN_ROUTE,
   safeRedirectPath,
@@ -31,6 +32,20 @@ describe('isPublicRoute', () => {
   it('does not treat a route that merely starts with a public name as public', () => {
     expect(isPublicRoute('/loginy')).toBe(false)
     expect(isPublicRoute('/signup-admin')).toBe(false)
+  })
+})
+
+describe('getPostLoginRedirect', () => {
+  it('returns the requested route for approved users', () => {
+    expect(getPostLoginRedirect('/admin/volunteers', true)).toBe(
+      '/admin/volunteers',
+    )
+    expect(getPostLoginRedirect('/reports', true)).toBe('/reports')
+  })
+
+  it('sends unapproved users to the pending screen', () => {
+    expect(getPostLoginRedirect('/admin/volunteers', false)).toBe('/pending')
+    expect(getPostLoginRedirect('/reports', false)).toBe('/pending')
   })
 })
 

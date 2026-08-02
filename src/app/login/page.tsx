@@ -3,7 +3,7 @@ import { REDIRECT_PARAM, safeRedirectPath } from '@/lib/auth/routes'
 import { LoginForm } from './login-form'
 
 export const metadata: Metadata = {
-  title: 'Log in | Canopée',
+  title: 'Connexion | Canopée',
 }
 
 export default async function LoginPage(props: PageProps<'/login'>) {
@@ -21,7 +21,7 @@ export default async function LoginPage(props: PageProps<'/login'>) {
       <main className="flex w-full max-w-sm flex-col gap-8 px-6 py-24">
         <header className="flex flex-col gap-2">
           <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-            Log in
+            Connexion
           </h1>
         </header>
 

@@ -4,8 +4,6 @@ import { getCurrentUserProfile } from '@/lib/auth/current-user'
 import { isAdmin } from '@/lib/auth/roles'
 import { logout } from '@/app/login/actions'
 
-// This page reads live data from Postgres on every request, so it must not be
-// statically prerendered at build time.
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
@@ -33,7 +31,7 @@ export default async function Home() {
                   href="/admin/volunteers"
                   className="rounded bg-black px-3 py-1.5 text-sm text-white dark:bg-zinc-50 dark:text-black"
                 >
-                  Review requests
+                  Examiner les demandes
                 </Link>
               )}
               {currentUser ? (
@@ -42,7 +40,7 @@ export default async function Home() {
                     type="submit"
                     className="text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
                   >
-                    Log out
+                    Se déconnecter
                   </button>
                 </form>
               ) : (
@@ -50,7 +48,7 @@ export default async function Home() {
                   href="/login"
                   className="text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
                 >
-                  Log in
+                  Se connecter
                 </Link>
               )}
             </div>
@@ -58,7 +56,7 @@ export default async function Home() {
 
           {currentUser && (
             <p className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
-              Signed in as{' '}
+              Connecté en tant que{' '}
               <span className="font-medium text-black dark:text-zinc-50">
                 {currentUser.email}
               </span>{' '}
@@ -69,15 +67,16 @@ export default async function Home() {
           )}
 
           <p className="text-zinc-600 dark:text-zinc-400">
-            {allUsers.length} user{allUsers.length === 1 ? '' : 's'} fetched
-            from Supabase Postgres through Drizzle.
+            {allUsers.length} utilisateur{allUsers.length === 1 ? '' : 's'} récupéré
+            {allUsers.length === 1 ? '' : 's'} depuis Supabase Postgres via Drizzle.
           </p>
         </header>
 
         {allUsers.length === 0 ? (
           <p className="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-zinc-500 dark:border-zinc-700">
-            No users yet. Run <code className="font-mono">npm run db:seed</code>{' '}
-            to add some.
+            Aucun utilisateur pour l'instant. Lancez{' '}
+            <code className="font-mono">npm run db:seed</code>{' '}
+            pour en ajouter.
           </p>
         ) : (
           <ul className="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">

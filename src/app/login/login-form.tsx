@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useActionState, useState } from 'react'
 import { REDIRECT_PARAM } from '@/lib/auth/routes'
 import {
@@ -53,7 +54,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
       <input type="hidden" name={REDIRECT_PARAM} value={redirectTo} />
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="email">Email</label>
+        <label htmlFor="email">Adresse courriel</label>
         <input
           id="email"
           name="email"
@@ -72,7 +73,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="password">Password</label>
+        <label htmlFor="password">Mot de passe</label>
         <input
           id="password"
           name="password"
@@ -101,8 +102,15 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
         disabled={pending}
         className="rounded bg-black px-4 py-2 text-white disabled:opacity-50 dark:bg-zinc-50 dark:text-black"
       >
-        {pending ? 'Signing in...' : 'Log in'}
+        {pending ? 'Connexion...' : 'Se connecter'}
       </button>
+
+      <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+        Pas de compte?{' '}
+        <Link href="/signup" className="font-medium text-black underline underline-offset-4 dark:text-zinc-50">
+          Créez votre compte
+        </Link>
+      </p>
     </form>
   )
 }

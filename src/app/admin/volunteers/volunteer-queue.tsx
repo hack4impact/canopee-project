@@ -36,7 +36,7 @@ function ApproveButton({ userId }: { userId: string }) {
         disabled={pending}
         className="rounded bg-black px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-zinc-50 dark:text-black"
       >
-        {pending ? 'Approving…' : 'Approve'}
+        {pending ? 'Approbation en cours…' : 'Approuver'}
       </button>
       {state.message && (
         <p aria-live="polite" className="text-sm text-red-600">
@@ -57,13 +57,13 @@ function RejectForm({ userId }: { userId: string }) {
     <form action={formAction} className="flex w-full max-w-sm flex-col gap-2">
       <input type="hidden" name="userId" value={userId} />
       <label htmlFor={`reason-${userId}`} className="sr-only">
-        Rejection reason (optional)
+        Raison du rejet (optionnel)
       </label>
       <input
         id={`reason-${userId}`}
         name="reason"
         type="text"
-        placeholder="Reason (optional)"
+        placeholder="Raison (optionnel)"
         className="rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700"
       />
       <button
@@ -71,7 +71,7 @@ function RejectForm({ userId }: { userId: string }) {
         disabled={pending}
         className="rounded border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300"
       >
-        {pending ? 'Rejecting…' : 'Reject'}
+        {pending ? 'Rejet en cours…' : 'Rejeter'}
       </button>
       {state.message && (
         <p aria-live="polite" className="text-sm text-red-600">
@@ -90,7 +90,7 @@ export function VolunteerQueue({
   if (volunteers.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-zinc-500 dark:border-zinc-700">
-        No users are waiting for approval.
+        Aucun utilisateur en attente d'approbation.
       </p>
     )
   }
@@ -107,7 +107,7 @@ export function VolunteerQueue({
               {volunteer.email}
             </span>
             <span className="text-sm text-zinc-500">
-              Signed up {formatDate(volunteer.createdAt)}
+              Inscrit le {formatDate(volunteer.createdAt)}
             </span>
           </div>
 

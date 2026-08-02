@@ -3,7 +3,11 @@
 import { redirect } from 'next/navigation'
 import { ensureUserProfile, type UserProfile } from '@/lib/auth/ensure-profile'
 import { isApproved } from '@/lib/auth/roles'
-import { REDIRECT_PARAM, safeRedirectPath } from '@/lib/auth/routes'
+import {
+  getPostLoginRedirect,
+  REDIRECT_PARAM,
+  safeRedirectPath,
+} from '@/lib/auth/routes'
 import { isValid, validateLogin, type LoginErrors } from '@/lib/auth/validation'
 import { createClient } from '@/lib/supabase/server'
 
@@ -14,10 +18,10 @@ export type LoginState = {
 
 function loginErrorMessage(code?: string): string {
   if (code === 'email_not_confirmed') {
-    return 'Confirm your email before logging in.'
+    return 'Confirmez votre courriel avant de vous connecter.'
   }
 
-  return 'Invalid email or password.'
+  return 'Courriel ou mot de passe invalide.'
 }
 
 export async function login(
@@ -65,15 +69,14 @@ export async function login(
     await supabase.auth.signOut()
     return {
       message:
-        'You are signed in but your profile is missing. Contact an admin.',
+        'Vous êtes connecté, mais votre profil est manquant. Contactez un administrateur.',
     }
   }
 
-  redirect(redirectTo)
   // An account still awaiting review — or one an admin turned down — can sign
   // in, but can't use the app. Send it straight to the screen that says so
   // rather than bouncing it off the home page gate.
-  redirect(isApproved(profile) ? '/' : '/pending')
+  redirect(getPostLoginRedirect(redirectTo, isApproved(profile)))
 }
 
 export async function logout() {

@@ -34,21 +34,21 @@ export function validateSignup(input: SignupInput): SignupErrors {
   const email = input.email.trim()
 
   if (!email) {
-    errors.email = 'Enter your email address.'
+    errors.email = 'Saisissez votre adresse courriel.'
   } else if (!EMAIL_PATTERN.test(email)) {
-    errors.email = 'Enter a valid email address.'
+    errors.email = 'Saisissez une adresse courriel valide.'
   }
 
   if (!input.password) {
-    errors.password = 'Choose a password.'
+    errors.password = 'Choisissez un mot de passe.'
   } else if (input.password.length < MIN_PASSWORD_LENGTH) {
-    errors.password = `Use at least ${MIN_PASSWORD_LENGTH} characters.`
+    errors.password = `Utilisez au moins ${MIN_PASSWORD_LENGTH} caractères.`
   }
 
   if (!input.confirmPassword) {
-    errors.confirmPassword = 'Confirm your password.'
+    errors.confirmPassword = 'Confirmez votre mot de passe.'
   } else if (input.password !== input.confirmPassword) {
-    errors.confirmPassword = 'Passwords do not match.'
+    errors.confirmPassword = 'Les mots de passe ne correspondent pas.'
   }
 
   return errors
@@ -59,13 +59,13 @@ export function validateLogin(input: LoginInput): LoginErrors {
   const email = input.email.trim()
 
   if (!email) {
-    errors.email = 'Enter your email address.'
+    errors.email = 'Saisissez votre adresse courriel.'
   } else if (!EMAIL_PATTERN.test(email)) {
-    errors.email = 'Enter a valid email address.'
+    errors.email = 'Saisissez une adresse courriel valide.'
   }
 
   if (!input.password) {
-    errors.password = 'Enter your password.'
+    errors.password = 'Saisissez votre mot de passe.'
   }
 
   return errors
