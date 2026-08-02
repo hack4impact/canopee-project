@@ -10,6 +10,7 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   role: roleEnum('role').notNull().default('volunteer'),
   status: statusEnum('status').notNull().default('pending'),
+  rejectionReason: text('rejection_reason'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),

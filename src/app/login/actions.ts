@@ -52,12 +52,18 @@ export async function login(
     await ensureUserProfile(data.user.id, email)
   } catch (cause) {
     console.error('Login succeeded in Supabase but the users row failed', cause)
-
+    await supabase.auth.signOut()
     return {
       message:
         'You are signed in but your profile is missing. Contact an admin.',
     }
   }
 
+  redirect('/')
+}
+
+export async function logout() {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
   redirect('/')
 }

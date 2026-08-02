@@ -2,7 +2,11 @@ import Plunk from '@plunk/node'
 
 type PlunkClient = {
   emails: {
-    send: (payload: { to: string; subject: string; body: string }) => Promise<unknown>
+    send: (payload: {
+      to: string
+      subject: string
+      body: string
+    }) => Promise<unknown>
   }
 }
 
