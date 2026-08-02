@@ -8,22 +8,27 @@ export type UserProfile = typeof users.$inferSelect
 
 /** Loads the signed-in user's application profile, or null when unauthenticated (or when the profile row is missing). */
 export async function getCurrentUserProfile(): Promise<UserProfile | null> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-  if (!user) {
+    if (!user) {
+      return null
+    }
+
+    const [profile] = await db
+      .select()
+      .from(users)
+      .where(eq(users.authUserId, user.id))
+      .limit(1)
+
+    return profile ?? null
+  } catch (error) {
+    console.error('Failed to load current user profile:', error)
     return null
   }
-
-  const [profile] = await db
-    .select()
-    .from(users)
-    .where(eq(users.authUserId, user.id))
-    .limit(1)
-
-  return profile ?? null
 }
 
 /** Ensures the caller is an admin. Throws a 403 response otherwise. */

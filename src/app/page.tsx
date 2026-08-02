@@ -9,8 +9,15 @@ import { logout } from '@/app/login/actions'
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
-  const allUsers = await db.select().from(users)
-  const currentUser = await getCurrentUserProfile()
+  let allUsers: Array<{ id: string; email: string; role: string }> = []
+  let currentUser = null
+
+  try {
+    allUsers = await db.select().from(users)
+    currentUser = await getCurrentUserProfile()
+  } catch (error) {
+    console.error('Home page data load failed:', error)
+  }
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
