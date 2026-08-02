@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
-import { forbidden } from 'next/navigation'
+import { forbidden, redirect } from 'next/navigation'
 import { db, users } from '@/db'
-import { isAdmin } from '@/lib/auth/roles'
+import { canAccess, isAdmin, isApproved, type Role } from '@/lib/auth/roles'
 import { createClient } from '@/lib/supabase/server'
 
 export type UserProfile = typeof users.$inferSelect
@@ -40,4 +40,59 @@ export async function requireAdmin(): Promise<UserProfile> {
   }
 
   return profile
+}
+
+/**
+ * Page and layout gate. Sends signed-out visitors to the login form and
+ * signed-in-but-unapproved accounts to the approval-pending screen, which
+ * explains why they can't get in. Anyone signed in and approved but holding
+ * too low a role gets a 403 instead — they know where they stand, they just
+ * aren't allowed here.
+ *
+ * Use this from a layout or page. Route Handlers and Server Actions should
+ * call `requireApprovedAccess` so a rejected request gets a status code
+ * rather than a redirect to an HTML page.
+ */
+export async function requireApprovedUser(
+  requiredRole: Role = 'volunteer',
+): Promise<UserProfile> {
+  const profile = await getCurrentUserProfile()
+
+  if (!profile) {
+    redirect('/login')
+  }
+
+  if (!canAccess(profile, requiredRole)) {
+    // Split on why: an unapproved account gets the explanation, an approved
+    // one that simply outranks nothing here gets the plain 403.
+    redirectUnapprovedOrForbid(profile)
+  }
+
+  return profile
+}
+
+/**
+ * Route Handler and Server Action gate. Throws Next's 403 interrupt for any
+ * caller that isn't an approved user holding `requiredRole` or higher, so an
+ * unapproved volunteer hitting an endpoint gets a 403 rather than HTML.
+ */
+export async function requireApprovedAccess(
+  requiredRole: Role = 'volunteer',
+): Promise<UserProfile> {
+  const profile = await getCurrentUserProfile()
+
+  if (!profile || !canAccess(profile, requiredRole)) {
+    forbidden()
+  }
+
+  return profile
+}
+
+/** Never returns: both branches throw a navigation interrupt. */
+function redirectUnapprovedOrForbid(profile: UserProfile): never {
+  if (!isApproved(profile)) {
+    redirect('/pending')
+  }
+
+  forbidden()
 }
