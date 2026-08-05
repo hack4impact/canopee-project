@@ -21,7 +21,9 @@ describe('mapbox config', () => {
 
   it('returns the public token from the environment when set', () => {
     const previous = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+    const previousLegacy = process.env.MAPBOX_TOXEN
     process.env.NEXT_PUBLIC_MAPBOX_TOKEN = 'pk.test-token'
+    delete process.env.MAPBOX_TOXEN
 
     expect(getMapboxToken()).toBe('pk.test-token')
 
@@ -29,6 +31,12 @@ describe('mapbox config', () => {
       delete process.env.NEXT_PUBLIC_MAPBOX_TOKEN
     } else {
       process.env.NEXT_PUBLIC_MAPBOX_TOKEN = previous
+    }
+
+    if (previousLegacy === undefined) {
+      delete process.env.MAPBOX_TOXEN
+    } else {
+      process.env.MAPBOX_TOXEN = previousLegacy
     }
   })
 })

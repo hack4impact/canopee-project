@@ -15,5 +15,5 @@ export type MapViewport = {
 
 /** Reads the public Mapbox token from the environment. */
 export function getMapboxToken(): string | undefined {
-  return process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+  return process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? process.env.MAPBOX_TOXEN
 }
