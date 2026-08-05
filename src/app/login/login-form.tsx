@@ -1,6 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { useActionState, useState } from 'react'
+import { REDIRECT_PARAM } from '@/lib/auth/routes'
 import {
   isValid,
   validateLogin,
@@ -16,7 +18,16 @@ const emptyInput: LoginInput = {
   password: '',
 }
 
-export function LoginForm() {
+type LoginFormProps = {
+  /**
+   * Where to send the user once they are signed in. Already validated by the
+   * page; the action validates it again, because a Server Action is a POST
+   * endpoint and nothing forces a caller to go through this form.
+   */
+  redirectTo: string
+}
+
+export function LoginForm({ redirectTo }: LoginFormProps) {
   const [state, formAction, pending] = useActionState(login, initialState)
   const [input, setInput] = useState(emptyInput)
   const [clientErrors, setClientErrors] = useState<LoginErrors>({})
@@ -40,8 +51,10 @@ export function LoginForm() {
 
   return (
     <form action={submit} noValidate className="flex flex-col gap-4">
+      <input type="hidden" name={REDIRECT_PARAM} value={redirectTo} />
+
       <div className="flex flex-col gap-1">
-        <label htmlFor="email">Email</label>
+        <label htmlFor="email">Adresse courriel</label>
         <input
           id="email"
           name="email"
@@ -60,7 +73,7 @@ export function LoginForm() {
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="password">Password</label>
+        <label htmlFor="password">Mot de passe</label>
         <input
           id="password"
           name="password"
@@ -89,8 +102,15 @@ export function LoginForm() {
         disabled={pending}
         className="rounded bg-black px-4 py-2 text-white disabled:opacity-50 dark:bg-zinc-50 dark:text-black"
       >
-        {pending ? 'Signing in...' : 'Log in'}
+        {pending ? 'Connexion...' : 'Se connecter'}
       </button>
+
+      <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+        Pas de compte?{' '}
+        <Link href="/signup" className="font-medium text-black underline underline-offset-4 dark:text-zinc-50">
+          Créez votre compte
+        </Link>
+      </p>
     </form>
   )
 }

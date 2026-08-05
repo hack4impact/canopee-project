@@ -1,9 +1,8 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { db, users } from '@/db'
-import { logout } from '@/app/login/actions'
 import { getCurrentUserProfile } from '@/lib/auth/current-user'
-import { isAdmin, isApproved } from '@/lib/auth/roles'
+import { isAdmin } from '@/lib/auth/roles'
+import { logout } from '@/app/login/actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,38 +15,6 @@ export default async function Home() {
     currentUser = await getCurrentUserProfile()
   } catch (error) {
     console.error('Home page data load failed:', error)
-  }
-
-  if (currentUser && !isApproved(currentUser)) {
-    redirect('/pending')
-  }
-
-  if (!currentUser) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-        <main className="flex w-full max-w-2xl flex-col gap-8 px-6 py-24">
-          <header className="flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-4">
-              <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-                Canopée
-              </h1>
-              <div className="flex shrink-0 items-center gap-3">
-                <Link
-                  href="/login"
-                  className="text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
-                >
-                  Se connecter
-                </Link>
-              </div>
-            </div>
-
-            <p className="text-zinc-600 dark:text-zinc-400">
-              Bienvenue sur l'application Canopée.
-            </p>
-          </header>
-        </main>
-      </div>
-    )
   }
 
   return (
@@ -67,24 +34,37 @@ export default async function Home() {
                   Examiner les demandes
                 </Link>
               )}
-              <form action={logout}>
-                <button
-                  type="submit"
+              {currentUser ? (
+                <form action={logout}>
+                  <button
+                    type="submit"
+                    className="text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
+                  >
+                    Se déconnecter
+                  </button>
+                </form>
+              ) : (
+                <Link
+                  href="/login"
                   className="text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
                 >
-                  Se déconnecter
-                </button>
-              </form>
+                  Se connecter
+                </Link>
+              )}
             </div>
           </div>
 
-          <p className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
-            Connecté en tant que{' '}
-            <span className="font-medium text-black dark:text-zinc-50">
-              {currentUser.email}
-            </span>{' '}
-            <span className="font-mono text-zinc-500">({currentUser.role})</span>
-          </p>
+          {currentUser && (
+            <p className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+              Connecté en tant que{' '}
+              <span className="font-medium text-black dark:text-zinc-50">
+                {currentUser.email}
+              </span>{' '}
+              <span className="font-mono text-zinc-500">
+                ({currentUser.role})
+              </span>
+            </p>
+          )}
 
           <p className="text-zinc-600 dark:text-zinc-400">
             {allUsers.length} utilisateur{allUsers.length === 1 ? '' : 's'} récupéré

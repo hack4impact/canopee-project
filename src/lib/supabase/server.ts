@@ -1,11 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-function required(value: string | undefined, name: string): string {
-  if (!value) {
-    throw new Error(`${name} is not set`)
-  }
-
+function required(value: string | undefined, name: string): string | undefined {
   return value
 }
 
@@ -28,6 +24,10 @@ const supabaseKey = required(
  * sharing a single instance.
  */
 export async function createClient() {
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Supabase environment variables are not configured')
+  }
+
   const cookieStore = await cookies()
 
   return createServerClient(supabaseUrl, supabaseKey, {
