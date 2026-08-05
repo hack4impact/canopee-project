@@ -1,10 +1,15 @@
 import type { NextConfig } from 'next'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url))
 
 const nextConfig: NextConfig = {
   experimental: {
-    // Required for `forbidden()` from next/navigation, which renders
-    // `forbidden.tsx` with a 403 status. Still experimental in Next 16.
     authInterrupts: true,
+  },
+  turbopack: {
+    root: projectRoot,
   },
 }
 
