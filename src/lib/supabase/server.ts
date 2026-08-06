@@ -9,25 +9,22 @@ function required(value: string | undefined, name: string): string {
   return value
 }
 
-// Read through the full `process.env.NEXT_PUBLIC_*` expression: Next swaps
-// those in at build time by matching the literal text, so a lookup by variable
-// name would never be replaced.
-const supabaseUrl = required(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  'NEXT_PUBLIC_SUPABASE_URL',
-)
-
-const supabaseKey = required(
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-  'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
-)
-
 /**
  * Supabase client for server-side code. Reads and writes the session cookies
  * through Next's cookie store, so build a new one per request rather than
  * sharing a single instance.
  */
 export async function createClient() {
+  const supabaseUrl = required(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    'NEXT_PUBLIC_SUPABASE_URL',
+  )
+
+  const supabaseKey = required(
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+  )
+
   const cookieStore = await cookies()
 
   return createServerClient(supabaseUrl, supabaseKey, {
