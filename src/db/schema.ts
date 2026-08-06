@@ -1,8 +1,27 @@
-import { pgTable, pgEnum, uuid, text, timestamp } from 'drizzle-orm/pg-core'
+import {
+  check,
+  decimal,
+  index,
+  integer,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 
 export const roleEnum = pgEnum('role', ['volunteer', 'pro', 'admin'])
 
 export const statusEnum = pgEnum('status', ['pending', 'approved', 'rejected'])
+
+export const reportCategoryEnum = pgEnum('report_category', [
+  'dangerous_tree',
+  'damaged_infrastructure',
+  'fauna_observation',
+  'flora_observation',
+  'unleashed_dog',
+])
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -15,3 +34,31 @@ export const users = pgTable('users', {
     .notNull()
     .defaultNow(),
 })
+
+export const reports = pgTable(
+  'reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventNumber: integer('event_number')
+      .notNull()
+      .unique()
+      .generatedAlwaysAsIdentity(),
+    latitude: decimal('latitude', { precision: 9, scale: 6 }).notNull(),
+    longitude: decimal('longitude', { precision: 9, scale: 6 }).notNull(),
+    category: reportCategoryEnum('category').notNull(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    userId: uuid('user_id').references(() => users.id),
+    reporterEmail: text('reporter_email'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      'reports_reporter_present',
+      sql`(${table.userId} is null) <> (${table.reporterEmail} is null)`,
+    ),
+    index('reports_resolved_at_idx').on(table.resolvedAt),
+    index('reports_category_idx').on(table.category),
+  ],
+)

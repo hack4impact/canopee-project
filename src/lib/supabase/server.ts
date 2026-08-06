@@ -5,8 +5,20 @@ function required(value: string | undefined, name: string): string {
   if (!value) {
     throw new Error(`${name} is not configured`)
   }
-
   return value
+}
+
+function getSupabaseConfig() {
+  return {
+    url: required(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      'NEXT_PUBLIC_SUPABASE_URL',
+    ),
+    key: required(
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+      'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+    ),
+  }
 }
 
 /**
@@ -15,19 +27,10 @@ function required(value: string | undefined, name: string): string {
  * sharing a single instance.
  */
 export async function createClient() {
-  const supabaseUrl = required(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    'NEXT_PUBLIC_SUPABASE_URL',
-  )
-
-  const supabaseKey = required(
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-    'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
-  )
-
   const cookieStore = await cookies()
+  const { url, key } = getSupabaseConfig()
 
-  return createServerClient(supabaseUrl, supabaseKey, {
+  return createServerClient(url, key, {
     cookies: {
       getAll() {
         return cookieStore.getAll()

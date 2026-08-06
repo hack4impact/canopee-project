@@ -10,12 +10,14 @@ export const dynamic = 'force-dynamic'
 export default async function Home() {
   let allUsers: Array<{ id: string; email: string; role: string }> = []
   let currentUser = null
+  let dataError: string | null = null
 
   try {
     allUsers = await db.select().from(users)
     currentUser = await getCurrentUserProfile()
   } catch (error) {
     console.error('Home page data load failed:', error)
+    dataError = error instanceof Error ? error.message : 'Impossible de charger les données'
   }
 
   if (currentUser && !isApproved(currentUser)) {
@@ -40,7 +42,6 @@ export default async function Home() {
                 </Link>
               </div>
             </div>
-
             <p className="text-zinc-600 dark:text-zinc-400">
               Bienvenue sur l&apos;application Canopée.
             </p>
@@ -88,12 +89,18 @@ export default async function Home() {
             </span>
           </p>
 
-          <p className="text-zinc-600 dark:text-zinc-400">
-            {allUsers.length} utilisateur{allUsers.length === 1 ? '' : 's'}{' '}
-            récupéré
-            {allUsers.length === 1 ? '' : 's'} depuis Supabase Postgres via
-            Drizzle.
-          </p>
+          {dataError ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+              Les données ne sont pas encore disponibles :{' '}
+              <span className="font-mono">{dataError}</span>
+            </p>
+          ) : (
+            <p className="text-zinc-600 dark:text-zinc-400">
+              {allUsers.length} utilisateur{allUsers.length === 1 ? '' : 's'}{' '}
+              récupéré{allUsers.length === 1 ? '' : 's'} depuis Supabase
+              Postgres via Drizzle.
+            </p>
+          )}
         </header>
 
         {allUsers.length === 0 ? (
