@@ -19,7 +19,6 @@ function getDbInstance(): DbInstance {
 
   const client = postgres(connectionString, { prepare: false })
   dbInstance = drizzle(client, { schema })
-
   return dbInstance
 }
 
@@ -27,7 +26,6 @@ export const db = new Proxy({} as DbInstance, {
   get(_target, prop, receiver) {
     const instance = getDbInstance()
     const value = Reflect.get(instance, prop, receiver)
-
     return typeof value === 'function' ? value.bind(instance) : value
   },
 })
