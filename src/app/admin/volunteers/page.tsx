@@ -13,7 +13,7 @@ export default async function AdminVolunteersPage() {
         <header className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-4">
             <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-              File d'approbation des bénévoles
+              File d&apos;approbation des bénévoles
             </h1>
             <Link
               href="/"
@@ -24,7 +24,7 @@ export default async function AdminVolunteersPage() {
           </div>
           <p className="text-zinc-600 dark:text-zinc-400">
             {pendingUsers.length} bénévole
-            {pendingUsers.length === 1 ? '' : 's'} en attente d'examen.
+            {pendingUsers.length === 1 ? '' : 's'} en attente d&apos;examen.
           </p>
         </header>
 

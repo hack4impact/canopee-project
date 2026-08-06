@@ -26,7 +26,7 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
 
     return profile ?? null
   } catch (error) {
-    console.error('Failed to load current user profile:', error)
+    console.warn('Unable to resolve the current user profile:', error)
     return null
   }
 }

@@ -4,13 +4,26 @@ import * as schema from './schema'
 
 const connectionString = process.env.DATABASE_URL
 
-function createDb() {
+type DrizzleDb = ReturnType<typeof drizzle<typeof schema>>
+
+let dbInstance: DrizzleDb | null = null
+
+function getDb(): DrizzleDb {
   if (!connectionString) {
-    return null
+    throw new Error('DATABASE_URL is not set')
   }
 
-  return postgres(connectionString, { prepare: false })
+  if (!dbInstance) {
+    const client = postgres(connectionString, { prepare: false })
+    dbInstance = drizzle(client, { schema })
+  }
+
+  return dbInstance
 }
 
-export const db = drizzle((createDb() ?? ({} as never)) as never, { schema })
+export const db = new Proxy({} as DrizzleDb, {
+  get(_target, prop) {
+    return Reflect.get(getDb(), prop)
+  },
+})
 export * from './schema'

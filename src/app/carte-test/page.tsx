@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { MapboxMap } from '@/components/mapbox-map'
+import { BaseMap } from '@/components/base-map'
 
 export const metadata: Metadata = {
-  title: 'Carte de test | Canopée',
+  title: 'Carte | Canopée',
   description:
-    'Page temporaire pour valider l’intégration Mapbox avec le style Outdoors.',
+    'Carte interactive des secteurs boisés de Laval avec navigation et géolocalisation.',
 }
 
 export default function CarteTestPage() {
@@ -13,28 +13,28 @@ export default function CarteTestPage() {
 
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex w-full flex-col gap-6 px-6 py-10">
-        <header className="mx-auto flex w-full max-w-5xl flex-col gap-2">
+      <main className="flex w-full flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
+        <header className="mx-auto flex w-full max-w-6xl flex-col gap-2">
           <div className="flex items-center justify-between gap-4">
-            <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-              Carte de test Mapbox
+            <h1 className="text-2xl font-semibold tracking-tight text-black sm:text-3xl dark:text-zinc-50">
+              Carte de Laval
             </h1>
             <Link
               href="/"
-              className="text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
+              className="shrink-0 text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
             >
               Accueil
             </Link>
           </div>
-          <p className="text-zinc-600 dark:text-zinc-400">
-            Page temporaire pour valider le style Outdoors et la vue par défaut
-            sur les secteurs boisés de Laval.
+          <p className="text-sm text-zinc-600 sm:text-base dark:text-zinc-400">
+            Zoomez, déplacez la carte et utilisez « Me localiser » pour centrer
+            la vue sur votre position.
           </p>
         </header>
 
-        <MapboxMap
+        <BaseMap
           accessToken={accessToken}
-          className="mx-auto h-[70vh] w-full max-w-5xl overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800"
+          className="mx-auto h-[min(70vh,720px)] min-h-[280px] w-full max-w-6xl overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800"
         />
       </main>
     </div>

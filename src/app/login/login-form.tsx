@@ -107,7 +107,10 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
 
       <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
         Pas de compte?{' '}
-        <Link href="/signup" className="font-medium text-black underline underline-offset-4 dark:text-zinc-50">
+        <Link
+          href="/signup"
+          className="font-medium text-black underline underline-offset-4 dark:text-zinc-50"
+        >
           Créez votre compte
         </Link>
       </p>

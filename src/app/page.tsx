@@ -42,7 +42,7 @@ export default async function Home() {
             </div>
 
             <p className="text-zinc-600 dark:text-zinc-400">
-              Bienvenue sur l'application Canopée.
+              Bienvenue sur l&apos;application Canopée.
             </p>
           </header>
         </main>
@@ -83,20 +83,23 @@ export default async function Home() {
             <span className="font-medium text-black dark:text-zinc-50">
               {currentUser.email}
             </span>{' '}
-            <span className="font-mono text-zinc-500">({currentUser.role})</span>
+            <span className="font-mono text-zinc-500">
+              ({currentUser.role})
+            </span>
           </p>
 
           <p className="text-zinc-600 dark:text-zinc-400">
-            {allUsers.length} utilisateur{allUsers.length === 1 ? '' : 's'} récupéré
-            {allUsers.length === 1 ? '' : 's'} depuis Supabase Postgres via Drizzle.
+            {allUsers.length} utilisateur{allUsers.length === 1 ? '' : 's'}{' '}
+            récupéré
+            {allUsers.length === 1 ? '' : 's'} depuis Supabase Postgres via
+            Drizzle.
           </p>
         </header>
 
         {allUsers.length === 0 ? (
           <p className="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-zinc-500 dark:border-zinc-700">
-            Aucun utilisateur pour l'instant. Lancez{' '}
-            <code className="font-mono">npm run db:seed</code>{' '}
-            pour en ajouter.
+            Aucun utilisateur pour l&apos;instant. Lancez{' '}
+            <code className="font-mono">npm run db:seed</code> pour en ajouter.
           </p>
         ) : (
           <ul className="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">

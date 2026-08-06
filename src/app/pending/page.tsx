@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 const PENDING_COPY = {
-  heading: 'Votre compte est en attente d\'approbation',
-  body: 'Un administrateur examine chaque nouveau compte de patrouilleur avant qu\'il puisse être utilisé. Vous recevrez un courriel dès que votre compte sera approuvé, et vous pourrez vous connecter à partir de ce moment.',
+  heading: "Votre compte est en attente d'approbation",
+  body: "Un administrateur examine chaque nouveau compte de patrouilleur avant qu'il puisse être utilisé. Vous recevrez un courriel dès que votre compte sera approuvé, et vous pourrez vous connecter à partir de ce moment.",
 }
 
 const REJECTED_COPY = {

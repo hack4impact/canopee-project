@@ -90,7 +90,7 @@ export function VolunteerQueue({
   if (volunteers.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-zinc-500 dark:border-zinc-700">
-        Aucun utilisateur en attente d'approbation.
+        Aucun utilisateur en attente d&apos;approbation.
       </p>
     )
   }
