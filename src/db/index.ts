@@ -26,5 +26,4 @@ export const db = new Proxy({} as DrizzleDb, {
     return Reflect.get(getDb(), prop)
   },
 })
-
 export * from './schema'
