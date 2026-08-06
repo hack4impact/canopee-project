@@ -17,7 +17,7 @@ export type SignupState = {
   errors?: SignupErrors
 }
 
-const EMAIL_TAKEN = 'An account with this email already exists.'
+const EMAIL_TAKEN = 'Un compte avec cette adresse courriel existe déjà.'
 
 /** Postgres unique violation, raised if the email is already in `users`. */
 const UNIQUE_VIOLATION = '23505'
@@ -97,7 +97,7 @@ export async function signup(
 
     return {
       message:
-        'Your login was created but your profile was not. Contact an admin before trying again.',
+        'Votre connexion a été créée, mais votre profil n’a pas été enregistré. Contactez un administrateur avant de réessayer.',
     }
   }
 
