@@ -1,6 +1,5 @@
 import Link from 'next/link'
-import { db, users } from '@/db'
-import { getCurrentUserProfile } from '@/lib/auth/current-user'
+import type { UserProfile } from '@/lib/auth/current-user'
 import { isAdmin } from '@/lib/auth/roles'
 import { logout } from '@/app/login/actions'
 
@@ -9,8 +8,26 @@ import { logout } from '@/app/login/actions'
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
-  const allUsers = await db.select().from(users)
-  const currentUser = await getCurrentUserProfile()
+  let allUsers: Array<{ id: string; email: string; role: string }> = []
+  let currentUser: UserProfile | null = null
+  let dataError: string | null = null
+
+  try {
+    const [{ db, users }, { getCurrentUserProfile }] = await Promise.all([
+      import('@/db'),
+      import('@/lib/auth/current-user'),
+    ])
+
+    const [usersResult, currentUserProfile] = await Promise.all([
+      db.select().from(users),
+      getCurrentUserProfile(),
+    ])
+
+    allUsers = usersResult
+    currentUser = currentUserProfile
+  } catch (error) {
+    dataError = error instanceof Error ? error.message : 'Unable to load data'
+  }
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
@@ -61,10 +78,17 @@ export default async function Home() {
             </p>
           )}
 
-          <p className="text-zinc-600 dark:text-zinc-400">
-            {allUsers.length} user{allUsers.length === 1 ? '' : 's'} fetched
-            from Supabase Postgres through Drizzle.
-          </p>
+          {dataError ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+              Les données ne sont pas encore disponibles sur cette instance :{' '}
+              <span className="font-mono">{dataError}</span>
+            </p>
+          ) : (
+            <p className="text-zinc-600 dark:text-zinc-400">
+              {allUsers.length} user{allUsers.length === 1 ? '' : 's'} fetched
+              from Supabase Postgres through Drizzle.
+            </p>
+          )}
         </header>
 
         {allUsers.length === 0 ? (

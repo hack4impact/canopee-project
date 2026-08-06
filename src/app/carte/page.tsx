@@ -14,12 +14,11 @@ export const dynamic = 'force-dynamic'
 
 export default async function CartePage() {
   const profile = await getCurrentUserProfile()
+  const accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
   if (!canAccess(profile, 'volunteer')) {
     return <MapAccessFallback />
   }
-
-  const accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
   return <CarteView accessToken={accessToken} />
 }
