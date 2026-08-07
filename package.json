@@ -35,7 +35,7 @@
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.111.0",
     "drizzle-orm": "^0.45.2",
-    "mapbox-gl": "^3.27.0",
+    "mapbox-gl": "^3.28.0",
     "next": "16.2.12",
     "postgres": "^3.4.9",
     "react": "19.2.4",
