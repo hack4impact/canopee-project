@@ -17,7 +17,10 @@ export default async function Home() {
     currentUser = await getCurrentUserProfile()
   } catch (error) {
     console.error('Home page data load failed:', error)
-    dataError = error instanceof Error ? error.message : 'Impossible de charger les données'
+    dataError =
+      error instanceof Error
+        ? error.message
+        : 'Impossible de charger les données'
   }
 
   if (currentUser && !isApproved(currentUser)) {
@@ -60,6 +63,12 @@ export default async function Home() {
               Canopée
             </h1>
             <div className="flex shrink-0 items-center gap-3">
+              <Link
+                href="/carte"
+                className="rounded bg-black px-3 py-1.5 text-sm text-white transition-opacity hover:opacity-80 dark:bg-zinc-50 dark:text-black"
+              >
+                Voir la carte
+              </Link>
               {currentUser && isAdmin(currentUser) && (
                 <Link
                   href="/admin/volunteers"
