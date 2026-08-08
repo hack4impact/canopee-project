@@ -62,3 +62,47 @@ export const reports = pgTable(
     index('reports_category_idx').on(table.category),
   ],
 )
+
+export const patrols = pgTable(
+  'patrols',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    startedAt: timestamp('started_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    endedAt: timestamp('ended_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('patrols_user_id_started_at_idx').on(
+      table.userId,
+      table.startedAt.desc(),
+    ),
+    index('patrols_started_at_idx').on(table.startedAt),
+    index('patrols_ended_at_idx').on(table.endedAt),
+  ],
+)
+
+export const patrolPoints = pgTable(
+  'patrol_points',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    patrolId: uuid('patrol_id')
+      .notNull()
+      .references(() => patrols.id, { onDelete: 'cascade' }),
+    latitude: decimal('latitude', { precision: 9, scale: 6 }).notNull(),
+    longitude: decimal('longitude', { precision: 9, scale: 6 }).notNull(),
+    recordedAt: timestamp('recorded_at', { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index('patrol_points_patrol_id_recorded_at_idx').on(
+      table.patrolId,
+      table.recordedAt,
+    ),
+  ],
+)
