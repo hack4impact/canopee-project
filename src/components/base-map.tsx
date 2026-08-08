@@ -7,6 +7,7 @@ import {
   isGeolocationAvailable,
   LAVAL_WOODED_VIEW,
   MAPBOX_OUTDOORS_STYLE,
+  trackMapLoad,
   type MapViewport,
 } from '@/lib/mapbox'
 
@@ -112,9 +113,15 @@ export function BaseMap({
     map.addControl(new mapboxgl.NavigationControl(), 'top-right')
     mapRef.current = map
 
+    let hasTrackedLoad = false
     const handleReady = () => {
       map.resize()
       setIsReady(true)
+
+      if (!hasTrackedLoad) {
+        hasTrackedLoad = true
+        trackMapLoad()
+      }
     }
 
     map.once('load', handleReady)

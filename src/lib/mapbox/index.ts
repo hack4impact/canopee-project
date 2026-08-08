@@ -9,3 +9,11 @@ export {
   isGeolocationAvailable,
   type GeolocationNotice,
 } from './geolocation'
+export { trackMapLoad } from './track-load'
+export {
+  computeMapboxUsageStatus,
+  getMonthKey,
+  MAPBOX_FREE_TIER_THRESHOLD,
+  MAPBOX_WARNING_RATIO,
+  type MapboxUsageStatus,
+} from './usage'

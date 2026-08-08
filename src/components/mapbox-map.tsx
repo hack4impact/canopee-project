@@ -7,6 +7,7 @@ import {
   MAPBOX_OUTDOORS_STYLE,
   type MapViewport,
 } from '@/lib/mapbox/config'
+import { trackMapLoad } from '@/lib/mapbox/track-load'
 
 type MapboxMapProps = {
   accessToken?: string
@@ -42,9 +43,15 @@ export function MapboxMap({
 
     map.addControl(new mapboxgl.NavigationControl(), 'top-right')
 
+    let hasTrackedLoad = false
     const handleReady = () => {
       map.resize()
       setIsReady(true)
+
+      if (!hasTrackedLoad) {
+        hasTrackedLoad = true
+        trackMapLoad()
+      }
     }
 
     map.once('load', handleReady)
