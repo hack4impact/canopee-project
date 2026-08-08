@@ -53,8 +53,13 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
     <form action={submit} noValidate className="flex flex-col gap-4">
       <input type="hidden" name={REDIRECT_PARAM} value={redirectTo} />
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="email">Adresse courriel</label>
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="email"
+          className="text-sm font-medium text-canopee-forest"
+        >
+          Adresse courriel
+        </label>
         <input
           id="email"
           name="email"
@@ -63,17 +68,25 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
           value={input.email}
           onChange={(event) => update('email', event.target.value)}
           aria-describedby={errors.email ? 'email-error' : undefined}
-          className="rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700"
+          className="rounded-lg border border-canopee-green/30 bg-white px-3 py-2.5 text-canopee-forest placeholder-zinc-500 transition-colors outline-none focus:border-canopee-green focus:ring-2 focus:ring-canopee-green/40"
         />
         {errors.email && (
-          <p id="email-error" className="text-sm text-red-600">
+          <p
+            id="email-error"
+            className="text-sm font-medium text-canopee-coral-dark"
+          >
             {errors.email}
           </p>
         )}
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password">Mot de passe</label>
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="password"
+          className="text-sm font-medium text-canopee-forest"
+        >
+          Mot de passe
+        </label>
         <input
           id="password"
           name="password"
@@ -82,17 +95,23 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
           value={input.password}
           onChange={(event) => update('password', event.target.value)}
           aria-describedby={errors.password ? 'password-error' : undefined}
-          className="rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700"
+          className="rounded-lg border border-canopee-green/30 bg-white px-3 py-2.5 text-canopee-forest placeholder-zinc-500 transition-colors outline-none focus:border-canopee-green focus:ring-2 focus:ring-canopee-green/40"
         />
         {errors.password && (
-          <p id="password-error" className="text-sm text-red-600">
+          <p
+            id="password-error"
+            className="text-sm font-medium text-canopee-coral-dark"
+          >
             {errors.password}
           </p>
         )}
       </div>
 
       {state.message && (
-        <p aria-live="polite" className="text-sm text-red-600">
+        <p
+          aria-live="polite"
+          className="text-sm font-medium text-canopee-coral-dark"
+        >
           {state.message}
         </p>
       )}
@@ -100,16 +119,16 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded bg-black px-4 py-2 text-white disabled:opacity-50 dark:bg-zinc-50 dark:text-black"
+        className="rounded-lg bg-canopee-green px-4 py-2.5 font-bold text-white shadow-sm transition-colors hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/50 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {pending ? 'Connexion...' : 'Se connecter'}
       </button>
 
-      <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="text-center text-sm text-canopee-forest/80">
         Pas de compte?{' '}
         <Link
           href="/signup"
-          className="font-medium text-black underline underline-offset-4 dark:text-zinc-50"
+          className="font-medium text-canopee-forest underline underline-offset-4 transition-colors hover:text-canopee-green"
         >
           Créez votre compte
         </Link>
