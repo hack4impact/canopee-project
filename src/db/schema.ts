@@ -106,3 +106,14 @@ export const patrolPoints = pgTable(
     ),
   ],
 )
+
+/** Tracks self-reported Mapbox map loads per calendar month (UTC), used to
+ * approximate usage against the 50,000 free-tier threshold since Mapbox
+ * does not expose a usage-statistics API. */
+export const mapLoadCounters = pgTable('map_load_counters', {
+  month: text('month').primaryKey(), // 'YYYY-MM', UTC
+  count: integer('count').notNull().default(0),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+})

@@ -20,7 +20,7 @@ export const DEFAULT_REDIRECT = '/'
  * Routes reachable without a session. Everything else is gated, so a route
  * added later is protected by where it sits, not by remembering to list it.
  */
-const PUBLIC_ROUTES = [LOGIN_ROUTE, '/signup'] as const
+const PUBLIC_ROUTES = [LOGIN_ROUTE, '/signup', '/api/cron'] as const
 
 /**
  * True for a route that does not require a session. Matches on prefix, so
