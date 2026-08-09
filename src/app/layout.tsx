@@ -47,10 +47,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Canopée',
   description: 'Canopée — Next.js + Drizzle + Supabase',
-  icons: [
-    { rel: 'icon', url: '/canopee_icone.ico?v=2' },
-    { rel: 'shortcut icon', url: '/canopee_icone.ico?v=2' },
-  ],
+  icons: {
+    icon: [{ url: '/canopee_icone.png?v=3', type: 'image/png' }],
+  },
 }
 
 export default function RootLayout({
