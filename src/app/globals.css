@@ -31,6 +31,14 @@
   }
 }
 
+/* La gouttière de la barre de défilement est réservée en permanence. Sans ça,
+   une page qui déborde (/signup) est large de 15 px de moins qu'une page qui
+   ne déborde pas (/login), et son contenu centré se retrouve décalé de 7,5 px
+   vers la gauche — visible comme un saut pendant la transition entre les deux. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
