@@ -37,6 +37,27 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Transition entre /login et /signup. Le navigateur anime des captures GPU des
+   deux pages : rien ne passe par le thread principal, donc aucune saccade. La
+   classe `.morph` vient de <ViewTransition share="morph"> dans les deux pages. */
+::view-transition-group(.morph) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+::view-transition-image-pair(.morph) {
+  animation-duration: 320ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
 /* Mapbox injects a canvas; the container must fill its parent. */
 .mapbox-map {
   position: relative;
