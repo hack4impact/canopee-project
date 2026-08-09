@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useActionState, useState } from 'react'
+import { Spinner } from '@/components/spinner'
 import {
   isValid,
   MIN_PASSWORD_LENGTH,
@@ -145,8 +146,9 @@ export function SignupForm() {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-lg bg-canopee-green px-4 py-2.5 font-bold text-white shadow-sm transition-colors hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex touch-manipulation items-center justify-center gap-2 rounded-lg bg-canopee-green px-4 py-2.5 font-bold text-white shadow-sm transition-[background-color,transform] duration-150 ease-out hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/50 focus-visible:outline-none active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
       >
+        {pending && <Spinner />}
         {pending ? 'Création de votre compte...' : 'Créez votre compte'}
       </button>
 
