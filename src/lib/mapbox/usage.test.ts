@@ -25,7 +25,6 @@ describe('computeMapboxUsageStatus', () => {
   })
 
   it('does not warn when projected usage stays under 80%', () => {
-    // Day 10 of a 31-day month, 10,000 loads so far -> projects to ~31,000 (62%).
     const status = computeMapboxUsageStatus(
       10_000,
       new Date('2026-08-10T00:00:00Z'),
@@ -36,7 +35,6 @@ describe('computeMapboxUsageStatus', () => {
   })
 
   it('warns when projected usage crosses 80% of the threshold', () => {
-    // Day 10 of a 31-day month, 13,000 loads so far -> projects to ~40,300 (80.6%).
     const status = computeMapboxUsageStatus(
       13_000,
       new Date('2026-08-10T00:00:00Z'),

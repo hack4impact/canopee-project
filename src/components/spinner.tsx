@@ -1,7 +1,3 @@
-/**
- * Indicateur de chargement. L'animation ne touche que `transform`, donc elle
- * reste sur le thread de composition et ne provoque ni reflow ni repaint.
- */
 export function Spinner() {
   return (
     <svg

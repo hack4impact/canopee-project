@@ -20,11 +20,6 @@ const emptyInput: LoginInput = {
 }
 
 type LoginFormProps = {
-  /**
-   * Where to send the user once they are signed in. Already validated by the
-   * page; the action validates it again, because a Server Action is a POST
-   * endpoint and nothing forces a caller to go through this form.
-   */
   redirectTo: string
 }
 

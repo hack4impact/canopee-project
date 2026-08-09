@@ -5,15 +5,12 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import './globals.css'
 
 const averiaSerifLibre = Averia_Serif_Libre({
-  // Titres et sous-titres (pas une police variable : poids explicites requis).
   weight: ['400', '700'],
   variable: '--font-averia',
   subsets: ['latin'],
 })
 
 const museoSans = localFont({
-  // Texte courant. Fichiers dans ./fonts — voir src/app/fonts/README.md.
-  // Museo Sans n'existe pas en graisse 400 : son « régulier » est le 500.
   src: [
     {
       path: './fonts/MuseoSans-100.otf',

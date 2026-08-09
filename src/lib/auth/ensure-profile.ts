@@ -22,14 +22,6 @@ function readProfile(authUserId: string) {
     .limit(1)
 }
 
-/**
- * Makes sure a Supabase Auth user has a matching `users` row, and hands back
- * the row either way. Signup creates one directly; login runs this for
- * accounts that already exist in Auth only.
- *
- * The returned profile carries `role` and `status`, so the caller can decide
- * where to send the account without a second query.
- */
 export async function ensureUserProfile(
   authUserId: string,
   email: string,
@@ -52,8 +44,6 @@ export async function ensureUserProfile(
       throw cause
     }
 
-    // Another request inserted the row between the select and the insert.
-    // Read back whatever it wrote rather than failing a valid login.
     const [raced] = await readProfile(authUserId)
 
     if (!raced) {

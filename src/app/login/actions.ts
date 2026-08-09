@@ -38,8 +38,6 @@ export async function login(
     return { errors }
   }
 
-  // Re-validated here rather than trusted from the form: this is a POST
-  // endpoint, and a caller can put anything in the field.
   const redirectTo = safeRedirectPath(
     String(formData.get(REDIRECT_PARAM) ?? ''),
   )

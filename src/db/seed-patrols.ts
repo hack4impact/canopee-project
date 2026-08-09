@@ -1,9 +1,6 @@
 import 'dotenv/config'
 import { db, patrolPoints, patrols, users } from './index'
 
-// Routes trace walking paths through Laval's wooded areas, with points roughly
-// 40-80m apart. Patrols 1 and 3 share a stretch of Bois Papineau on purpose so
-// the frequency heatmap has overlapping traffic to render.
 const MOCK_PATROLS = [
   {
     label: 'Bois Papineau loop',
@@ -76,7 +73,6 @@ const MOCK_PATROLS = [
   },
 ] as const
 
-// The patroller presses "end" shortly after the last point is recorded.
 const END_DELAY_SECONDS = 60
 
 function addSeconds(date: Date, seconds: number) {
@@ -101,9 +97,6 @@ async function seedPatrols() {
     process.exit(1)
   }
 
-  // Citizens cannot patrol, so every patrol needs a real user. Prefer the
-  // intended role, then any user not already patrolling, so the demo spreads
-  // across accounts even when a role was never seeded.
   const assigned = new Set<string>()
   const pickUser = (role: (typeof MOCK_PATROLS)[number]['role']) => {
     const user =

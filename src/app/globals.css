@@ -31,10 +31,6 @@
   }
 }
 
-/* La gouttière de la barre de défilement est réservée en permanence. Sans ça,
-   une page qui déborde (/signup) est large de 15 px de moins qu'une page qui
-   ne déborde pas (/login), et son contenu centré se retrouve décalé de 7,5 px
-   vers la gauche — visible comme un saut pendant la transition entre les deux. */
 html {
   scrollbar-gutter: stable;
 }
@@ -45,9 +41,6 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Transition entre /login et /signup. Le navigateur anime des captures GPU des
-   deux pages : rien ne passe par le thread principal, donc aucune saccade. La
-   classe `.morph` vient de <ViewTransition share="morph"> dans les deux pages. */
 ::view-transition-group(.morph) {
   animation-duration: 320ms;
   animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -66,7 +59,6 @@ body {
   }
 }
 
-/* Mapbox injects a canvas; the container must fill its parent. */
 .mapbox-map {
   position: relative;
   min-height: 24rem;

@@ -2,7 +2,6 @@ export type GeolocationNotice = {
   message: string
 }
 
-/** User-facing copy when geolocation fails. Keeps the map usable. */
 export function getGeolocationNotice(
   error: Pick<GeolocationPositionError, 'code'>,
 ): GeolocationNotice {
@@ -22,11 +21,10 @@ export function getGeolocationNotice(
 
   return {
     message:
-      'Impossible d’obtenir votre position. La carte reste centrée sur les secteurs boisés de Laval.',
+      "Impossible d'obtenir votre position. La carte reste centrée sur les secteurs boisés de Laval.",
   }
 }
 
-/** Returns true when the browser exposes the Geolocation API. */
 export function isGeolocationAvailable(): boolean {
   return typeof navigator !== 'undefined' && 'geolocation' in navigator
 }

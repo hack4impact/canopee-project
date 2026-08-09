@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Role, Status } from './roles'
 
-// `redirect` and `forbidden` throw a navigation interrupt rather than
-// returning, so the fakes throw too. Tests assert on what was thrown, which is
-// also what proves the guards never fall through to returning a profile.
 class RedirectError extends Error {
   constructor(readonly to: string) {
     super(`redirect:${to}`)
@@ -43,7 +40,6 @@ vi.mock('@/db', () => ({
 const { getCurrentUserProfile, requireApprovedAccess, requireApprovedUser } =
   await import('./current-user')
 
-/** Puts a signed-in user with the given profile behind the mocked deps. */
 function signedInAs(role: Role, status: Status) {
   getUser.mockResolvedValue({ data: { user: { id: 'auth-1' } } })
   limit.mockResolvedValue([
@@ -51,7 +47,6 @@ function signedInAs(role: Role, status: Status) {
   ])
 }
 
-/** A valid Supabase session with no matching row in `users`. */
 function signedInWithoutProfile() {
   getUser.mockResolvedValue({ data: { user: { id: 'auth-1' } } })
   limit.mockResolvedValue([])

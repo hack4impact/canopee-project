@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   title: 'Approbation en attente | Canopée',
 }
 
-// Reads the caller's status on every request, so it must not be prerendered.
 export const dynamic = 'force-dynamic'
 
 const PENDING_COPY = {
@@ -28,7 +27,6 @@ export default async function PendingPage() {
     redirect('/login')
   }
 
-  // Nothing to explain to an approved account — send it to the app.
   if (isApproved(profile)) {
     redirect('/')
   }

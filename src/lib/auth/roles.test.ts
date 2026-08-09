@@ -11,7 +11,6 @@ import {
   type Status,
 } from './roles'
 
-/** Shorthand for the shape `canAccess` and friends take. */
 function user(role: Role, status: Status = 'approved') {
   return { role, status }
 }

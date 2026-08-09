@@ -7,7 +7,6 @@ import {
   safeRedirectPath,
 } from './routes'
 
-/** Builds a path containing one raw control character, by code point. */
 function withControlCharacter(code: number): string {
   return `/${String.fromCharCode(code)}/evil.example`
 }

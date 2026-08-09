@@ -6,7 +6,6 @@ import {
   type SignupInput,
 } from './validation'
 
-/** A form filled in correctly, so each test can spoil one field at a time. */
 function goodInput(overrides: Partial<SignupInput> = {}): SignupInput {
   return {
     email: 'volunteer@canopee.org',

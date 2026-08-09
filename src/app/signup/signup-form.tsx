@@ -25,16 +25,12 @@ export function SignupForm() {
   const [input, setInput] = useState(emptyInput)
   const [clientErrors, setClientErrors] = useState<SignupErrors>({})
 
-  // Whatever the browser caught takes precedence, since it reflects what is
-  // currently typed. Server messages fill in the rest, like a taken email.
   const errors = { ...state.errors, ...clientErrors }
 
   function update(field: keyof SignupInput, value: string) {
     setInput((current) => ({ ...current, [field]: value }))
   }
 
-  // Runs before the Server Action. Returning early keeps a form we already
-  // know is wrong from making the round trip.
   function submit(formData: FormData) {
     const found = validateSignup(input)
     setClientErrors(found)
