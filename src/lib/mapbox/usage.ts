@@ -1,4 +1,3 @@
-/** Mapbox's free-tier monthly map-load allowance. */
 export const MAPBOX_FREE_TIER_THRESHOLD = 50_000
 
 export const MAPBOX_WARNING_RATIO = 0.8

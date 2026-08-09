@@ -3,11 +3,6 @@ import { db } from '@/db'
 import { mapLoadCounters } from '@/db/schema'
 import { computeMapboxUsageStatus, getMonthKey } from '@/lib/mapbox'
 
-/**
- * Daily Vercel Cron job (see vercel.json). Compares our self-tracked map
- * load count for the current month against Mapbox's 50,000 free-tier
- * threshold, since Mapbox has no usage-statistics API to query directly.
- */
 export async function GET(request: Request) {
   if (process.env.CRON_SECRET) {
     const authHeader = request.headers.get('authorization')

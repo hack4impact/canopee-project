@@ -21,11 +21,6 @@ function getSupabaseConfig() {
   }
 }
 
-/**
- * Supabase client for server-side code. Reads and writes the session cookies
- * through Next's cookie store, so build a new one per request rather than
- * sharing a single instance.
- */
 export async function createClient() {
   const cookieStore = await cookies()
   const { url, key } = getSupabaseConfig()
@@ -40,10 +35,7 @@ export async function createClient() {
           cookiesToSet.forEach(({ name, value, options }) => {
             cookieStore.set(name, value, options)
           })
-        } catch {
-          // Server Components aren't allowed to write cookies. They only read
-          // the session, so there's nothing to salvage here.
-        }
+        } catch {}
       },
     },
   })

@@ -14,12 +14,11 @@
 }
 
 @theme {
-  /* Palette Canopée */
   --color-canopee-forest: #004523;
   --color-canopee-green: #17aa55;
   --color-canopee-cream: #f6f4df;
   --color-canopee-coral: #f06053;
-  --color-canopee-coral-dark: #c53f31; /* texte d'erreur lisible sur crème (AA) */
+  --color-canopee-coral-dark: #c53f31;
   --color-canopee-sky: #77d0ec;
   --color-canopee-lime: #c7de35;
 }

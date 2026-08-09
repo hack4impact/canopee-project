@@ -3,8 +3,6 @@ import { db } from '@/db'
 import { mapLoadCounters } from '@/db/schema'
 import { getMonthKey } from '@/lib/mapbox'
 
-/** Increments the current month's self-tracked Mapbox load counter. Fired
- * once per successful map render on the client (see BaseMap/MapboxMap). */
 export async function POST() {
   const month = getMonthKey(new Date())
 

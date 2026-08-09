@@ -71,9 +71,6 @@ export async function login(
     }
   }
 
-  // An account still awaiting review — or one an admin turned down — can sign
-  // in, but can't use the app. Send it straight to the screen that says so
-  // rather than bouncing it off the home page gate.
   redirect(getPostLoginRedirect(redirectTo, isApproved(profile)))
 }
 

@@ -88,7 +88,6 @@ async function seedPatrols() {
     process.exit(0)
   }
 
-  // Sorted so repeated runs assign the same users in the same order.
   const allUsers = (await db.select().from(users)).sort((a, b) =>
     a.email.localeCompare(b.email),
   )

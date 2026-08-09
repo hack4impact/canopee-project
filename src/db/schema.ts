@@ -108,7 +108,7 @@ export const patrolPoints = pgTable(
 )
 
 export const mapLoadCounters = pgTable('map_load_counters', {
-  month: text('month').primaryKey(), // 'YYYY-MM', UTC
+  month: text('month').primaryKey(),
   count: integer('count').notNull().default(0),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()

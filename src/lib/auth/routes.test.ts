@@ -86,7 +86,6 @@ describe('safeRedirectPath', () => {
   })
 
   it('rejects control characters that browsers strip before resolving a URL', () => {
-    // `/<tab>/evil.example` becomes `//evil.example` once the tab is stripped.
     expect(safeRedirectPath(withControlCharacter(0x09))).toBe(DEFAULT_REDIRECT)
     expect(safeRedirectPath(withControlCharacter(0x0a))).toBe(DEFAULT_REDIRECT)
     expect(safeRedirectPath(withControlCharacter(0x0d))).toBe(DEFAULT_REDIRECT)
@@ -107,7 +106,6 @@ describe('safeRedirectPath', () => {
 
   it('matches a public route on its path, ignoring query and hash', () => {
     expect(safeRedirectPath('/login#form')).toBe(DEFAULT_REDIRECT)
-    // A protected path that only *contains* a public name is still fine.
     expect(safeRedirectPath('/reports?from=/login')).toBe(
       '/reports?from=/login',
     )
