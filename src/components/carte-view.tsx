@@ -1,11 +1,16 @@
 import Link from 'next/link'
 import { BaseMap } from '@/components/base-map'
+import { PatrolControls } from '@/components/patrol-controls'
 
 type CarteViewProps = {
   accessToken?: string
+  patrolStartedAt?: string | null
 }
 
-export function CarteView({ accessToken }: CarteViewProps) {
+export function CarteView({
+  accessToken,
+  patrolStartedAt = null,
+}: CarteViewProps) {
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 font-sans dark:bg-black">
       <main className="flex w-full flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
@@ -25,6 +30,8 @@ export function CarteView({ accessToken }: CarteViewProps) {
             Zoomez, déplacez la carte et utilisez « Me localiser » pour centrer
             la vue sur votre position.
           </p>
+
+          <PatrolControls startedAt={patrolStartedAt} />
         </header>
 
         <BaseMap

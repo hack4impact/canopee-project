@@ -3,6 +3,7 @@ import { CarteView } from '@/components/carte-view'
 import { MapAccessFallback } from '@/components/map-access-fallback'
 import { getCurrentUserProfile } from '@/lib/auth/current-user'
 import { canAccess } from '@/lib/auth/roles'
+import { getActivePatrol } from '@/lib/patrols/queries'
 
 export const metadata: Metadata = {
   title: 'Carte | Canopée',
@@ -16,9 +17,16 @@ export default async function CartePage() {
   const profile = await getCurrentUserProfile()
   const accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
-  if (!canAccess(profile, 'volunteer')) {
+  if (!profile || !canAccess(profile, 'volunteer')) {
     return <MapAccessFallback />
   }
 
-  return <CarteView accessToken={accessToken} />
+  const activePatrol = await getActivePatrol(profile.id)
+
+  return (
+    <CarteView
+      accessToken={accessToken}
+      patrolStartedAt={activePatrol?.startedAt.toISOString() ?? null}
+    />
+  )
 }
