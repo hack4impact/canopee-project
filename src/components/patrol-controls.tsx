@@ -3,26 +3,9 @@
 import { useState, useSyncExternalStore, useTransition } from 'react'
 import { startPatrol } from '@/app/carte/actions'
 import { formatElapsed } from '@/lib/patrols/elapsed'
-import { usePatrolExitWarning } from '@/lib/patrols/use-patrol-exit-warning'
-import {
-  usePatrolRecorder,
-  type RecordingStatus,
-} from '@/lib/patrols/use-patrol-recorder'
 
 const TICK_MS = 1000
 const NO_READING_YET = '--:--:--'
-
-const RECORDING_NOTICE: Record<RecordingStatus, string | null> = {
-  waiting: 'Recherche du signal GPS…',
-  recording: null,
-  'signal-lost':
-    'Signal GPS perdu. L’enregistrement reprendra automatiquement.',
-  denied:
-    'Localisation refusée : le trajet de cette patrouille ne sera pas enregistré.',
-  unsupported:
-    'Ce navigateur ne peut pas enregistrer le trajet de la patrouille.',
-  stopped: 'Enregistrement du trajet interrompu. Rechargez la page.',
-}
 
 /**
  * A shared clock, read through `useSyncExternalStore` for its server snapshot:
@@ -69,7 +52,7 @@ type PatrolControlsProps = {
 
 export function PatrolControls({ startedAt }: PatrolControlsProps) {
   if (startedAt) {
-    return <ActivePatrol startedAt={startedAt} />
+    return <ActivePatrolBadge startedAt={startedAt} />
   }
 
   return <StartPatrolButton />
@@ -102,33 +85,6 @@ function StartPatrolButton() {
       {message && (
         <p role="alert" className="text-sm text-red-600">
           {message}
-        </p>
-      )}
-    </div>
-  )
-}
-
-/** Mounted only while a patrol runs, so recording lasts exactly that long. */
-function ActivePatrol({ startedAt }: { startedAt: string }) {
-  const recording = usePatrolRecorder()
-  usePatrolExitWarning()
-
-  const notice = RECORDING_NOTICE[recording]
-
-  return (
-    <div className="flex flex-col items-start gap-1">
-      <ActivePatrolBadge startedAt={startedAt} />
-
-      {notice && (
-        <p
-          role="status"
-          className={
-            recording === 'waiting'
-              ? 'text-sm text-zinc-600 dark:text-zinc-400'
-              : 'text-sm text-amber-700 dark:text-amber-400'
-          }
-        >
-          {notice}
         </p>
       )}
     </div>

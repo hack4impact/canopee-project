@@ -1,5 +1,5 @@
+import Link from 'next/link'
 import { BaseMap } from '@/components/base-map'
-import { LeavePatrolLink } from '@/components/leave-patrol-link'
 import { PatrolControls } from '@/components/patrol-controls'
 
 type CarteViewProps = {
@@ -19,13 +19,12 @@ export function CarteView({
             <h1 className="text-2xl font-semibold tracking-tight text-black sm:text-3xl dark:text-zinc-50">
               Carte de Laval
             </h1>
-            <LeavePatrolLink
+            <Link
               href="/"
-              isPatrolActive={patrolStartedAt !== null}
               className="shrink-0 text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
             >
               Accueil
-            </LeavePatrolLink>
+            </Link>
           </div>
           <p className="text-sm text-zinc-600 sm:text-base dark:text-zinc-400">
             Zoomez, déplacez la carte et utilisez « Me localiser » pour centrer
