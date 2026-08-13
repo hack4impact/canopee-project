@@ -1,11 +1,16 @@
 import Link from 'next/link'
 import { BaseMap } from '@/components/base-map'
+import { PatrolControls } from '@/components/patrol-controls'
 
 type CarteViewProps = {
   accessToken?: string
+  patrolStartedAt?: string | null
 }
 
-export function CarteView({ accessToken }: CarteViewProps) {
+export function CarteView({
+  accessToken,
+  patrolStartedAt = null,
+}: CarteViewProps) {
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 font-sans dark:bg-black">
       <main className="flex w-full flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
@@ -27,10 +32,16 @@ export function CarteView({ accessToken }: CarteViewProps) {
           </p>
         </header>
 
-        <BaseMap
-          accessToken={accessToken}
-          className="mx-auto h-[min(70vh,720px)] min-h-[280px] w-full max-w-6xl overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800"
-        />
+        <div className="relative mx-auto h-[min(70vh,720px)] min-h-[280px] w-full max-w-6xl">
+          <BaseMap
+            accessToken={accessToken}
+            className="h-full w-full overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800"
+          />
+
+          <div className="absolute top-4 left-4 z-10">
+            <PatrolControls startedAt={patrolStartedAt} />
+          </div>
+        </div>
       </main>
     </div>
   )
