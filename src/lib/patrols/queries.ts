@@ -1,8 +1,10 @@
-import { desc, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { db, patrolPoints, patrols } from '@/db'
 import { totalDistanceMetres, type Coordinate } from './distance'
 
 export const PATROLS_PAGE_SIZE = 20
+
+export type Patrol = typeof patrols.$inferSelect
 
 export type PatrolListItem = {
   id: string
@@ -15,6 +17,18 @@ export type PatrolListItem = {
 export type PatrolPage = {
   items: PatrolListItem[]
   hasNextPage: boolean
+}
+
+/** The user's running patrol, or null. A null `endedAt` is what makes it active. */
+export async function getActivePatrol(userId: string): Promise<Patrol | null> {
+  const [patrol] = await db
+    .select()
+    .from(patrols)
+    .where(and(eq(patrols.userId, userId), isNull(patrols.endedAt)))
+    .orderBy(desc(patrols.startedAt))
+    .limit(1)
+
+  return patrol ?? null
 }
 
 export function parsePageParam(value: string | null | undefined): number {
