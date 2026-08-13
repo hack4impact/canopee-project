@@ -31,14 +31,18 @@ export function CarteView({
             Zoomez, déplacez la carte et utilisez « Me localiser » pour centrer
             la vue sur votre position.
           </p>
-
-          <PatrolControls startedAt={patrolStartedAt} />
         </header>
 
-        <BaseMap
-          accessToken={accessToken}
-          className="mx-auto h-[min(70vh,720px)] min-h-[280px] w-full max-w-6xl overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800"
-        />
+        <div className="relative mx-auto h-[min(70vh,720px)] min-h-[280px] w-full max-w-6xl">
+          <BaseMap
+            accessToken={accessToken}
+            className="h-full w-full overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800"
+          />
+
+          <div className="absolute top-4 left-4 z-10">
+            <PatrolControls startedAt={patrolStartedAt} />
+          </div>
+        </div>
       </main>
     </div>
   )
