@@ -24,6 +24,11 @@ const RECORDING_NOTICE: Record<RecordingStatus, string | null> = {
   stopped: 'Enregistrement du trajet interrompu. Rechargez la page.',
 }
 
+/**
+ * A shared clock, read through `useSyncExternalStore` for its server snapshot:
+ * SSR renders a placeholder rather than a duration that cannot survive
+ * hydration. Module level, so one timer serves every badge.
+ */
 let clockNow = Date.now()
 let clockTimer: ReturnType<typeof setInterval> | null = null
 const clockSubscribers = new Set<() => void>()
@@ -115,7 +120,7 @@ function ActivePatrol({ startedAt }: { startedAt: string }) {
 
   return (
     <div className="flex flex-col items-start gap-1">
-      <ActivePatrolBadge startedAt={startedAt} />
+      <ActivePatrolStatus startedAt={startedAt} />
 
       {notice && (
         <p
@@ -135,7 +140,7 @@ function ActivePatrol({ startedAt }: { startedAt: string }) {
   )
 }
 
-function ActivePatrolBadge({ startedAt }: { startedAt: string }) {
+function ActivePatrolStatus({ startedAt }: { startedAt: string }) {
   const startedAtMs = new Date(startedAt).getTime()
 
   // Null on the server, a live timestamp in the browser.
@@ -159,3 +164,4 @@ function ActivePatrolBadge({ startedAt }: { startedAt: string }) {
     </div>
   )
 }
+
