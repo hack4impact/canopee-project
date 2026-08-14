@@ -1,4 +1,4 @@
-const EARTH_RADIUS_M = 6_371_000
+const EARTH_RADIUS_METRES = 6371000
 
 export type Coordinate = {
   latitude: number
@@ -9,26 +9,24 @@ function toRadians(degrees: number): number {
   return (degrees * Math.PI) / 180
 }
 
-/** Great-circle distance between two coordinates, in meters. */
-export function haversineMeters(a: Coordinate, b: Coordinate): number {
-  const dLat = toRadians(b.latitude - a.latitude)
-  const dLon = toRadians(b.longitude - a.longitude)
+export function distanceBetweenMetres(a: Coordinate, b: Coordinate): number {
+  const deltaLatitude = toRadians(b.latitude - a.latitude)
+  const deltaLongitude = toRadians(b.longitude - a.longitude)
 
-  const sin =
-    Math.sin(dLat / 2) ** 2 +
+  const h =
+    Math.sin(deltaLatitude / 2) ** 2 +
     Math.cos(toRadians(a.latitude)) *
       Math.cos(toRadians(b.latitude)) *
-      Math.sin(dLon / 2) ** 2
+      Math.sin(deltaLongitude / 2) ** 2
 
-  return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(sin)))
+  return EARTH_RADIUS_METRES * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h))
 }
 
-/** Sum of the legs between consecutive points; 0 for fewer than two points. */
-export function totalRouteMeters(points: readonly Coordinate[]): number {
+export function totalDistanceMetres(points: readonly Coordinate[]): number {
   let total = 0
 
-  for (let i = 1; i < points.length; i++) {
-    total += haversineMeters(points[i - 1], points[i])
+  for (let index = 1; index < points.length; index += 1) {
+    total += distanceBetweenMetres(points[index - 1], points[index])
   }
 
   return total

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { sendMock } = vi.hoisted(() => ({
   sendMock: vi.fn(),
@@ -17,6 +17,11 @@ import { sendApprovalEmail, sendRejectionEmail } from './plunk'
 describe('plunk email helpers', () => {
   beforeEach(() => {
     sendMock.mockReset()
+  })
+
+  afterEach(() => {
+    // Unpatches the console spies below, which outlive their tests otherwise.
+    vi.restoreAllMocks()
   })
 
   it('logs and does not throw when approval email sending fails', async () => {

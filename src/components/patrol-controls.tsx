@@ -17,7 +17,8 @@ const RECORDING_NOTICE: Record<RecordingStatus, string | null> = {
   recording: null,
   'signal-lost':
     'Signal GPS perdu. L’enregistrement reprendra automatiquement.',
-  denied: 'Localisation refusée',
+  denied:
+    'Localisation refusée : le trajet de cette patrouille ne sera pas enregistré.',
   unsupported:
     'Ce navigateur ne peut pas enregistrer le trajet de la patrouille.',
   stopped: 'Enregistrement du trajet interrompu. Rechargez la page.',
@@ -159,9 +160,8 @@ function ActivePatrol({ startedAt }: { startedAt: string }) {
   const notice = RECORDING_NOTICE[status]
 
   return (
-    <div className="flex flex-col items-start gap-1.5">
-      <EndPatrolButton flushAndStop={flushAndStop} />
-      <ActivePatrolBadge startedAt={startedAt} />
+    <div className="flex flex-col items-start gap-1">
+      <ActivePatrolStatus startedAt={startedAt} />
 
       {notice && (
         <p
@@ -181,7 +181,7 @@ function ActivePatrol({ startedAt }: { startedAt: string }) {
   )
 }
 
-function ActivePatrolBadge({ startedAt }: { startedAt: string }) {
+function ActivePatrolStatus({ startedAt }: { startedAt: string }) {
   const startedAtMs = new Date(startedAt).getTime()
 
   // Null on the server, a live timestamp in the browser.
@@ -205,3 +205,4 @@ function ActivePatrolBadge({ startedAt }: { startedAt: string }) {
     </div>
   )
 }
+

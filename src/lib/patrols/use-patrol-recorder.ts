@@ -221,7 +221,7 @@ export function usePatrolRecorder(): PatrolRecorder {
       }
 
       // The watch is left running: the browser keeps trying, and `handleFix`
-      // runs again on its own once a fix returns. That is the automatic resume.
+      // runs again on its own once a fix returns
       console.warn(
         `GPS signal lost (code ${error.code}), ${describeSignalGap(
           lastRecordedAtRef.current,

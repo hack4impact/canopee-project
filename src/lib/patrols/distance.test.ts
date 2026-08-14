@@ -1,52 +1,86 @@
 import { describe, expect, it } from 'vitest'
-import { haversineMeters, totalRouteMeters } from '@/lib/patrols/distance'
-
-describe('haversineMeters', () => {
-  it('is zero between a point and itself', () => {
-    const point = { latitude: 45.57, longitude: -73.75 }
-
-    expect(haversineMeters(point, point)).toBe(0)
+import {
+  distanceBetweenMetres,
+  totalDistanceMetres,
+  type Coordinate,
+} from './distance'
+ 
+const BOIS_PAPINEAU_LOOP: Coordinate[] = [
+  { latitude: 45.5885, longitude: -73.723 },
+  { latitude: 45.5889, longitude: -73.7223 },
+  { latitude: 45.5893, longitude: -73.7216 },
+  { latitude: 45.5898, longitude: -73.721 },
+  { latitude: 45.5902, longitude: -73.7203 },
+  { latitude: 45.5907, longitude: -73.7197 },
+  { latitude: 45.5911, longitude: -73.719 },
+  { latitude: 45.5914, longitude: -73.7182 },
+  { latitude: 45.591, longitude: -73.7176 },
+  { latitude: 45.5905, longitude: -73.7179 },
+  { latitude: 45.59, longitude: -73.7184 },
+  { latitude: 45.5895, longitude: -73.719 },
+  { latitude: 45.589, longitude: -73.7197 },
+  { latitude: 45.5886, longitude: -73.7204 },
+  { latitude: 45.5884, longitude: -73.7212 },
+  { latitude: 45.5884, longitude: -73.7221 },
+]
+ 
+describe('distanceBetweenMetres', () => {
+  it('measures no distance between a point and itself', () => {
+    const point: Coordinate = { latitude: 45.6, longitude: -73.7 }
+ 
+    expect(distanceBetweenMetres(point, point)).toBe(0)
   })
-
-  it('matches a known distance within 0.5%', () => {
-    // One degree of latitude is ~111.2 km anywhere on the globe.
-    const meters = haversineMeters(
-      { latitude: 45, longitude: -73 },
-      { latitude: 46, longitude: -73 },
-    )
-
-    expect(meters).toBeGreaterThan(111_000)
-    expect(meters).toBeLessThan(111_400)
+ 
+  it('measures a degree of latitude as the arc length of the angle', () => {
+    expect(
+      distanceBetweenMetres(
+        { latitude: 0, longitude: 0 },
+        { latitude: 1, longitude: 0 },
+      ),
+    ).toBeCloseTo(111195, -2)
   })
-
+ 
+  it('shrinks a degree of longitude by the cosine of the latitude', () => {
+    expect(
+      distanceBetweenMetres(
+        { latitude: 45.6, longitude: 0 },
+        { latitude: 45.6, longitude: 1 },
+      ),
+    ).toBeCloseTo(77798, -1)
+  })
+ 
   it('is symmetric', () => {
-    const a = { latitude: 45.5, longitude: -73.6 }
-    const b = { latitude: 45.6, longitude: -73.5 }
-
-    expect(haversineMeters(a, b)).toBeCloseTo(haversineMeters(b, a), 6)
+    const a: Coordinate = { latitude: 45.5, longitude: -73.6 }
+    const b: Coordinate = { latitude: 45.6, longitude: -73.5 }
+ 
+    expect(distanceBetweenMetres(a, b)).toBeCloseTo(
+      distanceBetweenMetres(b, a),
+      6,
+    )
   })
 })
-
-describe('totalRouteMeters', () => {
-  it('is zero for an empty route', () => {
-    expect(totalRouteMeters([])).toBe(0)
+ 
+describe('totalDistanceMetres', () => {
+  it('measures no distance when there is no leg to walk', () => {
+    expect(totalDistanceMetres([])).toBe(0)
+    expect(totalDistanceMetres([{ latitude: 45.6, longitude: -73.7 }])).toBe(0)
   })
-
-  it('is zero for a single point', () => {
-    expect(totalRouteMeters([{ latitude: 45.5, longitude: -73.6 }])).toBe(0)
-  })
-
+ 
   it('sums the legs of a multi-point route', () => {
-    const points = [
+    const points: Coordinate[] = [
       { latitude: 45.5, longitude: -73.6 },
       { latitude: 45.51, longitude: -73.6 },
       { latitude: 45.52, longitude: -73.6 },
     ]
-
+ 
     const legByLeg =
-      haversineMeters(points[0], points[1]) +
-      haversineMeters(points[1], points[2])
-
-    expect(totalRouteMeters(points)).toBeCloseTo(legByLeg, 6)
+      distanceBetweenMetres(points[0], points[1]) +
+      distanceBetweenMetres(points[1], points[2])
+ 
+    expect(totalDistanceMetres(points)).toBeCloseTo(legByLeg, 6)
+  })
+ 
+  it('sums a seeded patrol route to a plausible walking distance', () => {
+    expect(totalDistanceMetres(BOIS_PAPINEAU_LOOP)).toBeCloseTo(1047, -1)
   })
 })

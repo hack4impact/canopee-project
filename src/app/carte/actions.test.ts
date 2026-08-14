@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 class ForbiddenError extends Error {
   constructor() {
@@ -74,6 +74,11 @@ beforeEach(() => {
   values.mockResolvedValue(undefined)
   orderBy.mockResolvedValue([])
   whereUpdate.mockResolvedValue(undefined)
+})
+
+afterEach(() => {
+  // Unpatches the console spies below, which outlive their tests otherwise.
+  vi.restoreAllMocks()
 })
 
 describe('startPatrol authorization', () => {
