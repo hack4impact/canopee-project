@@ -19,6 +19,8 @@ export type PatrolPage = {
   hasNextPage: boolean
 }
 
+export type PatrolRoutePoint = Coordinate & { recordedAt: Date }
+
 /** The user's running patrol, or null. A null `endedAt` is what makes it active. */
 export async function getActivePatrol(userId: string): Promise<Patrol | null> {
   const [patrol] = await db
@@ -128,4 +130,34 @@ export async function listPatrolsForUser(
     })),
     hasNextPage,
   }
+}
+
+export async function getPatrolById(patrolId: string): Promise<Patrol | null> {
+  const [patrol] = await db
+    .select()
+    .from(patrols)
+    .where(eq(patrols.id, patrolId))
+    .limit(1)
+
+  return patrol ?? null
+}
+
+export async function listPatrolRoute(
+  patrolId: string,
+): Promise<PatrolRoutePoint[]> {
+  const rows = await db
+    .select({
+      latitude: patrolPoints.latitude,
+      longitude: patrolPoints.longitude,
+      recordedAt: patrolPoints.recordedAt,
+    })
+    .from(patrolPoints)
+    .where(eq(patrolPoints.patrolId, patrolId))
+    .orderBy(patrolPoints.recordedAt, patrolPoints.id)
+
+  return rows.flatMap((row) => {
+    const coordinate = toCoordinate(row.latitude, row.longitude)
+
+    return coordinate ? [{ ...coordinate, recordedAt: row.recordedAt }] : []
+  })
 }
