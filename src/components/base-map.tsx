@@ -124,10 +124,67 @@ export function BaseMap({
     map.addControl(new mapboxgl.NavigationControl(), 'top-right')
     mapRef.current = map
 
+    const computeBoundsFloor = (): number => {
+      const bounds = map.getMaxBounds()
+
+      if (!bounds) {
+        return LAVAL_MIN_ZOOM
+      }
+
+      const southWest = bounds.getSouthWest()
+      const northEast = bounds.getNorthEast()
+      const southWestWorld = mapboxgl.MercatorCoordinate.fromLngLat(southWest)
+      const northEastWorld = mapboxgl.MercatorCoordinate.fromLngLat(northEast)
+
+      // Bounds size in pixels at zoom 0, where the world is 512 px wide.
+      const boundsWorldWidth = (northEastWorld.x - southWestWorld.x) * 512
+      const boundsWorldHeight = (southWestWorld.y - northEastWorld.y) * 512
+
+      const { clientWidth: width, clientHeight: height } = map.getContainer()
+
+      return Math.max(
+        LAVAL_MIN_ZOOM,
+        Math.log2(width / boundsWorldWidth),
+        Math.log2(height / boundsWorldHeight),
+      )
+    }
+
+    const syncZoomFloor = () => {
+      const floor = computeBoundsFloor()
+
+      if (map.getMinZoom() !== floor) {
+        map.setMinZoom(floor)
+      }
+
+      // Normalise any float drift so the camera sits exactly on the floor.
+      if (map.getZoom() < floor) {
+        map.setZoom(floor)
+      }
+    }
+
+    const syncZoomButtons = () => {
+      const zoomOutButton = container.querySelector<HTMLButtonElement>(
+        '.mapboxgl-ctrl-zoom-out',
+      )
+
+      if (!zoomOutButton) {
+        return
+      }
+
+      zoomOutButton.disabled = map.getZoom() <= map.getMinZoom()
+    }
+
+    syncZoomFloor()
+    map.on('zoom', syncZoomButtons)
+    map.on('zoomend', syncZoomButtons)
+    map.on('resize', syncZoomFloor)
+
     let hasTrackedLoad = false
     let hasNotifiedReady = false
     const handleReady = () => {
       map.resize()
+      syncZoomFloor()
+      syncZoomButtons()
       setIsReady(true)
 
       if (!hasTrackedLoad) {
