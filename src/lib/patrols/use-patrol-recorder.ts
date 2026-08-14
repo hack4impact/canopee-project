@@ -1,6 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import { isGeolocationAvailable } from '@/lib/mapbox'
 import {
   capBuffer,
@@ -33,13 +39,21 @@ function isSupportedOnServer(): boolean {
 export type RecordingStatus =
   'unsupported' | 'waiting' | 'recording' | 'signal-lost' | 'denied' | 'stopped'
 
+export type PatrolRecorder = {
+  status: RecordingStatus
+  /** Stops recording and delivers every buffered point; awaited before ending. */
+  flushAndStop: () => Promise<void>
+}
+
 /**
  * Records the patroller's position and syncs it in batches, for as long as it is
  * mounted. Mounting is the on/off switch, so there is no flag to keep in step
  * with the server's view of the patrol.
  */
-export function usePatrolRecorder(): RecordingStatus {
+export function usePatrolRecorder(): PatrolRecorder {
   const [status, setStatus] = useState<RecordingStatus>('waiting')
+
+  const flushAndStopRef = useRef<() => Promise<void>>(() => Promise.resolve())
 
   // A store rather than state: the server has no `navigator`, and setting this
   // from the effect would cost a second render on every patrol.
@@ -146,6 +160,42 @@ export function usePatrolRecorder(): RecordingStatus {
       }
     }
 
+    /** Ends recording and delivers whatever is buffered, batch by batch. */
+    async function flushAndStop() {
+      stopped = true
+
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId)
+        watchId = null
+      }
+
+      if (syncTimer !== null) {
+        clearInterval(syncTimer)
+        syncTimer = null
+      }
+
+      while (bufferRef.current.length > 0) {
+        const batch = takeBatch(bufferRef.current)
+
+        try {
+          const response = await fetch(ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(batch),
+            redirect: 'manual',
+          })
+
+          if (!response.ok) {
+            break
+          }
+        } catch {
+          break
+        }
+
+        bufferRef.current = bufferRef.current.slice(batch.length)
+      }
+    }
+
     function handleFix(position: GeolocationPosition) {
       if (stopped) {
         return
@@ -189,6 +239,7 @@ export function usePatrolRecorder(): RecordingStatus {
     )
 
     syncTimer = setInterval(() => void flush(), SYNC_INTERVAL_MS)
+    flushAndStopRef.current = flushAndStop
 
     // `pagehide` rather than `beforeunload`: mobile browsers fire it reliably,
     // including when the tab is frozen instead of closed.
@@ -196,6 +247,7 @@ export function usePatrolRecorder(): RecordingStatus {
 
     return () => {
       window.removeEventListener('pagehide', flushBeforeUnload)
+      flushAndStopRef.current = () => Promise.resolve()
 
       // A client-side navigation runs this instead of `pagehide`, and the patrol
       // is still open, so the last points can still be delivered.
@@ -213,5 +265,10 @@ export function usePatrolRecorder(): RecordingStatus {
     }
   }, [isSupported])
 
-  return isSupported ? status : 'unsupported'
+  const flushAndStop = useCallback(() => flushAndStopRef.current(), [])
+
+  return {
+    status: isSupported ? status : 'unsupported',
+    flushAndStop,
+  }
 }

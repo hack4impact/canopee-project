@@ -1,0 +1,1 @@
+ALTER TABLE "patrols" ADD COLUMN "distance_meters" integer;
