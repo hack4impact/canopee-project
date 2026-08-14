@@ -160,7 +160,8 @@ function ActivePatrol({ startedAt }: { startedAt: string }) {
   const notice = RECORDING_NOTICE[status]
 
   return (
-    <div className="flex flex-col items-start gap-1">
+    <div className="flex flex-col items-start gap-1.5">
+      <EndPatrolButton flushAndStop={flushAndStop} />
       <ActivePatrolStatus startedAt={startedAt} />
 
       {notice && (
@@ -205,4 +206,3 @@ function ActivePatrolStatus({ startedAt }: { startedAt: string }) {
     </div>
   )
 }
-

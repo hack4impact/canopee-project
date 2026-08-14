@@ -4,7 +4,7 @@ import { asc, eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { db, patrolPoints, patrols } from '@/db'
 import { requireApprovedAccess } from '@/lib/auth/current-user'
-import { totalRouteMeters } from '@/lib/patrols/distance'
+import { totalDistanceMetres } from '@/lib/patrols/distance'
 import { getActivePatrol } from '@/lib/patrols/queries'
 
 export type StartPatrolState = {
@@ -64,7 +64,7 @@ export async function endPatrol(): Promise<EndPatrolState> {
       .orderBy(asc(patrolPoints.recordedAt))
 
     const distanceMeters = Math.round(
-      totalRouteMeters(
+      totalDistanceMetres(
         points.map((point) => ({
           latitude: Number(point.latitude),
           longitude: Number(point.longitude),
