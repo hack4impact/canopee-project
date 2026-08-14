@@ -74,6 +74,7 @@ export const patrols = pgTable(
       .notNull()
       .defaultNow(),
     endedAt: timestamp('ended_at', { withTimezone: true }),
+    distanceMeters: integer('distance_meters'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

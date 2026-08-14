@@ -1,11 +1,17 @@
 'use server'
 
+import { asc, eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
-import { db, patrols } from '@/db'
+import { db, patrolPoints, patrols } from '@/db'
 import { requireApprovedAccess } from '@/lib/auth/current-user'
+import { totalRouteMeters } from '@/lib/patrols/distance'
 import { getActivePatrol } from '@/lib/patrols/queries'
 
 export type StartPatrolState = {
+  message?: string
+}
+
+export type EndPatrolState = {
   message?: string
 }
 
@@ -28,6 +34,52 @@ export async function startPatrol(): Promise<StartPatrolState> {
     console.error('Failed to open a patrol row', cause)
 
     return { message: 'Impossible de démarrer la patrouille. Réessayez.' }
+  }
+
+  revalidatePath('/carte')
+
+  return {}
+}
+
+/** Closes the patrol and records the distance walked over its stored route. */
+export async function endPatrol(): Promise<EndPatrolState> {
+  const profile = await requireApprovedAccess('volunteer')
+
+  const active = await getActivePatrol(profile.id)
+
+  if (!active) {
+    revalidatePath('/carte')
+    return {}
+  }
+
+  try {
+    // Read after the client has flushed, so the distance covers the whole route.
+    const points = await db
+      .select({
+        latitude: patrolPoints.latitude,
+        longitude: patrolPoints.longitude,
+      })
+      .from(patrolPoints)
+      .where(eq(patrolPoints.patrolId, active.id))
+      .orderBy(asc(patrolPoints.recordedAt))
+
+    const distanceMeters = Math.round(
+      totalRouteMeters(
+        points.map((point) => ({
+          latitude: Number(point.latitude),
+          longitude: Number(point.longitude),
+        })),
+      ),
+    )
+
+    await db
+      .update(patrols)
+      .set({ endedAt: new Date(), distanceMeters })
+      .where(eq(patrols.id, active.id))
+  } catch (cause) {
+    console.error('Failed to close the patrol', cause)
+
+    return { message: 'Impossible de terminer la patrouille. Réessayez.' }
   }
 
   revalidatePath('/carte')

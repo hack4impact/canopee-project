@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useSyncExternalStore, useTransition } from 'react'
-import { startPatrol } from '@/app/carte/actions'
+import { endPatrol, startPatrol } from '@/app/carte/actions'
 import { formatElapsed } from '@/lib/patrols/elapsed'
 import { usePatrolExitWarning } from '@/lib/patrols/use-patrol-exit-warning'
 import {
@@ -110,24 +110,66 @@ function StartPatrolButton() {
   )
 }
 
-/** Mounted only while a patrol runs, so recording lasts exactly that long. */
-function ActivePatrol({ startedAt }: { startedAt: string }) {
-  const recording = usePatrolRecorder()
-  usePatrolExitWarning()
+function EndPatrolButton({
+  flushAndStop,
+}: {
+  flushAndStop: () => Promise<void>
+}) {
+  const [pending, startTransition] = useTransition()
+  const [message, setMessage] = useState<string | null>(null)
 
-  const notice = RECORDING_NOTICE[recording]
+  function handleClick() {
+    setMessage(null)
+
+    startTransition(async () => {
+      await flushAndStop()
+      const result = await endPatrol()
+      setMessage(result.message ?? null)
+    })
+  }
 
   return (
     <div className="flex flex-col items-start gap-1">
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={pending}
+        className="inline-flex touch-manipulation items-center justify-center gap-2 rounded-lg bg-canopee-coral px-4 py-2.5 text-sm font-bold text-white shadow-lg ring-1 ring-black/5 transition-[background-color,transform] duration-150 ease-out hover:bg-canopee-coral-dark focus-visible:ring-2 focus-visible:ring-canopee-coral/50 focus-visible:outline-none active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+      >
+        {pending ? 'Patrouille finie' : 'Terminer la patrouille'}
+      </button>
+
+      {message && (
+        <p
+          role="alert"
+          className="rounded bg-canopee-cream/95 px-2 py-1 text-sm font-medium text-canopee-coral-dark shadow-sm"
+        >
+          {message}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** Mounted only while a patrol runs, so recording lasts exactly that long. */
+function ActivePatrol({ startedAt }: { startedAt: string }) {
+  const { status, flushAndStop } = usePatrolRecorder()
+  usePatrolExitWarning()
+
+  const notice = RECORDING_NOTICE[status]
+
+  return (
+    <div className="flex flex-col items-start gap-1.5">
+      <EndPatrolButton flushAndStop={flushAndStop} />
       <ActivePatrolBadge startedAt={startedAt} />
 
       {notice && (
         <p
           role="status"
           className={
-            recording === 'waiting'
+            status === 'waiting'
               ? 'text-sm text-zinc-600 dark:text-zinc-400'
-              : recording === 'denied'
+              : status === 'denied'
                 ? 'text-sm font-medium text-canopee-coral-dark'
                 : 'text-sm text-amber-700 dark:text-amber-400'
           }
