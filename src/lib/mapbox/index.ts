@@ -1,6 +1,8 @@
 export {
   getMapboxToken,
   LAVAL_WOODED_VIEW,
+  LAVAL_BOUNDS,
+  LAVAL_MIN_ZOOM,
   MAPBOX_OUTDOORS_STYLE,
   type MapViewport,
 } from './config'
