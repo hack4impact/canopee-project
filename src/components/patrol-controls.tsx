@@ -71,7 +71,7 @@ export function PatrolControls({ startedAt }: PatrolControlsProps) {
   if (startedAt) {
     return <ActivePatrol startedAt={startedAt} />
   }
- 
+
   return <StartPatrolButton />
 }
 
@@ -115,20 +115,22 @@ function StartPatrolButton() {
 function ActivePatrol({ startedAt }: { startedAt: string }) {
   const recording = usePatrolRecorder()
   usePatrolExitWarning()
- 
+
   const notice = RECORDING_NOTICE[recording]
- 
+
   return (
     <div className="flex flex-col items-start gap-1">
       <ActivePatrolStatus startedAt={startedAt} />
- 
+
       {notice && (
         <p
           role="status"
           className={
             recording === 'waiting'
               ? 'text-sm text-zinc-600 dark:text-zinc-400'
-              : 'text-sm text-amber-700 dark:text-amber-400'
+              : recording === 'denied'
+                ? 'text-sm font-medium text-canopee-coral-dark'
+                : 'text-sm text-amber-700 dark:text-amber-400'
           }
         >
           {notice}
@@ -137,9 +139,8 @@ function ActivePatrol({ startedAt }: { startedAt: string }) {
     </div>
   )
 }
- 
-function ActivePatrolStatus({ startedAt }: { startedAt: string }) {
 
+function ActivePatrolStatus({ startedAt }: { startedAt: string }) {
   const startedAtMs = new Date(startedAt).getTime()
 
   // Null on the server, a live timestamp in the browser.
@@ -163,3 +164,4 @@ function ActivePatrolStatus({ startedAt }: { startedAt: string }) {
     </div>
   )
 }
+
