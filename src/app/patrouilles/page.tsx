@@ -59,6 +59,14 @@ export default async function PatrouillesPage({
                   {formatDuration(patrol.durationSeconds)} ·{' '}
                   {formatDistance(patrol.distanceMetres)}
                 </span>
+                {patrol.endedAt !== null && (
+                  <Link
+                    href={`/patrouilles/${patrol.id}`}
+                    className="self-start text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
+                  >
+                    Voir le trajet
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

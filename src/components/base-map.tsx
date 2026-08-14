@@ -15,6 +15,7 @@ type BaseMapProps = {
   accessToken?: string
   className?: string
   viewport?: MapViewport
+  onMapReady?: (map: mapboxgl.Map) => void
 }
 
 const LOCATE_ZOOM = 14
@@ -23,10 +24,12 @@ export function BaseMap({
   accessToken,
   className,
   viewport = LAVAL_WOODED_VIEW,
+  onMapReady,
 }: BaseMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const userMarkerRef = useRef<mapboxgl.Marker | null>(null)
+  const onMapReadyRef = useRef(onMapReady)
   const [fatalError, setFatalError] = useState<string | null>(null)
   const [isReady, setIsReady] = useState(false)
   const [isLocating, setIsLocating] = useState(false)
@@ -92,6 +95,10 @@ export function BaseMap({
   }, [resetToDefaultView])
 
   useEffect(() => {
+    onMapReadyRef.current = onMapReady
+  }, [onMapReady])
+
+  useEffect(() => {
     const container = containerRef.current
 
     if (!mapboxToken || !container) {
@@ -114,6 +121,7 @@ export function BaseMap({
     mapRef.current = map
 
     let hasTrackedLoad = false
+    let hasNotifiedReady = false
     const handleReady = () => {
       map.resize()
       setIsReady(true)
@@ -121,6 +129,11 @@ export function BaseMap({
       if (!hasTrackedLoad) {
         hasTrackedLoad = true
         trackMapLoad()
+      }
+
+      if (!hasNotifiedReady) {
+        hasNotifiedReady = true
+        onMapReadyRef.current?.(map)
       }
     }
 
