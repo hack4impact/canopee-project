@@ -1,0 +1,98 @@
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+
+const ICON_PROPS = {
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  className: 'h-[22px] w-[22px]',
+  'aria-hidden': true,
+} as const
+
+const LINKS = [
+  {
+    href: '/accueil',
+    label: 'Accueil',
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+        <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      </svg>
+    ),
+  },
+  {
+    href: '/carte',
+    label: 'Carte',
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z" />
+        <path d="M15 5.764v15" />
+        <path d="M9 3.236v15" />
+      </svg>
+    ),
+  },
+  {
+    href: '/patrouilles',
+    label: 'Patrouiller',
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" />
+      </svg>
+    ),
+  },
+  {
+    href: '/signaler',
+    label: 'Signaler',
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+        <path d="M12 9v4" />
+        <path d="M12 17h.01" />
+      </svg>
+    ),
+  },
+  {
+    href: '/profil',
+    label: 'Profil',
+    icon: (
+      <svg {...ICON_PROPS}>
+        <circle cx="12" cy="8" r="5" />
+        <path d="M20 21a8 8 0 0 0-16 0" />
+      </svg>
+    ),
+  },
+]
+
+export function BottomNav() {
+  const pathname = usePathname()
+
+  return (
+    <nav className="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full bg-canopee-forest p-1.5 shadow-xl shadow-black/30 ring-1 ring-white/10">
+      {LINKS.map((link) => {
+        const isActive =
+          pathname === link.href || pathname.startsWith(`${link.href}/`)
+
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            aria-current={isActive ? 'page' : undefined}
+            className={`flex min-w-16 flex-col items-center gap-1 rounded-full px-2 py-2 text-[10px] font-semibold tracking-wide whitespace-nowrap transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none ${
+              isActive
+                ? 'bg-canopee-green text-white'
+                : 'text-canopee-cream/70 hover:bg-white/10 hover:text-canopee-cream'
+            }`}
+          >
+            {link.icon}
+            {link.label}
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
