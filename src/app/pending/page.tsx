@@ -28,7 +28,7 @@ export default async function PendingPage() {
   }
 
   if (isApproved(profile)) {
-    redirect('/')
+    redirect('/accueil')
   }
 
   const copy = isRejected(profile) ? REJECTED_COPY : PENDING_COPY
