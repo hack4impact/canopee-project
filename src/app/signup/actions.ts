@@ -80,5 +80,10 @@ export async function signup(
     }
   }
 
-  redirect('/')
+  // Terminate any session that was active before the signup: the new account
+  // is pending approval and must not inherit an approved user's access.
+  await supabase.auth.signOut()
+
+  // The new account must confirm its email before it can log in.
+  redirect(`/signup/confirm?email=${encodeURIComponent(email)}`)
 }

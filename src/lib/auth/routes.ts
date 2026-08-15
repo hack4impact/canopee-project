@@ -2,7 +2,7 @@ export const LOGIN_ROUTE = '/login'
 
 export const REDIRECT_PARAM = 'next'
 
-export const DEFAULT_REDIRECT = '/accueil'
+export const DEFAULT_REDIRECT = '/'
 
 const PUBLIC_ROUTES = [LOGIN_ROUTE, '/signup', '/api/cron'] as const
 

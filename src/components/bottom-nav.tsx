@@ -16,7 +16,7 @@ const ICON_PROPS = {
 
 const LINKS = [
   {
-    href: '/accueil',
+    href: '/',
     label: 'Accueil',
     icon: (
       <svg {...ICON_PROPS}>
