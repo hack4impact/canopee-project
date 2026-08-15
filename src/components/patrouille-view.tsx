@@ -15,12 +15,9 @@ export function PatrouilleView({
 }: PatrouilleViewProps) {
   return (
     <div className="relative flex h-dvh w-full flex-col overflow-hidden">
+      {' '}
       <BaseMap accessToken={accessToken} className="h-dvh w-full" />
-
-      <div className="absolute bottom-28 left-1/2 z-10 -translate-x-1/2">
-        <PatrolControls startedAt={patrolStartedAt} />
-      </div>
-
+      <PatrolControls startedAt={patrolStartedAt} />
       <BottomNav />
     </div>
   )

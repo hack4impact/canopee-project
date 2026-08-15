@@ -39,9 +39,7 @@ export function CarteView({
             className="h-full w-full overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800"
           />
 
-          <div className="absolute top-4 left-4 z-10">
-            <PatrolControls startedAt={patrolStartedAt} />
-          </div>
+          <PatrolControls startedAt={patrolStartedAt} />
         </div>
       </main>
     </div>

@@ -50,7 +50,9 @@ export type PatrolRecorder = {
  * mounted. Mounting is the on/off switch, so there is no flag to keep in step
  * with the server's view of the patrol.
  */
-export function usePatrolRecorder(): PatrolRecorder {
+export function usePatrolRecorder({
+  paused = false,
+}: { paused?: boolean } = {}): PatrolRecorder {
   const [status, setStatus] = useState<RecordingStatus>('waiting')
 
   const flushAndStopRef = useRef<() => Promise<void>>(() => Promise.resolve())
@@ -232,13 +234,18 @@ export function usePatrolRecorder(): PatrolRecorder {
       setStatus('signal-lost')
     }
 
-    watchId = navigator.geolocation.watchPosition(
-      handleFix,
-      handleError,
-      WATCH_OPTIONS,
-    )
+    // While paused the watch and its sync loop are stopped entirely: no new
+    // points are captured, and nothing leaves the buffer until it resumes.
+    if (!paused) {
+      watchId = navigator.geolocation.watchPosition(
+        handleFix,
+        handleError,
+        WATCH_OPTIONS,
+      )
 
-    syncTimer = setInterval(() => void flush(), SYNC_INTERVAL_MS)
+      syncTimer = setInterval(() => void flush(), SYNC_INTERVAL_MS)
+    }
+
     flushAndStopRef.current = flushAndStop
 
     // `pagehide` rather than `beforeunload`: mobile browsers fire it reliably,
@@ -263,7 +270,7 @@ export function usePatrolRecorder(): PatrolRecorder {
 
       lastRecordedAtRef.current = null
     }
-  }, [isSupported])
+  }, [isSupported, paused])
 
   const flushAndStop = useCallback(() => flushAndStopRef.current(), [])
 
