@@ -72,7 +72,7 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full bg-canopee-forest p-1.5 shadow-xl shadow-black/30 ring-1 ring-white/10">
+    <nav className="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full bg-canopee-forest/80 p-1.5 shadow-xl shadow-black/30 ring-1 ring-white/10 back backdrop-blur-sm">
       {LINKS.map((link) => {
         const isActive =
           pathname === link.href || pathname.startsWith(`${link.href}/`)
@@ -85,7 +85,7 @@ export function BottomNav() {
             className={`flex min-w-16 flex-col items-center gap-1 rounded-full px-2 py-2 text-[10px] font-semibold tracking-wide whitespace-nowrap transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none ${
               isActive
                 ? 'bg-canopee-green text-white'
-                : 'text-canopee-cream/70 hover:bg-white/10 hover:text-canopee-cream'
+                : 'text-canopee-cream/70 hover:bg-white/10 hover:text-canopee-cream/70 focus-visible:bg-white/10 focus-visible:text-canopee-cream/70'
             }`}
           >
             {link.icon}
