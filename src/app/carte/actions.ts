@@ -25,6 +25,7 @@ export async function startPatrol(): Promise<StartPatrolState> {
 
   if (active) {
     revalidatePath('/carte')
+    revalidatePath('/patrouilles')
     return {}
   }
 
@@ -37,6 +38,7 @@ export async function startPatrol(): Promise<StartPatrolState> {
   }
 
   revalidatePath('/carte')
+  revalidatePath('/patrouilles')
 
   return {}
 }
@@ -49,6 +51,7 @@ export async function endPatrol(): Promise<EndPatrolState> {
 
   if (!active) {
     revalidatePath('/carte')
+    revalidatePath('/patrouilles')
     return {}
   }
 
@@ -83,6 +86,7 @@ export async function endPatrol(): Promise<EndPatrolState> {
   }
 
   revalidatePath('/carte')
+  revalidatePath('/patrouilles')
 
   return {}
 }
