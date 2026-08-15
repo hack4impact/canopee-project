@@ -1,10 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import {
-  getGeolocationNotice,
-  isGeolocationAvailable,
   LAVAL_WOODED_VIEW,
   LAVAL_BOUNDS,
   LAVAL_MIN_ZOOM,
@@ -20,8 +18,6 @@ type BaseMapProps = {
   onMapReady?: (map: mapboxgl.Map) => void
 }
 
-const LOCATE_ZOOM = 14
-
 export function BaseMap({
   accessToken,
   className,
@@ -30,71 +26,10 @@ export function BaseMap({
 }: BaseMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
-  const userMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const onMapReadyRef = useRef(onMapReady)
   const [fatalError, setFatalError] = useState<string | null>(null)
   const [isReady, setIsReady] = useState(false)
-  const [isLocating, setIsLocating] = useState(false)
-  const [notice, setNotice] = useState<string | null>(null)
   const mapboxToken = accessToken ?? process.env.NEXT_PUBLIC_MAPBOX_TOKEN
-
-  const resetToDefaultView = useCallback(() => {
-    const map = mapRef.current
-    if (!map) {
-      return
-    }
-
-    map.flyTo({
-      center: [viewport.longitude, viewport.latitude],
-      zoom: viewport.zoom,
-      essential: true,
-    })
-  }, [viewport.latitude, viewport.longitude, viewport.zoom])
-
-  const handleLocate = useCallback(() => {
-    const map = mapRef.current
-
-    if (!map) {
-      return
-    }
-
-    setNotice(null)
-
-    if (!isGeolocationAvailable()) {
-      setNotice(
-        'La géolocalisation n’est pas disponible dans ce navigateur. La carte reste centrée sur Laval.',
-      )
-      resetToDefaultView()
-      return
-    }
-
-    setIsLocating(true)
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { longitude, latitude } = position.coords
-
-        userMarkerRef.current?.remove()
-        userMarkerRef.current = new mapboxgl.Marker({ color: '#2563eb' })
-          .setLngLat([longitude, latitude])
-          .addTo(map)
-
-        map.flyTo({
-          center: [longitude, latitude],
-          zoom: LOCATE_ZOOM,
-          essential: true,
-        })
-
-        setIsLocating(false)
-      },
-      (error) => {
-        setNotice(getGeolocationNotice(error).message)
-        resetToDefaultView()
-        setIsLocating(false)
-      },
-      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 },
-    )
-  }, [resetToDefaultView])
 
   useEffect(() => {
     onMapReadyRef.current = onMapReady
@@ -121,7 +56,6 @@ export function BaseMap({
       touchPitch: true,
     })
 
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right')
     mapRef.current = map
 
     const computeBoundsFloor = (): number => {
@@ -162,21 +96,7 @@ export function BaseMap({
       }
     }
 
-    const syncZoomButtons = () => {
-      const zoomOutButton = container.querySelector<HTMLButtonElement>(
-        '.mapboxgl-ctrl-zoom-out',
-      )
-
-      if (!zoomOutButton) {
-        return
-      }
-
-      zoomOutButton.disabled = map.getZoom() <= map.getMinZoom()
-    }
-
     syncZoomFloor()
-    map.on('zoom', syncZoomButtons)
-    map.on('zoomend', syncZoomButtons)
     map.on('resize', syncZoomFloor)
 
     let hasTrackedLoad = false
@@ -184,7 +104,6 @@ export function BaseMap({
     const handleReady = () => {
       map.resize()
       syncZoomFloor()
-      syncZoomButtons()
       setIsReady(true)
 
       if (!hasTrackedLoad) {
@@ -224,8 +143,6 @@ export function BaseMap({
 
     return () => {
       window.removeEventListener('resize', handleResize)
-      userMarkerRef.current?.remove()
-      userMarkerRef.current = null
       map.remove()
       mapRef.current = null
       setIsReady(false)
@@ -274,25 +191,6 @@ export function BaseMap({
             </p>
           </div>
         </div>
-      )}
-
-      <button
-        type="button"
-        onClick={handleLocate}
-        disabled={!isReady || isLocating}
-        aria-label="Me localiser"
-        className="absolute top-[6.75rem] right-[10px] z-10 rounded border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-      >
-        {isLocating ? 'Localisation…' : 'Me localiser'}
-      </button>
-
-      {notice && (
-        <p
-          aria-live="polite"
-          className="absolute right-2 bottom-2 left-2 z-10 rounded-lg border border-zinc-200 bg-white/95 px-3 py-2 text-sm text-zinc-700 shadow-sm sm:right-4 sm:bottom-4 sm:left-auto sm:max-w-sm dark:border-zinc-700 dark:bg-zinc-950/95 dark:text-zinc-300"
-        >
-          {notice}
-        </p>
       )}
     </div>
   )
