@@ -3,6 +3,8 @@ const dateFormatter = new Intl.DateTimeFormat('fr-CA', {
   timeStyle: 'short',
 })
 
+const timeFormatter = new Intl.DateTimeFormat('fr-CA', { timeStyle: 'short' })
+
 const kilometreFormatter = new Intl.NumberFormat('fr-CA', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -10,6 +12,10 @@ const kilometreFormatter = new Intl.NumberFormat('fr-CA', {
 
 export function formatPatrolDate(date: Date): string {
   return dateFormatter.format(date)
+}
+
+export function formatPatrolTime(date: Date): string {
+  return timeFormatter.format(date)
 }
 
 export function formatDuration(seconds: number | null): string {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { Map as MapboxMap } from 'mapbox-gl'
 import { BaseMap } from '@/components/base-map'
 import {
@@ -20,6 +20,7 @@ const FIT_MAX_ZOOM = 16
 type PatrolRouteMapProps = {
   patrolId: string
   accessToken?: string
+  children?: ReactNode
 }
 
 function routeMessage(points: RoutePoint[] | null, failed: boolean) {
@@ -38,7 +39,11 @@ function routeMessage(points: RoutePoint[] | null, failed: boolean) {
   return null
 }
 
-export function PatrolRouteMap({ patrolId, accessToken }: PatrolRouteMapProps) {
+export function PatrolRouteMap({
+  patrolId,
+  accessToken,
+  children,
+}: PatrolRouteMapProps) {
   const [map, setMap] = useState<MapboxMap | null>(null)
   const [points, setPoints] = useState<RoutePoint[] | null>(null)
   const [failed, setFailed] = useState(false)
@@ -125,12 +130,13 @@ export function PatrolRouteMap({ patrolId, accessToken }: PatrolRouteMapProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="h-[min(70vh,720px)] min-h-[280px] w-full">
+      <div className="relative h-[min(70vh,720px)] min-h-[280px] w-full">
         <BaseMap
           accessToken={accessToken}
           onMapReady={setMap}
           className="h-full w-full overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800"
         />
+        {children}
       </div>
 
       {message && (
