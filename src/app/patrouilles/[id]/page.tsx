@@ -44,7 +44,7 @@ export default async function PatrouillePage({ params }: PatrouillePageProps) {
             {formatPatrolDate(patrol.startedAt)}
           </h1>
           <Link
-            href="/patrouilles"
+            href="/patrouilles/historique"
             className="shrink-0 text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
           >
             Mes patrouilles

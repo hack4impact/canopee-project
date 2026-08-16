@@ -7,8 +7,8 @@ export const LAVAL_WOODED_VIEW = {
 } as const
 
 export const LAVAL_BOUNDS: [[number, number], [number, number]] = [
-  [-73.9, 45.54],
-  [-73.55, 45.67],
+  [-73.95, 45.5],
+  [-73.5, 45.69],
 ]
 
 export const LAVAL_MIN_ZOOM = 10
