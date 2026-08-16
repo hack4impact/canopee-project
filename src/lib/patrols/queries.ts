@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
-import { db, patrolPoints, patrols } from '@/db'
+import { db, patrolPoints, patrols, users } from '@/db'
 import { totalDistanceMetres, type Coordinate } from './distance'
 
 export const PATROLS_PAGE_SIZE = 20
@@ -54,7 +54,10 @@ function toCoordinate(latitude: string, longitude: string): Coordinate | null {
   return { latitude: parsedLatitude, longitude: parsedLongitude }
 }
 
-function durationSeconds(startedAt: Date, endedAt: Date | null): number | null {
+export function durationSeconds(
+  startedAt: Date,
+  endedAt: Date | null,
+): number | null {
   if (!endedAt) {
     return null
   }
@@ -140,6 +143,21 @@ export async function getPatrolById(patrolId: string): Promise<Patrol | null> {
     .limit(1)
 
   return patrol ?? null
+}
+
+export type PatrolWithUser = Patrol & { patrollerEmail: string }
+
+export async function getPatrolWithUser(
+  patrolId: string,
+): Promise<PatrolWithUser | null> {
+  const [row] = await db
+    .select({ patrol: patrols, patrollerEmail: users.email })
+    .from(patrols)
+    .innerJoin(users, eq(patrols.userId, users.id))
+    .where(eq(patrols.id, patrolId))
+    .limit(1)
+
+  return row ? { ...row.patrol, patrollerEmail: row.patrollerEmail } : null
 }
 
 export async function listPatrolRoute(

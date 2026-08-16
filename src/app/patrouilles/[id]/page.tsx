@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { PatrolDetails } from '@/components/patrol-details'
 import { PatrolRouteMap } from '@/components/patrol-route-map'
 import { requireApprovedUser } from '@/lib/auth/current-user'
 import { canViewPatrol } from '@/lib/patrols/access'
 import { formatPatrolDate } from '@/lib/patrols/format'
-import { getPatrolById } from '@/lib/patrols/queries'
+import { durationSeconds, getPatrolWithUser } from '@/lib/patrols/queries'
 
 export const metadata: Metadata = {
   title: 'Trajet de la patrouille | Canopée',
@@ -29,7 +30,7 @@ export default async function PatrouillePage({ params }: PatrouillePageProps) {
     notFound()
   }
 
-  const patrol = await getPatrolById(id)
+  const patrol = await getPatrolWithUser(id)
 
   if (!patrol || !canViewPatrol(profile, patrol)) {
     notFound()
@@ -59,7 +60,20 @@ export default async function PatrouillePage({ params }: PatrouillePageProps) {
           <PatrolRouteMap
             patrolId={patrol.id}
             accessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
-          />
+          >
+            <span className="absolute top-4 right-4 z-10 rounded-full bg-canopee-forest px-4 py-2 text-sm font-medium text-canopee-cream shadow-lg ring-1 ring-black/5">
+              {patrol.patrollerEmail}
+            </span>
+            <PatrolDetails
+              startedAt={patrol.startedAt}
+              endedAt={patrol.endedAt}
+              durationSeconds={durationSeconds(
+                patrol.startedAt,
+                patrol.endedAt,
+              )}
+              distanceMetres={patrol.distanceMeters}
+            />
+          </PatrolRouteMap>
         )}
       </main>
     </div>
