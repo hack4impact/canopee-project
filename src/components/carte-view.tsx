@@ -1,4 +1,4 @@
-import { BaseMap } from '@/components/base-map'
+import { HeatmapMap } from '@/components/heatmap-map'
 import { LeavePatrolLink } from '@/components/leave-patrol-link'
 import { PatrolControls } from '@/components/patrol-controls'
 
@@ -34,7 +34,7 @@ export function CarteView({
         </header>
 
         <div className="relative mx-auto h-[min(70vh,720px)] min-h-[280px] w-full max-w-6xl">
-          <BaseMap
+          <HeatmapMap
             accessToken={accessToken}
             className="h-full w-full overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800"
           />
