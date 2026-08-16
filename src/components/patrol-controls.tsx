@@ -24,11 +24,6 @@ const RECORDING_NOTICE: Record<RecordingStatus, string | null> = {
   stopped: 'Enregistrement du trajet interrompu. Rechargez la page.',
 }
 
-/**
- * A shared clock, read through `useSyncExternalStore` for its server snapshot:
- * SSR renders a placeholder rather than a duration that cannot survive
- * hydration. Module level, so one timer serves every badge.
- */
 let clockNow = Date.now()
 let clockTimer: ReturnType<typeof setInterval> | null = null
 const clockSubscribers = new Set<() => void>()
@@ -36,7 +31,6 @@ const clockSubscribers = new Set<() => void>()
 function subscribeToClock(onChange: () => void): () => void {
   clockSubscribers.add(onChange)
 
-  // React re-reads the snapshot right after subscribing.
   clockNow = Date.now()
 
   clockTimer ??= setInterval(() => {
@@ -241,33 +235,35 @@ function EndPatrolButton({
   )
 }
 
-/** Mounted only while a patrol runs, so recording lasts exactly that long. */
 function ActivePatrol({ startedAt }: { startedAt: string }) {
-  // Restored from storage so a paused patrol stays paused across pages, with
-  // the timer frozen at the same moment it was paused.
-  const [pause, setPause] = useState<StoredPause>(() =>
-    readStoredPause(startedAt),
-  )
+  const [pause, setPause] = useState<StoredPause>({
+    paused: false,
+    pausedAtMs: null,
+  })
   const { status, flushAndStop } = usePatrolRecorder({ paused: pause.paused })
   usePatrolExitWarning()
 
   const notice = pause.paused ? null : RECORDING_NOTICE[status]
 
-  // Keep storage in step with the state, so the next mount restores it.
   useEffect(() => {
-    if (pause.paused || pause.pausedAtMs !== null) {
-      writeStoredPause(startedAt, pause)
+    const stored = readStoredPause(startedAt)
+    const frame = requestAnimationFrame(() => setPause(stored))
+
+    return () => cancelAnimationFrame(frame)
+  }, [startedAt])
+
+  function handleTogglePause() {
+    const next = pause.paused
+      ? { paused: false, pausedAtMs: null }
+      : { paused: true, pausedAtMs: Date.now() }
+
+    setPause(next)
+
+    if (next.paused || next.pausedAtMs !== null) {
+      writeStoredPause(startedAt, next)
     } else {
       clearStoredPause(startedAt)
     }
-  }, [startedAt, pause])
-
-  function handleTogglePause() {
-    setPause(
-      pause.paused
-        ? { paused: false, pausedAtMs: null }
-        : { paused: true, pausedAtMs: Date.now() },
-    )
   }
 
   return (
@@ -279,14 +275,19 @@ function ActivePatrol({ startedAt }: { startedAt: string }) {
           pausedAtMs={pause.pausedAtMs}
         />
 
-        {notice && (
-          <p
-            role="status"
-            className="max-w-72 rounded-full bg-canopee-forest/80 px-3 py-1.5 text-sm text-zinc-100 shadow-md ring-1 ring-white/10 backdrop-blur-sm"
-          >
-            {notice}
-          </p>
-        )}
+        {notice &&
+          (status === 'waiting' ? (
+            <p role="status" className="text-sm font-medium text-canopee-green">
+              {notice}
+            </p>
+          ) : (
+            <p
+              role="status"
+              className="max-w-72 rounded-full bg-canopee-forest/80 px-3 py-1.5 text-sm text-zinc-100 shadow-md ring-1 ring-white/10 backdrop-blur-sm"
+            >
+              {notice}
+            </p>
+          ))}
       </div>
 
       <div className="absolute bottom-28 left-1/2 z-10 flex -translate-x-1/2 items-center gap-4 rounded-full bg-canopee-forest/30 p-3 shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm">
