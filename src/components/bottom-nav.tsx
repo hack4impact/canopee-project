@@ -45,7 +45,7 @@ const LINKS: NavLink[] = [
     ),
   },
   {
-    href: '/patrouiller',
+    href: '/patrouilles',
     label: 'Patrouiller',
     icon: (
       <svg {...ICON_PROPS}>
@@ -67,7 +67,7 @@ const LINKS: NavLink[] = [
   {
     href: '/profil',
     label: 'Profil',
-    related: ['/patrouilles'],
+    related: ['/patrouilles/historique'],
     icon: (
       <svg {...ICON_PROPS}>
         <circle cx="12" cy="8" r="5" />
@@ -77,28 +77,49 @@ const LINKS: NavLink[] = [
   },
 ]
 
+/** How closely a link matches, so /patrouilles/historique lights Profil alone. */
+function matchLength(pathname: string, link: NavLink): number {
+  let longest = -1
+
+  for (const path of [link.href, ...(link.related ?? [])]) {
+    if (pathname === path || pathname.startsWith(`${path}/`)) {
+      longest = Math.max(longest, path.length)
+    }
+  }
+
+  return longest
+}
+
 export function BottomNav() {
   const pathname = usePathname()
+  const scores = LINKS.map((link) => matchLength(pathname, link))
+  const bestScore = Math.max(...scores)
 
   return (
     <nav className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-full bg-canopee-forest/80 p-1.5 shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm">
-      {LINKS.map((link) => {
-        const isActive = [link.href, ...(link.related ?? [])].some(
-          (path) => pathname === path || pathname.startsWith(`${path}/`),
-        )
+      {LINKS.map((link, index) => {
+        const isActive = bestScore >= 0 && scores[index] === bestScore
 
         return (
           <Link
             key={link.href}
             href={link.href}
             aria-current={isActive ? 'page' : undefined}
-            className={`flex min-w-16 flex-col items-center gap-1 rounded-full px-2 py-2 text-[10px] font-semibold tracking-wide whitespace-nowrap transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none ${
+            className={`group flex min-w-16 flex-col items-center gap-1 rounded-2xl px-2 py-1.5 text-[10px] font-semibold tracking-wide whitespace-nowrap transition-colors duration-150 focus-visible:outline-none ${
               isActive
-                ? 'bg-canopee-green text-white'
-                : 'text-canopee-cream/70 hover:bg-white/10 hover:text-canopee-cream/70 focus-visible:bg-white/10 focus-visible:text-canopee-cream/70'
+                ? 'text-canopee-cream'
+                : 'text-canopee-cream/60 hover:text-canopee-cream focus-visible:text-canopee-cream'
             }`}
           >
-            {link.icon}
+            <span
+              className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 ${
+                isActive
+                  ? 'bg-canopee-cream text-canopee-forest'
+                  : 'group-hover:bg-white/10 group-focus-visible:bg-white/10'
+              }`}
+            >
+              {link.icon}
+            </span>
             {link.label}
           </Link>
         )

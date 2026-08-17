@@ -1,7 +1,12 @@
 'use client'
 
 import { useEffect, useState, useSyncExternalStore, useTransition } from 'react'
-import { endPatrol, startPatrol } from '@/app/carte/actions'
+import { useRouter } from 'next/navigation'
+import {
+  endPatrol,
+  startPatrol,
+  type PatrolSummary,
+} from '@/app/patrouilles/actions'
 import { formatElapsed } from '@/lib/patrols/elapsed'
 import { usePatrolExitWarning } from '@/lib/patrols/use-patrol-exit-warning'
 import {
@@ -113,8 +118,15 @@ function clearStoredPause(startedAt: string): void {
 }
 
 export function PatrolControls({ startedAt }: PatrolControlsProps) {
+  const router = useRouter()
+
   if (startedAt) {
-    return <ActivePatrol startedAt={startedAt} />
+    return (
+      <ActivePatrol
+        startedAt={startedAt}
+        onEnded={(summary) => router.push(`/patrouilles/${summary.id}`)}
+      />
+    )
   }
 
   return <StartPatrolButton />
@@ -193,7 +205,7 @@ function EndPatrolButton({
   onPatrolEnded,
 }: {
   flushAndStop: () => Promise<void>
-  onPatrolEnded?: () => void
+  onPatrolEnded?: (summary?: PatrolSummary) => void
 }) {
   const [pending, startTransition] = useTransition()
   const [message, setMessage] = useState<string | null>(null)
@@ -207,7 +219,7 @@ function EndPatrolButton({
       setMessage(result.message ?? null)
 
       if (!result.message) {
-        onPatrolEnded?.()
+        onPatrolEnded?.(result.summary)
       }
     })
   }
@@ -235,7 +247,13 @@ function EndPatrolButton({
   )
 }
 
-function ActivePatrol({ startedAt }: { startedAt: string }) {
+function ActivePatrol({
+  startedAt,
+  onEnded,
+}: {
+  startedAt: string
+  onEnded: (summary: PatrolSummary) => void
+}) {
   const [pause, setPause] = useState<StoredPause>({
     paused: false,
     pausedAtMs: null,
@@ -275,26 +293,27 @@ function ActivePatrol({ startedAt }: { startedAt: string }) {
           pausedAtMs={pause.pausedAtMs}
         />
 
-        {notice &&
-          (status === 'waiting' ? (
-            <p role="status" className="text-sm font-medium text-canopee-green">
-              {notice}
-            </p>
-          ) : (
-            <p
-              role="status"
-              className="max-w-72 rounded-full bg-canopee-forest/80 px-3 py-1.5 text-sm text-zinc-100 shadow-md ring-1 ring-white/10 backdrop-blur-sm"
-            >
-              {notice}
-            </p>
-          ))}
+        {notice && (
+          <p
+            role="status"
+            className="max-w-72 rounded-full bg-canopee-cream/95 px-3 py-1.5 text-sm font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
+          >
+            {notice}
+          </p>
+        )}
       </div>
 
       <div className="absolute bottom-28 left-1/2 z-10 flex -translate-x-1/2 items-center gap-4 rounded-full bg-canopee-forest/30 p-3 shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm">
         <PauseResumeButton paused={pause.paused} onToggle={handleTogglePause} />
         <EndPatrolButton
           flushAndStop={flushAndStop}
-          onPatrolEnded={() => clearStoredPause(startedAt)}
+          onPatrolEnded={(summary) => {
+            clearStoredPause(startedAt)
+
+            if (summary) {
+              onEnded(summary)
+            }
+          }}
         />
       </div>
     </>
