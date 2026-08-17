@@ -27,6 +27,7 @@ export default async function CartePage() {
     <CarteView
       accessToken={accessToken}
       patrolStartedAt={activePatrol?.startedAt.toISOString() ?? null}
+      canViewHeatmap={canAccess(profile, 'volunteer')}
     />
   )
 }

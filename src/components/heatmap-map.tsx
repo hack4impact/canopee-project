@@ -18,9 +18,14 @@ type HeatmapPayload = {
 type HeatmapMapProps = {
   accessToken?: string
   className?: string
+  visible?: boolean
 }
 
-export function HeatmapMap({ accessToken, className }: HeatmapMapProps) {
+export function HeatmapMap({
+  accessToken,
+  className,
+  visible = true,
+}: HeatmapMapProps) {
   const [map, setMap] = useState<MapboxMap | null>(null)
   const [payload, setPayload] = useState<HeatmapPayload | null>(null)
   const [failed, setFailed] = useState(false)
@@ -67,6 +72,7 @@ export function HeatmapMap({ accessToken, className }: HeatmapMapProps) {
       id: HEATMAP_LAYER_ID,
       type: 'heatmap',
       source: HEATMAP_SOURCE_ID,
+      layout: { visibility: visible ? 'visible' : 'none' },
       paint: heatmapPaint(payload.maxPoints),
     })
 
@@ -79,7 +85,20 @@ export function HeatmapMap({ accessToken, className }: HeatmapMapProps) {
         map.removeSource(HEATMAP_SOURCE_ID)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, payload])
+
+  useEffect(() => {
+    if (!map || !map.getLayer(HEATMAP_LAYER_ID)) {
+      return
+    }
+
+    map.setLayoutProperty(
+      HEATMAP_LAYER_ID,
+      'visibility',
+      visible ? 'visible' : 'none',
+    )
+  }, [map, visible])
 
   return (
     <>
