@@ -42,7 +42,7 @@ export default async function ProfilPage() {
 
         <nav className="flex flex-col gap-3">
           <Link
-            href="/patrouilles"
+            href="/patrouilles/historique?from=profil"
             className={`flex items-center justify-between gap-4 text-canopee-forest transition-colors hover:border-canopee-green/40 ${CARD}`}
           >
             <span className="font-heading text-base">Mes patrouilles</span>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { BottomNav } from '@/components/bottom-nav'
 import { requireApprovedUser } from '@/lib/auth/current-user'
 import {
   formatDistance,
@@ -15,56 +16,89 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
+const CARD = 'rounded-2xl border border-canopee-forest/10 bg-white/70 shadow-sm'
+
+const ORIGINS = {
+  patrouille: { href: '/patrouilles', label: 'Patrouiller' },
+  profil: { href: '/profil', label: 'Profil' },
+}
+
+type OriginKey = keyof typeof ORIGINS
+
+/** Where the patroller came from, so the header button sends them back there. */
+function parseOrigin(from: string | undefined): OriginKey {
+  return from === 'patrouille' ? 'patrouille' : 'profil'
+}
+
+function pageHref(page: number, from: OriginKey): string {
+  return `/patrouilles/historique?page=${page}&from=${from}`
+}
+
 type PatrouillesPageProps = {
-  searchParams: Promise<{ page?: string }>
+  searchParams: Promise<{ page?: string; from?: string }>
 }
 
 export default async function PatrouillesHistoryPage({
   searchParams,
 }: PatrouillesPageProps) {
   const profile = await requireApprovedUser()
-  const page = parsePageParam((await searchParams).page)
+  const { page: pageParam, from } = await searchParams
+  const page = parsePageParam(pageParam)
+  const origin = parseOrigin(from)
   const { items, hasNextPage } = await listPatrolsForUser(profile.id, page)
 
   return (
-    <div className="flex flex-1 flex-col bg-zinc-50 font-sans dark:bg-black">
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
+    <div className="flex min-h-dvh w-full flex-col bg-canopee-cream">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 pt-10 pb-32 sm:px-6">
         <header className="flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold tracking-tight text-black sm:text-3xl dark:text-zinc-50">
+          <h1 className="font-heading text-2xl text-canopee-forest sm:text-3xl">
             Mes patrouilles
           </h1>
           <Link
-            href="/patrouilles"
-            className="shrink-0 text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
+            href={ORIGINS[origin].href}
+            className="inline-flex shrink-0 items-center rounded-full bg-canopee-forest px-4 py-2 text-sm font-semibold text-canopee-cream shadow-sm transition-colors hover:bg-canopee-green focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none"
           >
-            Patrouiller
+            {ORIGINS[origin].label}
           </Link>
         </header>
 
         {items.length === 0 ? (
-          <p className="rounded-lg border border-zinc-200 px-4 py-8 text-center text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+          <p
+            className={`my-auto px-6 py-12 text-center text-sm leading-relaxed text-canopee-forest/70 ${CARD}`}
+          >
             Vous n&apos;avez pas encore de patrouille enregistrée.
           </p>
         ) : (
           <ul className="flex flex-col gap-3">
             {items.map((patrol) => (
-              <li
-                key={patrol.id}
-                className="flex flex-col gap-1 rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-800"
-              >
-                <span className="text-sm font-medium text-black dark:text-zinc-50">
-                  {formatPatrolDate(patrol.startedAt)}
-                </span>
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {formatDuration(patrol.durationSeconds)} ·{' '}
-                  {formatDistance(patrol.distanceMetres)}
-                </span>
-                {patrol.endedAt !== null && (
+              <li key={patrol.id}>
+                {patrol.endedAt === null ? (
+                  <div className={`flex flex-col gap-0.5 px-5 py-4 ${CARD}`}>
+                    <span className="font-heading text-base text-canopee-forest">
+                      {formatPatrolDate(patrol.startedAt)}
+                    </span>
+                    <span className="text-sm text-canopee-forest/70">
+                      Patrouille en cours
+                    </span>
+                  </div>
+                ) : (
                   <Link
                     href={`/patrouilles/${patrol.id}`}
-                    className="self-start text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
+                    className={`flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:border-canopee-green/40 ${CARD}`}
                   >
-                    Voir le trajet
+                    <span className="flex flex-col gap-0.5">
+                      <span className="font-heading text-base text-canopee-forest">
+                        {formatPatrolDate(patrol.startedAt)}
+                      </span>
+                      <span className="text-sm text-canopee-forest/70">
+                        {formatDuration(patrol.durationSeconds)} ·{' '}
+                        {formatDistance(patrol.distanceMetres)}
+                      </span>
+                    </span>
+
+                    <span className="shrink-0 text-sm font-medium text-canopee-green">
+                      Voir le trajet
+                    </span>
                   </Link>
                 )}
               </li>
@@ -76,8 +110,8 @@ export default async function PatrouillesHistoryPage({
           <nav className="flex items-center justify-between gap-4 text-sm">
             {page > 1 ? (
               <Link
-                href={`/patrouilles/historique?page=${page - 1}`}
-                className="text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
+                href={pageHref(page - 1, origin)}
+                className="text-canopee-forest/70 underline underline-offset-4 hover:text-canopee-forest"
               >
                 Page précédente
               </Link>
@@ -87,8 +121,8 @@ export default async function PatrouillesHistoryPage({
 
             {hasNextPage && (
               <Link
-                href={`/patrouilles/historique?page=${page + 1}`}
-                className="text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
+                href={pageHref(page + 1, origin)}
+                className="text-canopee-forest/70 underline underline-offset-4 hover:text-canopee-forest"
               >
                 Page suivante
               </Link>
@@ -96,6 +130,8 @@ export default async function PatrouillesHistoryPage({
           </nav>
         )}
       </main>
+
+      <BottomNav />
     </div>
   )
 }
