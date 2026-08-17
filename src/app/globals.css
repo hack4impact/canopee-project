@@ -63,7 +63,7 @@ html {
 
 .mapbox-map {
   position: relative;
-  min-height: 24rem;
+  min-height: 12rem;
 }
 
 .mapbox-map .mapboxgl-canvas {

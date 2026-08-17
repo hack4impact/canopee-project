@@ -17,9 +17,12 @@ const LINE_WIDTH = 3.5
 const FIT_PADDING = 48
 const FIT_MAX_ZOOM = 16
 
+const DEFAULT_HEIGHT = 'h-[min(70vh,720px)] min-h-[280px]'
+
 type PatrolRouteMapProps = {
   patrolId: string
   accessToken?: string
+  className?: string
   children?: ReactNode
 }
 
@@ -42,6 +45,7 @@ function routeMessage(points: RoutePoint[] | null, failed: boolean) {
 export function PatrolRouteMap({
   patrolId,
   accessToken,
+  className = DEFAULT_HEIGHT,
   children,
 }: PatrolRouteMapProps) {
   const [map, setMap] = useState<MapboxMap | null>(null)
@@ -130,17 +134,20 @@ export function PatrolRouteMap({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative h-[min(70vh,720px)] min-h-[280px] w-full">
+      <div className={`relative w-full ${className}`}>
         <BaseMap
           accessToken={accessToken}
           onMapReady={setMap}
-          className="h-full w-full overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800"
+          className="h-full w-full overflow-hidden"
         />
         {children}
       </div>
 
       {message && (
-        <p role="status" className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p
+          role="status"
+          className="px-5 pb-4 text-center text-sm text-canopee-forest/70"
+        >
           {message}
         </p>
       )}
