@@ -1,7 +1,15 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+
+type NavLink = {
+  href: string
+  label: string
+  icon: ReactNode
+  related?: string[]
+}
 
 const ICON_PROPS = {
   viewBox: '0 0 24 24',
@@ -14,7 +22,7 @@ const ICON_PROPS = {
   'aria-hidden': true,
 } as const
 
-const LINKS = [
+const LINKS: NavLink[] = [
   {
     href: '/',
     label: 'Accueil',
@@ -37,7 +45,7 @@ const LINKS = [
     ),
   },
   {
-    href: '/patrouilles',
+    href: '/patrouiller',
     label: 'Patrouiller',
     icon: (
       <svg {...ICON_PROPS}>
@@ -59,6 +67,7 @@ const LINKS = [
   {
     href: '/profil',
     label: 'Profil',
+    related: ['/patrouilles'],
     icon: (
       <svg {...ICON_PROPS}>
         <circle cx="12" cy="8" r="5" />
@@ -72,10 +81,11 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full bg-canopee-forest/80 p-1.5 shadow-xl shadow-black/30 ring-1 ring-white/10 back backdrop-blur-sm">
+    <nav className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-full bg-canopee-forest/80 p-1.5 shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm">
       {LINKS.map((link) => {
-        const isActive =
-          pathname === link.href || pathname.startsWith(`${link.href}/`)
+        const isActive = [link.href, ...(link.related ?? [])].some(
+          (path) => pathname === path || pathname.startsWith(`${path}/`),
+        )
 
         return (
           <Link
