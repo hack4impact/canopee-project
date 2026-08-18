@@ -11,8 +11,17 @@ export type StartPatrolState = {
   message?: string
 }
 
+export type PatrolSummary = {
+  id: string
+  startedAt: string
+  endedAt: string
+  durationSeconds: number
+  distanceMetres: number
+}
+
 export type EndPatrolState = {
   message?: string
+  summary?: PatrolSummary
 }
 
 /** Opens a patrol. Timestamps are left to the database, not the phone's clock. */
@@ -24,7 +33,8 @@ export async function startPatrol(): Promise<StartPatrolState> {
   const active = await getActivePatrol(profile.id)
 
   if (active) {
-    revalidatePath('/carte')
+    revalidatePath('/')
+    revalidatePath('/patrouilles')
     return {}
   }
 
@@ -36,7 +46,8 @@ export async function startPatrol(): Promise<StartPatrolState> {
     return { message: 'Impossible de démarrer la patrouille. Réessayez.' }
   }
 
-  revalidatePath('/carte')
+  revalidatePath('/')
+  revalidatePath('/patrouilles')
 
   return {}
 }
@@ -48,9 +59,13 @@ export async function endPatrol(): Promise<EndPatrolState> {
   const active = await getActivePatrol(profile.id)
 
   if (!active) {
-    revalidatePath('/carte')
+    revalidatePath('/')
+    revalidatePath('/patrouilles')
     return {}
   }
+
+  const endedAt = new Date()
+  let summary: PatrolSummary | undefined
 
   try {
     // Read after the client has flushed, so the distance covers the whole route.
@@ -74,15 +89,26 @@ export async function endPatrol(): Promise<EndPatrolState> {
 
     await db
       .update(patrols)
-      .set({ endedAt: new Date(), distanceMeters })
+      .set({ endedAt, distanceMeters })
       .where(eq(patrols.id, active.id))
+
+    summary = {
+      id: active.id,
+      startedAt: active.startedAt.toISOString(),
+      endedAt: endedAt.toISOString(),
+      durationSeconds: Math.round(
+        (endedAt.getTime() - active.startedAt.getTime()) / 1000,
+      ),
+      distanceMetres: distanceMeters,
+    }
   } catch (cause) {
     console.error('Failed to close the patrol', cause)
 
     return { message: 'Impossible de terminer la patrouille. Réessayez.' }
   }
 
-  revalidatePath('/carte')
+  revalidatePath('/')
+  revalidatePath('/patrouilles')
 
-  return {}
+  return { summary }
 }

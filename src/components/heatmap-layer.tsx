@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { Map as MapboxMap } from 'mapbox-gl'
-import { BaseMap } from '@/components/base-map'
+import { useSharedMap } from '@/components/map-provider'
 import {
   heatmapPaint,
   HEATMAP_LAYER_ID,
@@ -15,20 +14,11 @@ type HeatmapPayload = {
   zones: HeatmapCollection
 }
 
-type HeatmapMapProps = {
-  accessToken?: string
-  className?: string
-  visible?: boolean
-}
-
-export function HeatmapMap({
-  accessToken,
-  className,
-  visible = true,
-}: HeatmapMapProps) {
-  const [map, setMap] = useState<MapboxMap | null>(null)
+export function HeatmapLayer() {
+  const map = useSharedMap()
   const [payload, setPayload] = useState<HeatmapPayload | null>(null)
   const [failed, setFailed] = useState(false)
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -66,17 +56,28 @@ export function HeatmapMap({
       return
     }
 
+    let mapRemoved = false
+    const handleRemove = () => {
+      mapRemoved = true
+    }
+
+    map.on('remove', handleRemove)
     map.addSource(HEATMAP_SOURCE_ID, { type: 'geojson', data: payload.zones })
 
     map.addLayer({
       id: HEATMAP_LAYER_ID,
       type: 'heatmap',
       source: HEATMAP_SOURCE_ID,
-      layout: { visibility: visible ? 'visible' : 'none' },
       paint: heatmapPaint(payload.maxPoints),
     })
 
     return () => {
+      map.off('remove', handleRemove)
+
+      if (mapRemoved) {
+        return
+      }
+
       if (map.getLayer(HEATMAP_LAYER_ID)) {
         map.removeLayer(HEATMAP_LAYER_ID)
       }
@@ -85,7 +86,6 @@ export function HeatmapMap({
         map.removeSource(HEATMAP_SOURCE_ID)
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, payload])
 
   useEffect(() => {
@@ -98,24 +98,31 @@ export function HeatmapMap({
       'visibility',
       visible ? 'visible' : 'none',
     )
-  }, [map, visible])
+  }, [map, payload, visible])
+
+  if (failed) {
+    return (
+      <p
+        role="status"
+        className="absolute bottom-28 left-1/2 z-10 -translate-x-1/2 rounded-full bg-canopee-cream/95 px-3 py-1.5 text-sm font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
+      >
+        Impossible d&apos;afficher la fréquentation des patrouilles.
+      </p>
+    )
+  }
+
+  if (!payload || payload.zones.features.length === 0) {
+    return null
+  }
 
   return (
-    <>
-      <BaseMap
-        accessToken={accessToken}
-        className={className}
-        onMapReady={setMap}
-      />
-
-      {failed && (
-        <p
-          role="status"
-          className="absolute right-2 bottom-2 left-2 z-10 rounded-lg bg-white/95 px-3 py-2 text-sm text-zinc-700 shadow-sm sm:right-auto sm:left-4 sm:max-w-sm"
-        >
-          Impossible d&apos;afficher la fréquentation des patrouilles.
-        </p>
-      )}
-    </>
+    <button
+      type="button"
+      onClick={() => setVisible((current) => !current)}
+      aria-pressed={visible}
+      className="absolute top-4 right-4 z-10 touch-manipulation rounded-full bg-canopee-forest/80 px-4 py-2.5 text-sm font-medium text-canopee-cream shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:scale-95 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+    >
+      {visible ? 'Masquer la carte de chaleur' : 'Afficher la carte de chaleur'}
+    </button>
   )
 }

@@ -50,7 +50,9 @@ export type PatrolRecorder = {
  * mounted. Mounting is the on/off switch, so there is no flag to keep in step
  * with the server's view of the patrol.
  */
-export function usePatrolRecorder(): PatrolRecorder {
+export function usePatrolRecorder({
+  paused = false,
+}: { paused?: boolean } = {}): PatrolRecorder {
   const [status, setStatus] = useState<RecordingStatus>('waiting')
 
   const flushAndStopRef = useRef<() => Promise<void>>(() => Promise.resolve())
@@ -107,21 +109,14 @@ export function usePatrolRecorder(): PatrolRecorder {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(batch),
-          // An expired session makes the proxy answer 307 to /login. Followed,
-          // that lands on a 200 page and looks like a successful sync, dropping
-          // the buffer without anything being stored.
           redirect: 'manual',
         })
 
         if (response.ok) {
-          // Re-read rather than reuse the snapshot above: a slow request can
-          // outlast the point interval, and those new points must survive.
           bufferRef.current = bufferRef.current.slice(batch.length)
           return
         }
 
-        // Status 0 is the unfollowed redirect above. Both it and a 4xx are
-        // permanent, so retrying either is a loop.
         if (response.status < 500) {
           bufferRef.current = []
 
@@ -135,7 +130,6 @@ export function usePatrolRecorder(): PatrolRecorder {
           return
         }
 
-        // 5xx and network failures keep the buffer for the next tick.
         console.warn(`Patrol point sync failed (${response.status}), retrying`)
       } catch (cause) {
         console.warn('Patrol point sync failed, keeping the buffer', cause)
@@ -144,7 +138,6 @@ export function usePatrolRecorder(): PatrolRecorder {
       }
     }
 
-    /** The page is going away, so the request has to outlive it. */
     function flushBeforeUnload() {
       if (stopped || syncing || bufferRef.current.length === 0) {
         return
@@ -160,7 +153,6 @@ export function usePatrolRecorder(): PatrolRecorder {
       }
     }
 
-    /** Ends recording and delivers whatever is buffered, batch by batch. */
     async function flushAndStop() {
       stopped = true
 
@@ -220,8 +212,6 @@ export function usePatrolRecorder(): PatrolRecorder {
         return
       }
 
-      // The watch is left running: the browser keeps trying, and `handleFix`
-      // runs again on its own once a fix returns
       console.warn(
         `GPS signal lost (code ${error.code}), ${describeSignalGap(
           lastRecordedAtRef.current,
@@ -232,25 +222,24 @@ export function usePatrolRecorder(): PatrolRecorder {
       setStatus('signal-lost')
     }
 
-    watchId = navigator.geolocation.watchPosition(
-      handleFix,
-      handleError,
-      WATCH_OPTIONS,
-    )
+    if (!paused) {
+      watchId = navigator.geolocation.watchPosition(
+        handleFix,
+        handleError,
+        WATCH_OPTIONS,
+      )
 
-    syncTimer = setInterval(() => void flush(), SYNC_INTERVAL_MS)
+      syncTimer = setInterval(() => void flush(), SYNC_INTERVAL_MS)
+    }
+
     flushAndStopRef.current = flushAndStop
 
-    // `pagehide` rather than `beforeunload`: mobile browsers fire it reliably,
-    // including when the tab is frozen instead of closed.
     window.addEventListener('pagehide', flushBeforeUnload)
 
     return () => {
       window.removeEventListener('pagehide', flushBeforeUnload)
       flushAndStopRef.current = () => Promise.resolve()
 
-      // A client-side navigation runs this instead of `pagehide`, and the patrol
-      // is still open, so the last points can still be delivered.
       flushBeforeUnload()
 
       if (watchId !== null) {
@@ -263,7 +252,7 @@ export function usePatrolRecorder(): PatrolRecorder {
 
       lastRecordedAtRef.current = null
     }
-  }, [isSupported])
+  }, [isSupported, paused])
 
   const flushAndStop = useCallback(() => flushAndStopRef.current(), [])
 
