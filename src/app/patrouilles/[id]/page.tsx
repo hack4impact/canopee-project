@@ -39,11 +39,17 @@ const DASH = '—'
 
 type PatrouillePageProps = {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ from?: string }>
 }
 
-export default async function PatrouillePage({ params }: PatrouillePageProps) {
+export default async function PatrouillePage({
+  params,
+  searchParams,
+}: PatrouillePageProps) {
   const profile = await requireApprovedUser()
   const { id } = await params
+  const { from } = await searchParams
+  const origin = from === 'profil' ? 'profil' : 'patrouille'
 
   if (!UUID_PATTERN.test(id)) {
     notFound()
@@ -91,7 +97,7 @@ export default async function PatrouillePage({ params }: PatrouillePageProps) {
           </div>
 
           <Link
-            href="/patrouilles/historique?from=patrouille"
+            href={`/patrouilles/historique?from=${origin}`}
             className="inline-flex shrink-0 items-center rounded-full bg-canopee-forest px-4 py-2 text-sm font-semibold text-canopee-cream shadow-sm transition-colors hover:bg-canopee-green focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none"
           >
             Mes patrouilles

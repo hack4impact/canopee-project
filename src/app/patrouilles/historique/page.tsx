@@ -83,7 +83,7 @@ export default async function PatrouillesHistoryPage({
                   </div>
                 ) : (
                   <Link
-                    href={`/patrouilles/${patrol.id}`}
+                    href={`/patrouilles/${patrol.id}?from=${origin}`}
                     className={`flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:border-canopee-green/40 ${CARD}`}
                   >
                     <span className="flex flex-col gap-0.5">

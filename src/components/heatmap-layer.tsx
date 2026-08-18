@@ -55,6 +55,12 @@ export function HeatmapLayer() {
       return
     }
 
+    let mapRemoved = false
+    const handleRemove = () => {
+      mapRemoved = true
+    }
+
+    map.on('remove', handleRemove)
     map.addSource(HEATMAP_SOURCE_ID, { type: 'geojson', data: payload.zones })
 
     map.addLayer({
@@ -65,6 +71,12 @@ export function HeatmapLayer() {
     })
 
     return () => {
+      map.off('remove', handleRemove)
+
+      if (mapRemoved) {
+        return
+      }
+
       if (map.getLayer(HEATMAP_LAYER_ID)) {
         map.removeLayer(HEATMAP_LAYER_ID)
       }

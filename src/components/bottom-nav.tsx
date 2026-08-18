@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 
 type NavLink = {
   href: string
@@ -90,9 +90,48 @@ function matchLength(pathname: string, link: NavLink): number {
   return longest
 }
 
+const PATROL_SUMMARY_PATTERN =
+  /^\/patrouilles\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function originMatch(
+  pathname: string,
+  link: NavLink,
+  from: string | null,
+): boolean | null {
+  if (from !== 'patrouille' && from !== 'profil') {
+    return null
+  }
+
+  const isHistory = pathname === '/patrouilles/historique'
+  const isSummary = PATROL_SUMMARY_PATTERN.test(pathname)
+
+  if (!isHistory && !isSummary) {
+    return null
+  }
+
+  if (link.href === '/profil') {
+    return from === 'profil'
+  }
+
+  if (link.href === '/patrouilles') {
+    return from === 'patrouille'
+  }
+
+  return null
+}
+
 export function BottomNav() {
   const pathname = usePathname()
-  const scores = LINKS.map((link) => matchLength(pathname, link))
+  const from = useSearchParams().get('from')
+  const scores = LINKS.map((link) => {
+    const explicit = originMatch(pathname, link, from)
+
+    if (explicit !== null) {
+      return explicit ? 1_000 : -1
+    }
+
+    return matchLength(pathname, link)
+  })
   const bestScore = Math.max(...scores)
 
   return (

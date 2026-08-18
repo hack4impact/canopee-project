@@ -124,7 +124,9 @@ export function PatrolControls({ startedAt }: PatrolControlsProps) {
     return (
       <ActivePatrol
         startedAt={startedAt}
-        onEnded={(summary) => router.push(`/patrouilles/${summary.id}`)}
+        onEnded={(summary) =>
+          router.push(`/patrouilles/${summary.id}?from=patrouille`)
+        }
       />
     )
   }

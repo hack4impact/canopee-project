@@ -90,6 +90,13 @@ export function PatrolRouteMap({
       return
     }
 
+    let mapRemoved = false
+    const handleRemove = () => {
+      mapRemoved = true
+    }
+
+    map.on('remove', handleRemove)
+
     const coordinates = toLineCoordinates(points)
 
     map.addSource(SOURCE_ID, {
@@ -120,6 +127,12 @@ export function PatrolRouteMap({
     }
 
     return () => {
+      map.off('remove', handleRemove)
+
+      if (mapRemoved) {
+        return
+      }
+
       if (map.getLayer(LAYER_ID)) {
         map.removeLayer(LAYER_ID)
       }
