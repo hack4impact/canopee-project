@@ -1,3 +1,5 @@
+import type { FeatureCollection, Point } from 'geojson'
+
 export const DEFAULT_ZONE_PRECISION = 3
 
 export const DEFAULT_WINDOW_MONTHS = 2
@@ -16,10 +18,7 @@ type ZoneProperties = {
   patrols: number
 }
 
-export type HeatmapCollection = GeoJSON.FeatureCollection<
-  GeoJSON.Point,
-  ZoneProperties
->
+export type HeatmapCollection = FeatureCollection<Point, ZoneProperties>
 
 export function parseMonthsParam(value: string | null | undefined): number {
   const months = Number(value)
