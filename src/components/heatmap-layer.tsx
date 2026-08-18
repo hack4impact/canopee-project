@@ -18,6 +18,7 @@ export function HeatmapLayer() {
   const map = useSharedMap()
   const [payload, setPayload] = useState<HeatmapPayload | null>(null)
   const [failed, setFailed] = useState(false)
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -87,16 +88,41 @@ export function HeatmapLayer() {
     }
   }, [map, payload])
 
-  if (!failed) {
+  useEffect(() => {
+    if (!map || !map.getLayer(HEATMAP_LAYER_ID)) {
+      return
+    }
+
+    map.setLayoutProperty(
+      HEATMAP_LAYER_ID,
+      'visibility',
+      visible ? 'visible' : 'none',
+    )
+  }, [map, payload, visible])
+
+  if (failed) {
+    return (
+      <p
+        role="status"
+        className="absolute bottom-28 left-1/2 z-10 -translate-x-1/2 rounded-full bg-canopee-cream/95 px-3 py-1.5 text-sm font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
+      >
+        Impossible d&apos;afficher la fréquentation des patrouilles.
+      </p>
+    )
+  }
+
+  if (!payload || payload.zones.features.length === 0) {
     return null
   }
 
   return (
-    <p
-      role="status"
-      className="absolute bottom-28 left-1/2 z-10 -translate-x-1/2 rounded-full bg-canopee-cream/95 px-3 py-1.5 text-sm font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
+    <button
+      type="button"
+      onClick={() => setVisible((current) => !current)}
+      aria-pressed={visible}
+      className="absolute top-4 right-4 z-10 touch-manipulation rounded-full bg-canopee-forest/80 px-4 py-2.5 text-sm font-medium text-canopee-cream shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:scale-95 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
     >
-      Impossible d&apos;afficher la fréquentation des patrouilles.
-    </p>
+      {visible ? 'Masquer la carte de chaleur' : 'Afficher la carte de chaleur'}
+    </button>
   )
 }
