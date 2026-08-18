@@ -116,7 +116,7 @@ describe('startPatrol opening a patrol', () => {
   it('refreshes the map so the badge replaces the button', async () => {
     await startPatrol()
 
-    expect(revalidatePath).toHaveBeenCalledWith('/carte')
+    expect(revalidatePath).toHaveBeenCalledWith('/')
   })
 
   it('reports no error on success', async () => {
@@ -144,7 +144,7 @@ describe('startPatrol when one is already running', () => {
   it('still refreshes the map, so a double tap lands on the badge', async () => {
     await expect(startPatrol()).resolves.toEqual({})
 
-    expect(revalidatePath).toHaveBeenCalledWith('/carte')
+    expect(revalidatePath).toHaveBeenCalledWith('/')
   })
 })
 
@@ -195,7 +195,7 @@ describe('endPatrol with no running patrol', () => {
     await expect(endPatrol()).resolves.toEqual({})
 
     expect(update).not.toHaveBeenCalled()
-    expect(revalidatePath).toHaveBeenCalledWith('/carte')
+    expect(revalidatePath).toHaveBeenCalledWith('/')
   })
 })
 
@@ -237,11 +237,27 @@ describe('endPatrol closing a patrol', () => {
   it('refreshes the map so the button replaces the badge', async () => {
     await endPatrol()
 
-    expect(revalidatePath).toHaveBeenCalledWith('/carte')
+    expect(revalidatePath).toHaveBeenCalledWith('/')
   })
 
   it('reports no error on success', async () => {
-    await expect(endPatrol()).resolves.toEqual({})
+    const { message } = await endPatrol()
+
+    expect(message).toBeUndefined()
+  })
+
+  it('returns the finished patrol so the summary can be shown', async () => {
+    orderBy.mockResolvedValue([
+      { latitude: '45.500000', longitude: '-73.600000' },
+      { latitude: '45.510000', longitude: '-73.600000' },
+    ])
+
+    const { summary } = await endPatrol()
+
+    expect(summary?.id).toBe('patrol-1')
+    expect(summary?.distanceMetres).toBe(lastUpdate().distanceMeters)
+    expect(Date.parse(summary?.endedAt ?? '')).not.toBeNaN()
+    expect(summary?.durationSeconds).toBeGreaterThanOrEqual(0)
   })
 })
 

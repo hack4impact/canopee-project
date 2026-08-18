@@ -32,7 +32,7 @@ export function heatmapPaint(
       LOW_ZOOM,
       1,
       HIGH_ZOOM,
-      1.5,
+      2,
     ],
     'heatmap-color': [
       'interpolate',
@@ -54,9 +54,9 @@ export function heatmapPaint(
       ['exponential', 2],
       ['zoom'],
       LOW_ZOOM,
-      4,
+      3,
       HIGH_ZOOM,
-      48,
+      192,
     ],
     'heatmap-opacity': 0.85,
   }

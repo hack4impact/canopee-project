@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { Map as MapboxMap } from 'mapbox-gl'
-import { BaseMap } from '@/components/base-map'
+import { useSharedMap } from '@/components/map-provider'
 import {
   heatmapPaint,
   HEATMAP_LAYER_ID,
@@ -15,13 +14,8 @@ type HeatmapPayload = {
   zones: HeatmapCollection
 }
 
-type HeatmapMapProps = {
-  accessToken?: string
-  className?: string
-}
-
-export function HeatmapMap({ accessToken, className }: HeatmapMapProps) {
-  const [map, setMap] = useState<MapboxMap | null>(null)
+export function HeatmapLayer() {
+  const map = useSharedMap()
   const [payload, setPayload] = useState<HeatmapPayload | null>(null)
   const [failed, setFailed] = useState(false)
 
@@ -61,6 +55,12 @@ export function HeatmapMap({ accessToken, className }: HeatmapMapProps) {
       return
     }
 
+    let mapRemoved = false
+    const handleRemove = () => {
+      mapRemoved = true
+    }
+
+    map.on('remove', handleRemove)
     map.addSource(HEATMAP_SOURCE_ID, { type: 'geojson', data: payload.zones })
 
     map.addLayer({
@@ -71,6 +71,12 @@ export function HeatmapMap({ accessToken, className }: HeatmapMapProps) {
     })
 
     return () => {
+      map.off('remove', handleRemove)
+
+      if (mapRemoved) {
+        return
+      }
+
       if (map.getLayer(HEATMAP_LAYER_ID)) {
         map.removeLayer(HEATMAP_LAYER_ID)
       }
@@ -81,22 +87,16 @@ export function HeatmapMap({ accessToken, className }: HeatmapMapProps) {
     }
   }, [map, payload])
 
-  return (
-    <>
-      <BaseMap
-        accessToken={accessToken}
-        className={className}
-        onMapReady={setMap}
-      />
+  if (!failed) {
+    return null
+  }
 
-      {failed && (
-        <p
-          role="status"
-          className="absolute right-2 bottom-2 left-2 z-10 rounded-lg bg-white/95 px-3 py-2 text-sm text-zinc-700 shadow-sm sm:right-auto sm:left-4 sm:max-w-sm"
-        >
-          Impossible d&apos;afficher la fréquentation des patrouilles.
-        </p>
-      )}
-    </>
+  return (
+    <p
+      role="status"
+      className="absolute bottom-28 left-1/2 z-10 -translate-x-1/2 rounded-full bg-canopee-cream/95 px-3 py-1.5 text-sm font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
+    >
+      Impossible d&apos;afficher la fréquentation des patrouilles.
+    </p>
   )
 }
