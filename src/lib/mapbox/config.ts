@@ -6,6 +6,13 @@ export const LAVAL_WOODED_VIEW = {
   zoom: 12,
 } as const
 
+export const LAVAL_BOUNDS: [[number, number], [number, number]] = [
+  [-73.95, 45.5],
+  [-73.5, 45.69],
+]
+
+export const LAVAL_MIN_ZOOM = 10
+
 export type MapViewport = {
   longitude: number
   latitude: number

@@ -20,6 +20,7 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:seed-reports": "tsx src/db/seed-reports.ts",
     "db:seed-patrols": "tsx src/db/seed-patrols.ts",
+    "email:campaign": "tsx scripts/send-campaign.ts",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -44,6 +45,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/geojson": "^7946.0.16",
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^20",
     "@types/react": "^19",

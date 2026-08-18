@@ -36,6 +36,13 @@
       "when": 1786213321339,
       "tag": "0004_numerous_princess_powerful",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786656529256,
+      "tag": "0005_boring_maginty",
+      "breakpoints": true
     }
   ]
 }

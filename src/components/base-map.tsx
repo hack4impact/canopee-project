@@ -1,11 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import {
-  getGeolocationNotice,
-  isGeolocationAvailable,
   LAVAL_WOODED_VIEW,
+  LAVAL_BOUNDS,
+  LAVAL_MIN_ZOOM,
   MAPBOX_OUTDOORS_STYLE,
   trackMapLoad,
   type MapViewport,
@@ -15,81 +15,25 @@ type BaseMapProps = {
   accessToken?: string
   className?: string
   viewport?: MapViewport
+  onMapReady?: (map: mapboxgl.Map) => void
 }
-
-const LOCATE_ZOOM = 14
 
 export function BaseMap({
   accessToken,
   className,
   viewport = LAVAL_WOODED_VIEW,
+  onMapReady,
 }: BaseMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
-  const userMarkerRef = useRef<mapboxgl.Marker | null>(null)
+  const onMapReadyRef = useRef(onMapReady)
   const [fatalError, setFatalError] = useState<string | null>(null)
   const [isReady, setIsReady] = useState(false)
-  const [isLocating, setIsLocating] = useState(false)
-  const [notice, setNotice] = useState<string | null>(null)
   const mapboxToken = accessToken ?? process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
-  const resetToDefaultView = useCallback(() => {
-    const map = mapRef.current
-    if (!map) {
-      return
-    }
-
-    map.flyTo({
-      center: [viewport.longitude, viewport.latitude],
-      zoom: viewport.zoom,
-      essential: true,
-    })
-  }, [viewport.latitude, viewport.longitude, viewport.zoom])
-
-  const handleLocate = useCallback(() => {
-    const map = mapRef.current
-
-    if (!map) {
-      return
-    }
-
-    setNotice(null)
-
-    if (!isGeolocationAvailable()) {
-      setNotice(
-        'La géolocalisation n’est pas disponible dans ce navigateur. La carte reste centrée sur Laval.',
-      )
-      resetToDefaultView()
-      return
-    }
-
-    setIsLocating(true)
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { longitude, latitude } = position.coords
-
-        userMarkerRef.current?.remove()
-        userMarkerRef.current = new mapboxgl.Marker({ color: '#2563eb' })
-          .setLngLat([longitude, latitude])
-          .addTo(map)
-
-        map.flyTo({
-          center: [longitude, latitude],
-          zoom: LOCATE_ZOOM,
-          essential: true,
-        })
-
-        setIsLocating(false)
-      },
-      (error) => {
-        setNotice(getGeolocationNotice(error).message)
-        resetToDefaultView()
-        setIsLocating(false)
-      },
-      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 },
-    )
-  }, [resetToDefaultView])
+  useEffect(() => {
+    onMapReadyRef.current = onMapReady
+  }, [onMapReady])
 
   useEffect(() => {
     const container = containerRef.current
@@ -105,22 +49,71 @@ export function BaseMap({
       style: MAPBOX_OUTDOORS_STYLE,
       center: [viewport.longitude, viewport.latitude],
       zoom: viewport.zoom,
+      minZoom: LAVAL_MIN_ZOOM,
+      maxBounds: LAVAL_BOUNDS,
       dragPan: true,
       touchZoomRotate: true,
       touchPitch: true,
     })
 
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right')
     mapRef.current = map
 
+    const computeBoundsFloor = (): number => {
+      const bounds = map.getMaxBounds()
+
+      if (!bounds) {
+        return LAVAL_MIN_ZOOM
+      }
+
+      const southWest = bounds.getSouthWest()
+      const northEast = bounds.getNorthEast()
+      const southWestWorld = mapboxgl.MercatorCoordinate.fromLngLat(southWest)
+      const northEastWorld = mapboxgl.MercatorCoordinate.fromLngLat(northEast)
+
+      // Bounds size in pixels at zoom 0, where the world is 512 px wide.
+      const boundsWorldWidth = (northEastWorld.x - southWestWorld.x) * 512
+      const boundsWorldHeight = (southWestWorld.y - northEastWorld.y) * 512
+
+      const { clientWidth: width, clientHeight: height } = map.getContainer()
+
+      return Math.max(
+        LAVAL_MIN_ZOOM,
+        Math.log2(width / boundsWorldWidth),
+        Math.log2(height / boundsWorldHeight),
+      )
+    }
+
+    const syncZoomFloor = () => {
+      const floor = computeBoundsFloor()
+
+      if (map.getMinZoom() !== floor) {
+        map.setMinZoom(floor)
+      }
+
+      // Normalise any float drift so the camera sits exactly on the floor.
+      if (map.getZoom() < floor) {
+        map.setZoom(floor)
+      }
+    }
+
+    syncZoomFloor()
+    map.on('resize', syncZoomFloor)
+
     let hasTrackedLoad = false
+    let hasNotifiedReady = false
     const handleReady = () => {
       map.resize()
+      syncZoomFloor()
       setIsReady(true)
 
       if (!hasTrackedLoad) {
         hasTrackedLoad = true
         trackMapLoad()
+      }
+
+      if (!hasNotifiedReady) {
+        hasNotifiedReady = true
+        onMapReadyRef.current?.(map)
       }
     }
 
@@ -150,8 +143,6 @@ export function BaseMap({
 
     return () => {
       window.removeEventListener('resize', handleResize)
-      userMarkerRef.current?.remove()
-      userMarkerRef.current = null
       map.remove()
       mapRef.current = null
       setIsReady(false)
@@ -200,25 +191,6 @@ export function BaseMap({
             </p>
           </div>
         </div>
-      )}
-
-      <button
-        type="button"
-        onClick={handleLocate}
-        disabled={!isReady || isLocating}
-        aria-label="Me localiser"
-        className="absolute top-[6.75rem] right-[10px] z-10 rounded border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-      >
-        {isLocating ? 'Localisation…' : 'Me localiser'}
-      </button>
-
-      {notice && (
-        <p
-          aria-live="polite"
-          className="absolute right-2 bottom-2 left-2 z-10 rounded-lg border border-zinc-200 bg-white/95 px-3 py-2 text-sm text-zinc-700 shadow-sm sm:right-4 sm:bottom-4 sm:left-auto sm:max-w-sm dark:border-zinc-700 dark:bg-zinc-950/95 dark:text-zinc-300"
-        >
-          {notice}
-        </p>
       )}
     </div>
   )
