@@ -82,8 +82,6 @@ export function ReportForm() {
         </p>
       )}
 
-      {/* Keyed on the new row's id: a successful submission remounts the
-          fields, which clears them without resetting state from an effect. */}
       <ReportFields
         key={state.submittedId ?? 'new'}
         formAction={formAction}
@@ -98,6 +96,25 @@ type ReportFieldsProps = {
   formAction: (formData: FormData) => void
   pending: boolean
   serverErrors?: ReportErrors
+}
+
+function UploadIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="m7 10 5-5 5 5" />
+      <path d="M12 5v12" />
+    </svg>
+  )
 }
 
 function ReportFields({
@@ -304,12 +321,12 @@ function ReportFields({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="photo" className={LABEL}>
+        <span className={LABEL}>
           Photo{' '}
           <span className="font-normal text-canopee-forest/60">
             (facultative)
           </span>
-        </label>
+        </span>
         <input
           ref={photoInputRef}
           id="photo"
@@ -319,9 +336,24 @@ function ReportFields({
           onChange={(event) =>
             void handlePhotoChange(event.target.files?.[0] ?? null)
           }
-          aria-describedby={errors.photo ? 'photo-error' : undefined}
-          className={`${FIELD} file:mr-3 file:rounded-full file:border-0 file:bg-canopee-green file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white`}
+          className="hidden"
         />
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => photoInputRef.current?.click()}
+            aria-describedby={errors.photo ? 'photo-error' : undefined}
+            className="inline-flex shrink-0 touch-manipulation items-center gap-2 rounded-lg border border-canopee-green bg-white px-3 py-2.5 text-sm font-medium text-canopee-forest transition-colors hover:bg-canopee-green/10 focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none"
+          >
+            <UploadIcon className="h-5 w-5" />
+            {photo ? 'Changer la photo' : 'Choisir une photo'}
+          </button>
+
+          <span className="min-w-0 break-all text-sm text-canopee-forest/60">
+            {photo ? photo.name : 'Aucune photo choisie'}
+          </span>
+        </div>
 
         {preparingPhoto && (
           <p role="status" className="text-sm text-canopee-forest/70">
