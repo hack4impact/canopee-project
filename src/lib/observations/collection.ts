@@ -10,7 +10,6 @@ export type ObservationCategory = (typeof OBSERVATION_CATEGORIES)[number]
 
 export type Observation = {
   id: string
-  eventNumber: number
   category: ObservationCategory
   latitude: number
   longitude: number
@@ -18,7 +17,6 @@ export type Observation = {
 
 type ObservationProperties = {
   id: string
-  eventNumber: number
   category: ObservationCategory
 }
 
@@ -26,12 +24,6 @@ export type ObservationCollection = FeatureCollection<
   Point,
   ObservationProperties
 >
-
-export function isObservationCategory(
-  value: string,
-): value is ObservationCategory {
-  return (OBSERVATION_CATEGORIES as readonly string[]).includes(value)
-}
 
 export function toFeatureCollection(
   observations: readonly Observation[],
@@ -46,7 +38,6 @@ export function toFeatureCollection(
       },
       properties: {
         id: observation.id,
-        eventNumber: observation.eventNumber,
         category: observation.category,
       },
     })),

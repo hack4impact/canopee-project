@@ -10,7 +10,6 @@ export async function listObservations(): Promise<Observation[]> {
   const rows = await db
     .select({
       id: reports.id,
-      eventNumber: reports.eventNumber,
       category: reports.category,
       latitude: reports.latitude,
       longitude: reports.longitude,
@@ -21,7 +20,6 @@ export async function listObservations(): Promise<Observation[]> {
 
   return rows.map((row) => ({
     id: row.id,
-    eventNumber: row.eventNumber,
     category: row.category as ObservationCategory,
     latitude: Number(row.latitude),
     longitude: Number(row.longitude),
