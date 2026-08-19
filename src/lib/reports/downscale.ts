@@ -4,9 +4,6 @@ const JPEG_QUALITY = 0.8
 
 const OUTPUT_TYPE = 'image/jpeg'
 
-// Shrinks a camera photo before it is sent
-// Returns the original file if the browser cannot decode it
-
 export async function downscalePhoto(file: File): Promise<File> {
   try {
     const bitmap = await createImageBitmap(file, {
@@ -40,8 +37,6 @@ export async function downscalePhoto(file: File): Promise<File> {
       return file
     }
 
-    // Re-encoding to JPEG also drops the EXIF block, and with it the GPS tags
-    // the camera wrote. The report carries its own coordinates.
     return new File([blob], renameToJpeg(file.name), { type: OUTPUT_TYPE })
   } catch {
     return file
