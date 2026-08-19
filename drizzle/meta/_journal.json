@@ -43,6 +43,13 @@
       "when": 1786656529256,
       "tag": "0005_boring_maginty",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787167638523,
+      "tag": "0006_omniscient_mojo",
+      "breakpoints": true
     }
   ]
 }
