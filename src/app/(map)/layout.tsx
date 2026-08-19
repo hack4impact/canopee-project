@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { BottomNav } from '@/components/bottom-nav'
 import { MapProvider } from '@/components/map-provider'
-import { SafariScrollRunway } from '@/components/safari-scroll-runway'
+import { SafariEdgeTint } from '@/components/safari-edge-tint'
 import { requireApprovedUser } from '@/lib/auth/current-user'
 
 export default async function MapLayout({ children }: { children: ReactNode }) {
@@ -13,7 +13,7 @@ export default async function MapLayout({ children }: { children: ReactNode }) {
         {children}
         <BottomNav />
       </MapProvider>
-      <SafariScrollRunway />
+      <SafariEdgeTint />
     </>
   )
 }
