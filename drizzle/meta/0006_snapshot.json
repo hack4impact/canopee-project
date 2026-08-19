@@ -1,5 +1,5 @@
 {
-  "id": "64239d97-d05e-44ee-bc24-8b2517e47710",
+  "id": "fa400ac7-fba7-4424-a1d3-e1d3300a5145",
   "prevId": "cf623e03-becf-4f09-8f7d-21b11455a8bf",
   "version": "7",
   "dialect": "postgresql",
@@ -282,6 +282,18 @@
           "primaryKey": false,
           "notNull": true
         },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "photo_url": {
+          "name": "photo_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "resolved_at": {
           "name": "resolved_at",
           "type": "timestamp with time zone",
@@ -396,18 +408,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "first_name": {
-          "name": "first_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "last_name": {
-          "name": "last_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "role": {
           "name": "role",

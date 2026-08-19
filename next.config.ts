@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
   experimental: {
     authInterrupts: true,
     viewTransition: true,
+    serverActions: {
+      // Report photos are downscaled in the browser to under 2MB
+      bodySizeLimit: '3mb',
+    },
   },
   turbopack: {
     root: projectRoot,

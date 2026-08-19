@@ -48,6 +48,8 @@ export const reports = pgTable(
     latitude: decimal('latitude', { precision: 9, scale: 6 }).notNull(),
     longitude: decimal('longitude', { precision: 9, scale: 6 }).notNull(),
     category: reportCategoryEnum('category').notNull(),
+    description: text('description'),
+    photoUrl: text('photo_url'),
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),
     userId: uuid('user_id').references(() => users.id),
     reporterEmail: text('reporter_email'),

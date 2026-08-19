@@ -1,16 +1,12 @@
 import { and, asc, eq, gte, lte } from 'drizzle-orm'
 import { db, reports } from '@/db'
-import type { reportCategoryEnum } from '@/db/schema'
 
-export type ReportCategory = (typeof reportCategoryEnum.enumValues)[number]
+export {
+  REPORT_CATEGORY_LABELS,
+  type ReportCategory,
+} from '@/lib/reports/categories'
 
-export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
-  dangerous_tree: 'Arbre dangereux',
-  damaged_infrastructure: 'Infrastructure endommagée',
-  fauna_observation: 'Observation de faune',
-  flora_observation: 'Observation de flore',
-  unleashed_dog: 'Chien sans laisse',
-}
+import type { ReportCategory } from '@/lib/reports/categories'
 
 export type PatrolReport = {
   id: string
