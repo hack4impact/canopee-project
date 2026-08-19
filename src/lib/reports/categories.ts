@@ -1,5 +1,3 @@
-// Type-only import: erased at build time, so this module stays free of the
-// Drizzle runtime and can be imported from Client Components.
 import type { reportCategoryEnum } from '@/db/schema'
 
 export type ReportCategory = (typeof reportCategoryEnum.enumValues)[number]
