@@ -52,7 +52,6 @@ export function validateReport(input: ReportInput): ReportErrors {
   return errors
 }
 
-/** A photo is optional, so `null` is valid. Only a supplied file is checked. */
 export function validatePhoto(photo: ReportPhotoInput | null): string | null {
   if (!photo || photo.size === 0) {
     return null
@@ -77,7 +76,6 @@ export function isValidReport(errors: ReportErrors): boolean {
   return Object.keys(errors).length === 0
 }
 
-/** Out-of-range values would overflow `decimal(9, 6)` and fail the insert. */
 function isCoordinate(value: number | null, limit: number): value is number {
   return (
     typeof value === 'number' &&
