@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Averia_Serif_Libre, Geist_Mono } from 'next/font/google'
 import localFont from 'next/font/local'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -47,6 +47,10 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: '/canopee_icone.png?v=3', type: 'image/png' }],
   },
+}
+
+export const viewport: Viewport = {
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({

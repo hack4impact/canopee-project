@@ -49,7 +49,7 @@ export default async function PatrouillesHistoryPage({
 
   return (
     <div className="flex min-h-dvh w-full flex-col bg-canopee-cream">
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 pt-10 pb-32 sm:px-6">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-32 sm:px-6">
         <header className="flex items-center justify-between gap-4">
           <h1 className="font-heading text-2xl text-canopee-forest sm:text-3xl">
             Mes patrouilles
