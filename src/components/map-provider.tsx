@@ -87,11 +87,11 @@ export function MapProvider({ accessToken, children }: MapProviderProps) {
   }
 
   return (
-    <div className="relative flex h-dvh w-full flex-col overflow-hidden">
+    <div className="fixed inset-0 flex w-full flex-col overflow-hidden">
       <BaseMap
         accessToken={accessToken}
         onMapReady={handleMapReady}
-        className="h-dvh w-full"
+        className="h-full w-full"
       />
 
       <MapContext value={map}>{children}</MapContext>
