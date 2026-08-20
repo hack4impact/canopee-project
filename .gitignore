@@ -41,4 +41,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-Canop\303\251e Project PRD - PolyMTL.pdf
+# docs
+*.pdf

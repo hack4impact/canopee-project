@@ -17,7 +17,7 @@ type TopPanelProps = {
 
 export function TopPanel({ date = formatDate(new Date()) }: TopPanelProps) {
   return (
-    <header className="fixed top-4 left-1/2 z-50 flex w-[min(96%,1200px)] -translate-x-1/2 items-center justify-between rounded-2xl border border-white/10 bg-canopee-forest/75 px-5 py-4 text-canopee-cream shadow-md shadow-black/30 backdrop-blur-sm">
+    <header className="fixed top-[calc(1rem+env(safe-area-inset-top))] left-1/2 z-50 flex w-[min(96%,1200px)] -translate-x-1/2 items-center justify-between rounded-2xl border border-white/10 bg-canopee-forest/75 px-5 py-4 text-canopee-cream shadow-md shadow-black/30 backdrop-blur-sm">
       <div className="flex items-center gap-3">
         <Image
           src="/canopee_icone.png"
