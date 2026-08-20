@@ -81,12 +81,19 @@ Application user profile. One row per non-citizen user. Linked one-to-one with a
 | `id`           | Internal user id                                                   |
 | `auth_user_id` | Links this profile to the Supabase Auth user. Cascade delete.      |
 | `email`        | Contact email. Duplicated from `auth.users.email` for convenience. |
+| `first_name`   | Given name. Nullable — see business rules.                         |
+| `last_name`    | Family name. Nullable — see business rules.                        |
 | `role`         | Permission level. See `user_role` enum.                            |
 | `status`       | Approval state. See `user_status` enum.                            |
 | `created_at`   | Row creation time                                                  |
 
 **Business rules**
 
+- `first_name` and `last_name` are nullable at the database level. Rows created
+  before the columns existed have neither, and `ensureUserProfile` — the login
+  fallback that creates a missing profile from the Supabase Auth user — only has
+  an id and an email to work with. Requiring a name would break both. Collecting
+  names at signup, and whether they are mandatory there, is a separate decision.
 - Public signups create `role = 'volunteer'`, `status = 'pending'`.
 - Pros and admins are created manually by an existing admin. They are never created through the public signup form.
 - Admins are always `approved`. Enforced at the application layer per the convention above.

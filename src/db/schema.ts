@@ -27,6 +27,8 @@ export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   authUserId: uuid('auth_user_id').notNull().unique(),
   email: text('email').notNull().unique(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
   role: roleEnum('role').notNull().default('volunteer'),
   status: statusEnum('status').notNull().default('pending'),
   rejectionReason: text('rejection_reason'),
