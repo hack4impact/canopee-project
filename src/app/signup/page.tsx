@@ -1,10 +1,14 @@
 import Image from 'next/image'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { ViewTransition } from 'react'
 import { SignupForm } from './signup-form'
 
 export const metadata: Metadata = {
   title: 'Créer un compte | Canopée',
+}
+
+export const viewport: Viewport = {
+  themeColor: '#004523',
 }
 
 export default function SignupPage() {

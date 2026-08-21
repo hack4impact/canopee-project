@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
 import { HeatmapLayer } from '@/components/heatmap-layer'
+import { ObservationsLayer } from '@/components/observations-layer'
+import { getCurrentUserProfile } from '@/lib/auth/current-user'
+import { canViewObservations } from '@/lib/observations/access'
 
 export const metadata: Metadata = {
   title: 'Carte | Canopée',
@@ -8,6 +11,13 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
-export default function CartePage() {
-  return <HeatmapLayer />
+export default async function CartePage() {
+  const profile = await getCurrentUserProfile()
+
+  return (
+    <>
+      <HeatmapLayer />
+      {canViewObservations(profile) && <ObservationsLayer />}
+    </>
+  )
 }
