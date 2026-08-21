@@ -9,14 +9,6 @@ import {
 } from 'react'
 import Image from 'next/image'
 import { Spinner } from '@/components/spinner'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { isGeolocationAvailable } from '@/lib/mapbox'
 import {
   REPORT_CATEGORIES,
@@ -121,44 +113,6 @@ function UploadIcon({ className }: { className?: string }) {
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <path d="m7 10 5-5 5 5" />
       <path d="M12 5v12" />
-    </svg>
-  )
-}
-
-function MaximizeIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M8 3H5a2 2 0 0 0-2 2v3" />
-      <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
-      <path d="M3 16v3a2 2 0 0 0 2 2h3" />
-      <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
-    </svg>
-  )
-}
-
-function XIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
     </svg>
   )
 }
@@ -408,54 +362,14 @@ function ReportFields({
         )}
 
         {preview && (
-          <Dialog>
-            <DialogTrigger asChild>
-              <button
-                type="button"
-                aria-label="Agrandir l'aperçu de la photo"
-                className="group relative mt-1 block w-full overflow-hidden rounded-lg text-left focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none"
-              >
-                <Image
-                  src={preview}
-                  alt="Aperçu de la photo jointe au signalement"
-                  width={320}
-                  height={240}
-                  unoptimized
-                  className="h-40 w-full object-cover transition-transform duration-150 group-hover:scale-[1.02]"
-                />
-                <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
-                  <MaximizeIcon className="h-3.5 w-3.5" />
-                  Agrandir
-                </span>
-              </button>
-            </DialogTrigger>
-
-            <DialogContent
-              overlayClassName="bg-black/85 backdrop-blur-none"
-              showCloseButton={false}
-              className="w-auto max-w-[calc(100%-1.5rem)] place-items-center gap-0 rounded-2xl border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-none"
-            >
-              <DialogTitle className="sr-only">Aperçu de la photo</DialogTitle>
-              <Image
-                src={preview}
-                alt="Aperçu de la photo jointe au signalement"
-                width={1200}
-                height={900}
-                unoptimized
-                className="max-h-[85dvh] w-auto max-w-full rounded-2xl object-contain shadow-2xl"
-              />
-              <DialogClose asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-lg"
-                  aria-label="Fermer l'aperçu"
-                  className="absolute top-2 right-2 rounded-full bg-black/50 text-white hover:bg-black/70 hover:text-white"
-                >
-                  <XIcon className="size-5" />
-                </Button>
-              </DialogClose>
-            </DialogContent>
-          </Dialog>
+          <Image
+            src={preview}
+            alt="Aperçu de la photo jointe au signalement"
+            width={320}
+            height={240}
+            unoptimized
+            className="mt-1 h-40 w-full rounded-lg object-cover"
+          />
         )}
 
         {errors.photo && (
