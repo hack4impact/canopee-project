@@ -1,4 +1,4 @@
-import { desc, inArray } from 'drizzle-orm'
+import { and, desc, gte, inArray, isNull, or } from 'drizzle-orm'
 import { db, reports } from '@/db'
 import {
   canViewObservations,
@@ -9,14 +9,20 @@ import {
   type Observation,
   type ObservationCategory,
 } from '@/lib/observations/collection'
+import {
+  resolvedCutoff,
+  resolvedDelayHours,
+} from '@/lib/observations/visibility'
 
 export async function listObservations(
   viewer: ObservationViewer,
 ): Promise<Observation[]> {
-if (!canViewObservations(viewer)) {
-  console.debug('[observations] Unauthorized access attempt', { viewer })
-  return []
-}
+  if (!canViewObservations(viewer)) {
+    console.debug('[observations] Unauthorized access attempt', { viewer })
+    return []
+  }
+
+  const cutoff = resolvedCutoff(new Date(), resolvedDelayHours())
 
   const rows = await db
     .select({
@@ -26,7 +32,12 @@ if (!canViewObservations(viewer)) {
       longitude: reports.longitude,
     })
     .from(reports)
-    .where(inArray(reports.category, [...OBSERVATION_CATEGORIES]))
+    .where(
+      and(
+        inArray(reports.category, [...OBSERVATION_CATEGORIES]),
+        or(isNull(reports.resolvedAt), gte(reports.resolvedAt, cutoff)),
+      ),
+    )
     .orderBy(desc(reports.createdAt))
 
   return rows.map((row) => ({
