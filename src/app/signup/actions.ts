@@ -43,6 +43,8 @@ export async function signup(
   }
 
   const email = input.email.trim().toLowerCase()
+  const firstName = String(formData.get('firstName') ?? '').trim()
+  const lastName = String(formData.get('lastName') ?? '').trim()
   const supabase = await createClient()
 
   const { data, error } = await supabase.auth.signUp({
@@ -63,7 +65,9 @@ export async function signup(
   }
 
   try {
-    await db.insert(users).values({ authUserId: data.user.id, email })
+    await db
+      .insert(users)
+      .values({ authUserId: data.user.id, email, firstName, lastName })
   } catch (cause) {
     if (isUniqueViolation(cause)) {
       return { errors: { email: EMAIL_TAKEN } }
