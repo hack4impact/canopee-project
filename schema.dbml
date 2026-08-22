@@ -109,7 +109,7 @@ Table patrol_points {
   '''
 
   indexes {
-    (patrol_id, recorded_at) [note: 'Every route render orders points by this.']
+    (patrol_id, recorded_at) [unique, note: 'Every route render orders points by this. Unique so a retried upload cannot duplicate a point.']
   }
 }
 
