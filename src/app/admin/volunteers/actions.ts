@@ -76,6 +76,8 @@ export async function getPendingUsers() {
     .select({
       id: users.id,
       email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
       createdAt: users.createdAt,
     })
     .from(users)

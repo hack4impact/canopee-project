@@ -12,6 +12,8 @@ const initialState: VolunteerActionState = {}
 type PendingVolunteer = {
   id: string
   email: string
+  firstName: string | null
+  lastName: string | null
   createdAt: Date
 }
 
@@ -97,26 +99,35 @@ export function VolunteerQueue({
 
   return (
     <ul className="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
-      {volunteers.map((volunteer) => (
-        <li
-          key={volunteer.id}
-          className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-start sm:justify-between"
-        >
-          <div className="flex flex-col gap-1">
-            <span className="font-medium text-black dark:text-zinc-50">
-              {volunteer.email}
-            </span>
-            <span className="text-sm text-zinc-500">
-              Inscrit le {formatDate(volunteer.createdAt)}
-            </span>
-          </div>
+      {volunteers.map((volunteer) => {
+        const name = [volunteer.firstName, volunteer.lastName]
+          .filter(Boolean)
+          .join(' ')
 
-          <div className="flex flex-col items-stretch gap-3 sm:items-end">
-            <ApproveButton userId={volunteer.id} />
-            <RejectForm userId={volunteer.id} />
-          </div>
-        </li>
-      ))}
+        return (
+          <li
+            key={volunteer.id}
+            className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-start sm:justify-between"
+          >
+            <div className="flex flex-col gap-1">
+              <span className="font-medium text-black dark:text-zinc-50">
+                {name || volunteer.email}
+              </span>
+              {name && (
+                <span className="text-sm text-zinc-500">{volunteer.email}</span>
+              )}
+              <span className="text-sm text-zinc-500">
+                Inscrit le {formatDate(volunteer.createdAt)}
+              </span>
+            </div>
+
+            <div className="flex flex-col items-stretch gap-3 sm:items-end">
+              <ApproveButton userId={volunteer.id} />
+              <RejectForm userId={volunteer.id} />
+            </div>
+          </li>
+        )
+      })}
     </ul>
   )
 }
