@@ -53,10 +53,8 @@ export function IssueList({ reports }: { reports: ReportListItem[] }) {
           </div>
 
           <span
-            className={`shrink-0 rounded-none px-3 py-1 text-xs font-semibold ${
-              report.resolvedAt
-                ? 'bg-canopee-green/15 text-canopee-forest'
-                : 'bg-canopee-coral/15 text-canopee-coral-dark'
+            className={`shrink-0 rounded-md px-3 py-1 text-xs font-semibold ${
+              report.resolvedAt ? 'text-canopee-forest' : 'text-canopee-coral'
             }`}
           >
             {report.resolvedAt ? 'Résolu' : 'En attente'}
