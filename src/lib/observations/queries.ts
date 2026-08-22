@@ -1,4 +1,4 @@
-import { desc, inArray } from 'drizzle-orm'
+import { and, desc, gte, inArray, isNull, or } from 'drizzle-orm'
 import { db, reports } from '@/db'
 import {
   canViewObservations,
@@ -9,6 +9,10 @@ import {
   type Observation,
   type ObservationCategory,
 } from '@/lib/observations/collection'
+import {
+  resolvedCutoff,
+  resolvedDelayHours,
+} from '@/lib/observations/visibility'
 
 export async function listObservations(
   viewer: ObservationViewer,
@@ -18,6 +22,8 @@ export async function listObservations(
     return []
   }
 
+  const cutoff = resolvedCutoff(new Date(), resolvedDelayHours())
+
   const rows = await db
     .select({
       id: reports.id,
@@ -26,7 +32,12 @@ export async function listObservations(
       longitude: reports.longitude,
     })
     .from(reports)
-    .where(inArray(reports.category, [...OBSERVATION_CATEGORIES]))
+    .where(
+      and(
+        inArray(reports.category, [...OBSERVATION_CATEGORIES]),
+        or(isNull(reports.resolvedAt), gte(reports.resolvedAt, cutoff)),
+      ),
+    )
     .orderBy(desc(reports.createdAt))
 
   return rows.map((row) => ({
