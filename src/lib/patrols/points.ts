@@ -87,6 +87,20 @@ export function isPermissionDenied(
   return error.code === 1
 }
 
+export type SyncOutcome = 'accepted' | 'retry' | 'fatal'
+
+export function classifySyncResponse(status: number): SyncOutcome {
+  if (status >= 200 && status < 300) {
+    return 'accepted'
+  }
+
+  if (status >= 500) {
+    return 'retry'
+  }
+
+  return 'fatal'
+}
+
 export function parsePatrolPointBatch(
   payload: unknown,
   bounds: BatchBounds,

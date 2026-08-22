@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   capBuffer,
+  classifySyncResponse,
   describeSignalGap,
   isPermissionDenied,
   MAX_BATCH_POINTS,
@@ -155,6 +156,27 @@ describe('isPermissionDenied', () => {
   it('is false for a lost signal or a timeout, which resolve on their own', () => {
     expect(isPermissionDenied({ code: 2 })).toBe(false)
     expect(isPermissionDenied({ code: 3 })).toBe(false)
+  })
+})
+
+describe('classifySyncResponse', () => {
+  it('accepts a 2xx, the only proof the points reached the database', () => {
+    expect(classifySyncResponse(200)).toBe('accepted')
+    expect(classifySyncResponse(201)).toBe('accepted')
+  })
+
+  it('retries a 5xx, where the server failed rather than refused', () => {
+    expect(classifySyncResponse(500)).toBe('retry')
+    expect(classifySyncResponse(503)).toBe('retry')
+  })
+
+  it('gives up on a 4xx, which would be refused identically forever', () => {
+    expect(classifySyncResponse(400)).toBe('fatal')
+    expect(classifySyncResponse(409)).toBe('fatal')
+  })
+
+  it('gives up on status 0, the opaque redirect of an expired session', () => {
+    expect(classifySyncResponse(0)).toBe('fatal')
   })
 })
 
