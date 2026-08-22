@@ -13,10 +13,10 @@ import {
 export async function listObservations(
   viewer: ObservationViewer,
 ): Promise<Observation[]> {
-if (!canViewObservations(viewer)) {
-  console.debug('[observations] Unauthorized access attempt', { viewer })
-  return []
-}
+  if (!canViewObservations(viewer)) {
+    console.debug('[observations] Unauthorized access attempt', { viewer })
+    return []
+  }
 
   const rows = await db
     .select({
