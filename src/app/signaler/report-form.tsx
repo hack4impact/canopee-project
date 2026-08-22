@@ -444,16 +444,25 @@ function ReportFields({
                 unoptimized
                 className="max-h-[85dvh] w-auto max-w-full rounded-2xl object-contain shadow-2xl"
               />
-              <DialogClose asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-lg"
-                  aria-label="Fermer l'aperçu"
-                  className="absolute top-2 right-2 rounded-full bg-black/50 text-white hover:bg-black/70 hover:text-white"
+              <div className="absolute top-2 right-2 flex items-center gap-2">
+                <a
+                  href={preview}
+                  download={photo?.name}
+                  className="inline-flex items-center rounded-full bg-black/50 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-black/70"
                 >
-                  <XIcon className="size-5" />
-                </Button>
-              </DialogClose>
+                  Télécharger
+                </a>
+                <DialogClose asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-lg"
+                    aria-label="Fermer l'aperçu"
+                    className="rounded-full bg-black/50 text-white hover:bg-black/70 hover:text-white"
+                  >
+                    <XIcon className="size-5" />
+                  </Button>
+                </DialogClose>
+              </div>
             </DialogContent>
           </Dialog>
         )}
