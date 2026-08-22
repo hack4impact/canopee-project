@@ -50,6 +50,13 @@
       "when": 1787084462615,
       "tag": "0006_peaceful_silver_samurai",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787421594682,
+      "tag": "0007_brown_ego",
+      "breakpoints": true
     }
   ]
 }

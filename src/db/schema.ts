@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
@@ -105,7 +106,7 @@ export const patrolPoints = pgTable(
     recordedAt: timestamp('recorded_at', { withTimezone: true }).notNull(),
   },
   (table) => [
-    index('patrol_points_patrol_id_recorded_at_idx').on(
+    uniqueIndex('patrol_points_patrol_id_recorded_at_idx').on(
       table.patrolId,
       table.recordedAt,
     ),
