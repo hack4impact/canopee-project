@@ -15,6 +15,8 @@ import { signup, type SignupState } from './actions'
 const initialState: SignupState = {}
 
 const emptyInput: SignupInput = {
+  firstName: '',
+  lastName: '',
   email: '',
   password: '',
   confirmPassword: '',
@@ -44,6 +46,59 @@ export function SignupForm() {
 
   return (
     <form action={submit} noValidate className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="firstName"
+          className="text-sm font-medium text-canopee-forest"
+        >
+          Prénom
+        </label>
+        <input
+          id="firstName"
+          name="firstName"
+          type="text"
+          autoComplete="given-name"
+          value={input.firstName}
+          onChange={(event) => update('firstName', event.target.value)}
+          aria-describedby={errors.firstName ? 'firstName-error' : undefined}
+          className="rounded-lg border border-canopee-green/30 bg-white px-3 py-2.5 text-canopee-forest placeholder-zinc-500 transition-colors outline-none focus:border-canopee-green focus:ring-2 focus:ring-canopee-green/40"
+        />
+        {errors.firstName && (
+          <p
+            id="firstName-error"
+            className="text-sm font-medium text-canopee-coral-dark"
+          >
+            {errors.firstName}
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="lastName"
+          className="text-sm font-medium text-canopee-forest"
+        >
+          Nom
+        </label>
+        <input
+          id="lastName"
+          name="lastName"
+          type="text"
+          autoComplete="family-name"
+          value={input.lastName}
+          onChange={(event) => update('lastName', event.target.value)}
+          aria-describedby={errors.lastName ? 'lastName-error' : undefined}
+          className="rounded-lg border border-canopee-green/30 bg-white px-3 py-2.5 text-canopee-forest placeholder-zinc-500 transition-colors outline-none focus:border-canopee-green focus:ring-2 focus:ring-canopee-green/40"
+        />
+        {errors.lastName && (
+          <p
+            id="lastName-error"
+            className="text-sm font-medium text-canopee-coral-dark"
+          >
+            {errors.lastName}
+          </p>
+        )}
+      </div>
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="email"

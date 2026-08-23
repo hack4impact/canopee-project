@@ -1,6 +1,8 @@
 export const MIN_PASSWORD_LENGTH = 8
 
 export type SignupInput = {
+  firstName: string
+  lastName: string
   email: string
   password: string
   confirmPassword: string
@@ -18,8 +20,15 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export function validateSignup(input: SignupInput): SignupErrors {
   const errors: SignupErrors = {}
-  const email = input.email.trim()
 
+  if (!input.firstName.trim()) {
+    errors.firstName = 'Saisissez votre prénom.'
+  }
+
+  if (!input.lastName.trim()) {
+    errors.lastName = 'Saisissez votre nom.'
+  }
+  const email = input.email.trim()
   if (!email) {
     errors.email = 'Saisissez votre adresse courriel.'
   } else if (!EMAIL_PATTERN.test(email)) {
