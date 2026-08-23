@@ -4,7 +4,7 @@ import {
   totalDistanceMetres,
   type Coordinate,
 } from './distance'
- 
+
 const BOIS_PAPINEAU_LOOP: Coordinate[] = [
   { latitude: 45.5885, longitude: -73.723 },
   { latitude: 45.5889, longitude: -73.7223 },
@@ -23,14 +23,14 @@ const BOIS_PAPINEAU_LOOP: Coordinate[] = [
   { latitude: 45.5884, longitude: -73.7212 },
   { latitude: 45.5884, longitude: -73.7221 },
 ]
- 
+
 describe('distanceBetweenMetres', () => {
   it('measures no distance between a point and itself', () => {
     const point: Coordinate = { latitude: 45.6, longitude: -73.7 }
- 
+
     expect(distanceBetweenMetres(point, point)).toBe(0)
   })
- 
+
   it('measures a degree of latitude as the arc length of the angle', () => {
     expect(
       distanceBetweenMetres(
@@ -39,7 +39,7 @@ describe('distanceBetweenMetres', () => {
       ),
     ).toBeCloseTo(111195, -2)
   })
- 
+
   it('shrinks a degree of longitude by the cosine of the latitude', () => {
     expect(
       distanceBetweenMetres(
@@ -48,38 +48,38 @@ describe('distanceBetweenMetres', () => {
       ),
     ).toBeCloseTo(77798, -1)
   })
- 
+
   it('is symmetric', () => {
     const a: Coordinate = { latitude: 45.5, longitude: -73.6 }
     const b: Coordinate = { latitude: 45.6, longitude: -73.5 }
- 
+
     expect(distanceBetweenMetres(a, b)).toBeCloseTo(
       distanceBetweenMetres(b, a),
       6,
     )
   })
 })
- 
+
 describe('totalDistanceMetres', () => {
   it('measures no distance when there is no leg to walk', () => {
     expect(totalDistanceMetres([])).toBe(0)
     expect(totalDistanceMetres([{ latitude: 45.6, longitude: -73.7 }])).toBe(0)
   })
- 
+
   it('sums the legs of a multi-point route', () => {
     const points: Coordinate[] = [
       { latitude: 45.5, longitude: -73.6 },
       { latitude: 45.51, longitude: -73.6 },
       { latitude: 45.52, longitude: -73.6 },
     ]
- 
+
     const legByLeg =
       distanceBetweenMetres(points[0], points[1]) +
       distanceBetweenMetres(points[1], points[2])
- 
+
     expect(totalDistanceMetres(points)).toBeCloseTo(legByLeg, 6)
   })
- 
+
   it('sums a seeded patrol route to a plausible walking distance', () => {
     expect(totalDistanceMetres(BOIS_PAPINEAU_LOOP)).toBeCloseTo(1047, -1)
   })

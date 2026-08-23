@@ -2,13 +2,23 @@ import { MAX_BUFFERED_POINTS, type RecordedPoint } from '@/lib/patrols/points'
 
 const DB_NAME = 'canopee-patrol'
 
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 const STORE = 'points'
+
+const EVENT_STORE = 'events'
+
+const MAX_BUFFERED_EVENTS = 5_000
 
 export type QueuedPoint = {
   key: number
   point: RecordedPoint
+}
+
+export type DebugEvent = {
+  at: string
+  kind: string
+  detail?: Record<string, unknown>
 }
 
 let connection: Promise<IDBDatabase> | null = null
@@ -29,6 +39,10 @@ function open(): Promise<IDBDatabase> {
       if (!request.result.objectStoreNames.contains(STORE)) {
         request.result.createObjectStore(STORE, { autoIncrement: true })
       }
+
+      if (!request.result.objectStoreNames.contains(EVENT_STORE)) {
+        request.result.createObjectStore(EVENT_STORE, { autoIncrement: true })
+      }
     }
 
     request.onsuccess = () => resolve(request.result)
@@ -39,14 +53,15 @@ function open(): Promise<IDBDatabase> {
 }
 
 async function request<T>(
+  store: string,
   mode: IDBTransactionMode,
   run: (store: IDBObjectStore) => IDBRequest<T>,
 ): Promise<T> {
   const db = await open()
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE, mode)
-    const pending = run(transaction.objectStore(STORE))
+    const transaction = db.transaction(store, mode)
+    const pending = run(transaction.objectStore(store))
 
     pending.onsuccess = () => resolve(pending.result)
     transaction.onerror = () => reject(transaction.error)
@@ -54,11 +69,11 @@ async function request<T>(
 }
 
 export async function countPoints(): Promise<number> {
-  return request('readonly', (store) => store.count())
+  return request(STORE, 'readonly', (store) => store.count())
 }
 
 export async function clearPoints(): Promise<void> {
-  await request('readwrite', (store) => store.clear())
+  await request(STORE, 'readwrite', (store) => store.clear())
 }
 
 export async function deletePoints(keys: number[]): Promise<void> {
@@ -102,18 +117,60 @@ export async function readBatch(limit: number): Promise<QueuedPoint[]> {
   })
 }
 
-export async function appendPoint(point: RecordedPoint): Promise<void> {
-  await request('readwrite', (store) => store.add(point))
+export async function appendPoint(point: RecordedPoint): Promise<number> {
+  await request(STORE, 'readwrite', (store) => store.add(point))
 
   const total = await countPoints()
 
   if (total <= MAX_BUFFERED_POINTS) {
-    return
+    return total
   }
 
-  const stale = await request('readonly', (store) =>
+  const stale = await request(STORE, 'readonly', (store) =>
     store.getAllKeys(null, total - MAX_BUFFERED_POINTS),
   )
 
   await deletePoints(stale as number[])
+
+  return MAX_BUFFERED_POINTS
+}
+
+export async function appendEvent(event: DebugEvent): Promise<void> {
+  await request(EVENT_STORE, 'readwrite', (store) => store.add(event))
+
+  const total = await request(EVENT_STORE, 'readonly', (store) => store.count())
+
+  if (total <= MAX_BUFFERED_EVENTS) {
+    return
+  }
+
+  const stale = await request(EVENT_STORE, 'readonly', (store) =>
+    store.getAllKeys(null, total - MAX_BUFFERED_EVENTS),
+  )
+
+  const db = await open()
+
+  await new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction(EVENT_STORE, 'readwrite')
+    const store = transaction.objectStore(EVENT_STORE)
+
+    for (const key of stale) {
+      store.delete(key)
+    }
+
+    transaction.oncomplete = () => resolve()
+    transaction.onerror = () => reject(transaction.error)
+  })
+}
+
+export async function readEvents(): Promise<DebugEvent[]> {
+  const events = await request(EVENT_STORE, 'readonly', (store) =>
+    store.getAll(),
+  )
+
+  return events as DebugEvent[]
+}
+
+export async function clearEvents(): Promise<void> {
+  await request(EVENT_STORE, 'readwrite', (store) => store.clear())
 }

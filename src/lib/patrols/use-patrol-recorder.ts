@@ -9,6 +9,14 @@ import {
 } from 'react'
 import { isGeolocationAvailable } from '@/lib/mapbox'
 import {
+  debugLog,
+  describeError,
+  dumpDebugEvents,
+  flushDebugFile,
+  installDebugBridge,
+  startDebugFile,
+} from '@/lib/patrols/debug'
+import {
   isNativeApp,
   startNativeWatch,
   stopNativeWatch,
@@ -16,6 +24,7 @@ import {
 import {
   appendPoint,
   clearPoints,
+  countPoints,
   deletePoints,
   isPointQueueAvailable,
   readBatch,
@@ -32,6 +41,8 @@ import {
 } from '@/lib/patrols/points'
 
 const ENDPOINT = '/api/patrol-points'
+
+const HEARTBEAT_MS = 30_000
 
 const WATCH_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
@@ -88,14 +99,45 @@ export function usePatrolRecorder({
 
   useEffect(() => {
     if (!isSupported) {
+      debugLog('recorder.unsupported', {
+        geolocation: isGeolocationAvailable(),
+        queue: isPointQueueAvailable(),
+      })
+
       return
     }
 
     let syncing = false
     let stopped = false
     let native = false
+    let stored = 0
     let watchId: number | null = null
     let syncTimer: ReturnType<typeof setInterval> | null = null
+    let heartbeatTimer: ReturnType<typeof setInterval> | null = null
+
+    installDebugBridge()
+
+    void startDebugFile()
+
+    debugLog('recorder.mounted', {
+      paused,
+      nativePlatform: isNativeApp(),
+      userAgent:
+        typeof navigator === 'undefined'
+          ? null
+          : navigator.userAgent.slice(0, 120),
+    })
+
+    void dumpDebugEvents().catch(() => {})
+
+    function onVisibilityChange() {
+      debugLog('page.visibility', {
+        state: document.visibilityState,
+        stored,
+      })
+
+      void flushDebugFile()
+    }
 
     function releaseWatch() {
       if (native) {
@@ -112,9 +154,16 @@ export function usePatrolRecorder({
         clearInterval(syncTimer)
         syncTimer = null
       }
+
+      if (heartbeatTimer !== null) {
+        clearInterval(heartbeatTimer)
+        heartbeatTimer = null
+      }
     }
 
     function stop(reason: RecordingStatus) {
+      debugLog('recorder.stop', { reason, stored })
+
       stopped = true
       releaseWatch()
       setStatus(reason)
@@ -122,18 +171,24 @@ export function usePatrolRecorder({
 
     async function drain() {
       if (stopped || syncing) {
+        debugLog('drain.skipped', { stopped, syncing })
         return
       }
 
       syncing = true
+
+      const startedAt = Date.now()
 
       try {
         while (!stopped) {
           const queued = await readBatch(MAX_BATCH_POINTS)
 
           if (queued.length === 0) {
+            debugLog('drain.empty')
             return
           }
+
+          debugLog('drain.posting', { batch: queued.length })
 
           const response = await fetch(ENDPOINT, {
             method: 'POST',
@@ -144,9 +199,22 @@ export function usePatrolRecorder({
 
           const outcome = classifySyncResponse(response.status)
 
+          debugLog('drain.response', {
+            status: response.status,
+            outcome,
+            batch: queued.length,
+            elapsedMs: Date.now() - startedAt,
+          })
+
           if (outcome === 'accepted') {
             await deletePoints(queued.map((entry) => entry.key))
             lastDrainedAtRef.current = Date.now()
+
+            debugLog('drain.accepted', {
+              delivered: queued.length,
+              remaining: await countPoints(),
+            })
+
             continue
           }
 
@@ -170,14 +238,46 @@ export function usePatrolRecorder({
           return
         }
       } catch (cause) {
+        debugLog('drain.threw', {
+          ...describeError(cause),
+          elapsedMs: Date.now() - startedAt,
+        })
+
         console.warn('Patrol point sync failed, keeping the queue', cause)
       } finally {
         syncing = false
       }
     }
 
+    async function storePoint(point: RecordedPoint): Promise<number | null> {
+      try {
+        return await appendPoint(point)
+      } catch (cause) {
+        debugLog('point.store.failed', {
+          ...describeError(cause),
+          recordedAt: point.recordedAt,
+        })
+      }
+
+      try {
+        const depth = await appendPoint(point)
+
+        debugLog('point.store.retried', { depth })
+
+        return depth
+      } catch (cause) {
+        debugLog('point.store.lost', {
+          ...describeError(cause),
+          recordedAt: point.recordedAt,
+        })
+
+        return null
+      }
+    }
+
     async function record(point: RecordedPoint) {
       if (stopped) {
+        debugLog('record.ignored.stopped')
         return
       }
 
@@ -186,23 +286,61 @@ export function usePatrolRecorder({
       const recordedAtMs = Date.parse(point.recordedAt)
 
       if (!shouldRecordPoint(lastRecordedAtRef.current, recordedAtMs)) {
+        debugLog('record.throttled', {
+          sinceLastMs:
+            lastRecordedAtRef.current === null
+              ? null
+              : recordedAtMs - lastRecordedAtRef.current,
+        })
+
+        return
+      }
+
+      const depth = await storePoint(point)
+
+      if (depth === null) {
         return
       }
 
       lastRecordedAtRef.current = recordedAtMs
+      stored += 1
 
-      await appendPoint(point)
+      debugLog('point.stored', {
+        n: stored,
+        depth,
+        recordedAt: point.recordedAt,
+      })
 
       if (Date.now() - lastDrainedAtRef.current >= SYNC_INTERVAL_MS) {
         await drain()
       }
     }
 
+    function submit(point: RecordedPoint) {
+      void record(point).catch((cause) => {
+        debugLog('record.threw', {
+          ...describeError(cause),
+          recordedAt: point.recordedAt,
+        })
+      })
+    }
+
     function handleFix(position: GeolocationPosition) {
-      void record(toRecordedPoint(position))
+      debugLog('web.position', {
+        accuracy: position.coords.accuracy,
+        timestamp: position.timestamp,
+      })
+
+      submit(toRecordedPoint(position))
     }
 
     function handleSignalLoss(reason: string) {
+      debugLog('signal.lost', {
+        reason,
+        gap: describeSignalGap(lastRecordedAtRef.current, Date.now()),
+        stored,
+      })
+
       console.warn(
         `${reason}, ${describeSignalGap(lastRecordedAtRef.current, Date.now())}`,
       )
@@ -220,6 +358,8 @@ export function usePatrolRecorder({
     }
 
     async function flushAndStop() {
+      debugLog('flushAndStop.begin', { stored })
+
       stopped = true
       releaseWatch()
 
@@ -227,6 +367,8 @@ export function usePatrolRecorder({
         const queued = await readBatch(MAX_BATCH_POINTS)
 
         if (queued.length === 0) {
+          debugLog('flushAndStop.done')
+          await flushDebugFile()
           return
         }
 
@@ -238,10 +380,16 @@ export function usePatrolRecorder({
             redirect: 'manual',
           })
 
+          debugLog('flushAndStop.response', {
+            status: response.status,
+            batch: queued.length,
+          })
+
           if (classifySyncResponse(response.status) !== 'accepted') {
             return
           }
-        } catch {
+        } catch (cause) {
+          debugLog('flushAndStop.threw', describeError(cause))
           return
         }
 
@@ -253,26 +401,55 @@ export function usePatrolRecorder({
       if (isNativeApp()) {
         native = true
 
-        startNativeWatch(
-          (point) => void record(point),
-          (error) => handleSignalLoss(`GPS signal lost (${error.message})`),
-        ).catch(() => stop('denied'))
+        startNativeWatch(submit, (error) =>
+          handleSignalLoss(`GPS signal lost (${error.message})`),
+        ).catch((cause) => {
+          debugLog('native.start.failed', describeError(cause))
+          stop('denied')
+        })
       } else {
         watchId = navigator.geolocation.watchPosition(
           handleFix,
           handleError,
           WATCH_OPTIONS,
         )
+
+        debugLog('web.watch.started', { watchId })
       }
 
       syncTimer = setInterval(() => void drain(), SYNC_INTERVAL_MS)
+
+      let lastBeatAt = Date.now()
+
+      heartbeatTimer = setInterval(() => {
+        const now = Date.now()
+
+        debugLog('heartbeat', {
+          driftMs: now - lastBeatAt - HEARTBEAT_MS,
+          visibility:
+            typeof document === 'undefined' ? null : document.visibilityState,
+          online: typeof navigator === 'undefined' ? null : navigator.onLine,
+          stored,
+        })
+
+        lastBeatAt = now
+
+        void flushDebugFile()
+      }, HEARTBEAT_MS)
     }
 
     flushAndStopRef.current = flushAndStop
 
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
     void drain()
 
     return () => {
+      debugLog('recorder.unmounted', { stored })
+
+      void flushDebugFile()
+
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       flushAndStopRef.current = () => Promise.resolve()
 
       stopped = true
