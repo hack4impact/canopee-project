@@ -25,7 +25,15 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
 
     return profile ?? null
   } catch (error) {
-    console.warn('Unable to resolve the current user profile:', error)
+    const cause = (error as { cause?: { code?: string; message?: string } })
+      .cause
+    console.warn(
+      'Unable to resolve the current user profile:',
+      error,
+      '| cause:',
+      cause?.code,
+      cause?.message,
+    )
     return null
   }
 }
