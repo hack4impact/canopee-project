@@ -274,9 +274,9 @@ function StartPatrolButton({ onStarted }: { onStarted: () => void }) {
         type="button"
         onClick={handleClick}
         disabled={pending}
-        className="inline-flex touch-manipulation items-center justify-center rounded-full bg-canopee-green px-8 py-4 text-base font-bold tracking-wide text-white shadow-xl shadow-black/30 ring-1 ring-white/25 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+        className="inline-flex touch-manipulation items-center justify-center rounded-full bg-canopee-green px-8 py-3.5 text-base font-bold tracking-wide text-white shadow-lg shadow-black/25 ring-1 ring-white/20 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest hover:shadow-xl focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:translate-y-0 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       >
-        {pending ? 'Démarrage…' : 'Démarrer la patrouille'}
+        {pending ? 'Démarrage…' : 'Démarrer'}
       </button>
 
       {message && (
@@ -292,7 +292,7 @@ function StartPatrolButton({ onStarted }: { onStarted: () => void }) {
 }
 
 const ROUND_BUTTON_BASE =
-  'inline-flex h-14 w-14 touch-manipulation items-center justify-center rounded-full text-white shadow-xl shadow-black/30 ring-1 ring-white/25 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-2xl focus-visible:ring-2 focus-visible:outline-none active:translate-y-0 active:scale-[0.95] motion-reduce:transition-none motion-reduce:hover:translate-y-0'
+  'inline-flex h-10 w-10 touch-manipulation items-center justify-center rounded-full shadow-lg shadow-black/25 ring-1 ring-white/20 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-xl focus-visible:ring-2 focus-visible:outline-none active:translate-y-0 active:scale-[0.95] motion-reduce:transition-none motion-reduce:hover:translate-y-0'
 
 function PauseResumeButton({
   paused,
@@ -310,14 +310,14 @@ function PauseResumeButton({
       }
       className={`${ROUND_BUTTON_BASE} ${
         paused
-          ? 'bg-canopee-green hover:bg-canopee-forest focus-visible:ring-canopee-sky'
+          ? 'bg-canopee-green text-white hover:bg-canopee-forest focus-visible:ring-canopee-sky'
           : 'bg-canopee-sky text-canopee-forest hover:bg-canopee-sky-dark hover:text-white focus-visible:ring-canopee-sky'
       }`}
     >
       {paused ? (
-        <PlayIcon className="h-6 w-6" />
+        <PlayIcon className="h-5 w-5" />
       ) : (
-        <PauseIcon className="h-6 w-6" />
+        <PauseIcon className="h-5 w-5" />
       )}
     </button>
   )
@@ -355,9 +355,9 @@ function EndPatrolButton({
       type="button"
       onClick={handleClick}
       disabled={pending}
-      className={`${ROUND_BUTTON_BASE} bg-canopee-coral hover:bg-canopee-coral-dark focus-visible:ring-canopee-coral`}
+      className={`${ROUND_BUTTON_BASE} bg-canopee-coral text-white hover:bg-canopee-coral-dark focus-visible:ring-canopee-coral`}
     >
-      <StopIcon className="h-6 w-6" />
+      <StopIcon className="h-5 w-5" />
     </button>
   )
 }
@@ -406,15 +406,17 @@ function ActivePatrol({
       {notice && (
         <p
           role={endError ? 'alert' : 'status'}
-          className="max-w-72 rounded-full bg-canopee-cream/95 px-3 py-1.5 text-sm font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
+          className="max-w-64 rounded-full bg-canopee-cream/90 px-3 py-1 text-xs font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
         >
           {notice}
         </p>
       )}
 
       <div
-        className={`flex items-center gap-2 rounded-full p-2 pl-4 shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm ${
-          pause.paused ? 'bg-canopee-sky-dark/85' : 'bg-canopee-forest/85'
+        className={`flex items-center gap-1.5 rounded-full p-1.5 pl-4 shadow-lg shadow-black/25 ring-1 ring-white/20 backdrop-blur-md transition-colors duration-200 ${
+          pause.paused
+            ? 'bg-canopee-sky/30 text-canopee-forest'
+            : 'bg-canopee-forest/35 text-canopee-cream'
         }`}
       >
         <ActivePatrolStatus
@@ -466,22 +468,18 @@ function ActivePatrolStatus({
         )
 
   return (
-    <span className="flex items-baseline gap-2 pr-1 pl-2 text-canopee-cream">
-      <span role="status" className="text-sm font-semibold">
-        {paused ? 'Patrouille en pause' : 'Patrouille en cours'}
-      </span>
-
-      {/* Outside the live region above: announcing every tick would make a
-          screen reader unusable. */}
-      {!paused && (
-        <time
-          dateTime={startedAt}
-          aria-label="Temps écoulé depuis le début de la patrouille"
-          className="font-mono text-sm font-medium tabular-nums"
-        >
-          {elapsedMs === null ? NO_READING_YET : formatElapsed(elapsedMs)}
-        </time>
-      )}
+    <span className="flex items-center pl-1 pr-1">
+      <time
+        dateTime={startedAt}
+        aria-label={
+          paused
+            ? 'Patrouille en pause'
+            : 'Temps écoulé depuis le début de la patrouille'
+        }
+        className="font-mono text-sm font-semibold whitespace-nowrap tabular-nums"
+      >
+        {elapsedMs === null ? NO_READING_YET : formatElapsed(elapsedMs)}
+      </time>
     </span>
   )
 }

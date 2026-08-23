@@ -16,11 +16,34 @@ export const roleEnum = pgEnum('role', ['volunteer', 'pro', 'admin'])
 export const statusEnum = pgEnum('status', ['pending', 'approved', 'rejected'])
 
 export const reportCategoryEnum = pgEnum('report_category', [
+  // Entretien (maintenance)
   'dangerous_tree',
+  'fallen_tree',
+  'littering',
+  'blocked_trail',
+  'damaged_trail',
+  'unofficial_trail',
+  'bridge_repair',
   'damaged_infrastructure',
+  'signage_fix',
+  'site_maintenance',
+  'maintenance_other',
+  // Citoyen (respect du règlement)
+  'bicycles',
+  'motor_vehicle',
+  'foraging',
+  'off_trail',
+  'encroachment',
+  'unleashed_dog',
+  'dog_waste',
+  'campfire',
+  'built_shelter',
+  'homeless_camp',
+  'illegal_dumping',
+  'citizen_other',
+  // Faune et flore
   'fauna_observation',
   'flora_observation',
-  'unleashed_dog',
 ])
 
 export const users = pgTable('users', {
@@ -49,6 +72,11 @@ export const reports = pgTable(
     longitude: decimal('longitude', { precision: 9, scale: 6 }).notNull(),
     category: reportCategoryEnum('category').notNull(),
     description: text('description'),
+    typology: text('typology'),
+    quantity: integer('quantity'),
+    species: text('species'),
+    unit: text('unit'),
+    habitat: text('habitat'),
     photoUrl: text('photo_url'),
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),
     userId: uuid('user_id').references(() => users.id),

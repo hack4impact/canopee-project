@@ -16,9 +16,10 @@ type PendingVolunteer = {
 }
 
 function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat('fr-CA', {
     dateStyle: 'medium',
     timeStyle: 'short',
+    timeZone: 'America/Toronto',
   }).format(date)
 }
 

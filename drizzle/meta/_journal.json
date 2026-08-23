@@ -50,6 +50,20 @@
       "when": 1787084462615,
       "tag": "0006_peaceful_silver_samurai",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787439819849,
+      "tag": "0007_giant_black_widow",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787440620809,
+      "tag": "0008_awesome_captain_flint",
+      "breakpoints": true
     }
   ]
 }
