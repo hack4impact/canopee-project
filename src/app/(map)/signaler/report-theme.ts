@@ -1,17 +1,11 @@
 import type { ReportGroup } from '@/lib/reports/categories'
 
 export type ReportTheme = {
-  /** Accent text colour (group title in the wizard). */
   accent: string
-  /** Active step of the progress bar. */
   bar: string
-  /** Icon chip, resting state. */
   chip: string
-  /** Icon chip, filled when the button is hovered/focused. */
   chipActive: string
-  /** Card border + background on hover. */
   cardHover: string
-  /** Focus ring. */
   ring: string
 }
 

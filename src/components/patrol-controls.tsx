@@ -169,20 +169,13 @@ function useActivePatrol(initialStartedAt: string | null): {
     }
   }, [])
 
-  // Refresh on mount and after every navigation: the session (or the running
-  // patrol) may have changed since the last fetch. Without this, the controls
-  // would keep their stale state after logging in or out.
+
   useEffect(() => {
     const frame = requestAnimationFrame(() => void refresh())
 
     return () => cancelAnimationFrame(frame)
   }, [refresh, pathname])
 
-  // A "not signed in" answer on an app page is usually a transient race right
-  // after login. Keep probing so the button appears on its own; a genuinely
-  // logged-out user is redirected away by the proxy anyway. The interval is
-  // keyed on the status string, so re-renders that keep "unavailable" do not
-  // tear it down — it stops the moment the state becomes idle or active.
   useEffect(() => {
     if (state.status !== 'unavailable' || isPublicRoute(pathname)) {
       return
@@ -212,11 +205,6 @@ function useActivePatrol(initialStartedAt: string | null): {
   return { state, refresh }
 }
 
-/**
- * The patrol controls: "Démarrer la patrouille" when idle, and the
- * status / pause / stop cluster while a patrol runs. Fixed so they stay in
- * the foreground on every page, above the bottom navigation.
- */
 export function PatrolControls({
   initialStartedAt,
 }: {
