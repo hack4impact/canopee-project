@@ -1,0 +1,5 @@
+ALTER TABLE "reports" ALTER COLUMN "category" SET DATA TYPE text;--> statement-breakpoint
+DROP TYPE "public"."report_category";--> statement-breakpoint
+CREATE TYPE "public"."report_category" AS ENUM('dangerous_tree', 'fallen_tree', 'littering', 'blocked_trail', 'damaged_trail', 'unofficial_trail', 'bridge_repair', 'damaged_infrastructure', 'signage_fix', 'site_maintenance', 'maintenance_other', 'bicycles', 'motor_vehicle', 'foraging', 'off_trail', 'encroachment', 'unleashed_dog', 'dog_waste', 'campfire', 'built_shelter', 'homeless_camp', 'illegal_dumping', 'citizen_other', 'reptile', 'insecte', 'oiseau', 'amphibien', 'mammifere', 'invertebre', 'mollusque', 'poisson', 'plante_vasculaire', 'bryophyte');--> statement-breakpoint
+ALTER TABLE "reports" ALTER COLUMN "category" SET DATA TYPE "public"."report_category" USING "category"::"public"."report_category";--> statement-breakpoint
+ALTER TABLE "reports" ADD COLUMN "statut" text;

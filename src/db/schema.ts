@@ -42,8 +42,16 @@ export const reportCategoryEnum = pgEnum('report_category', [
   'illegal_dumping',
   'citizen_other',
   // Faune et flore
-  'fauna_observation',
-  'flora_observation',
+  'reptile',
+  'insecte',
+  'oiseau',
+  'amphibien',
+  'mammifere',
+  'invertebre',
+  'mollusque',
+  'poisson',
+  'plante_vasculaire',
+  'bryophyte',
 ])
 
 export const users = pgTable('users', {
@@ -77,6 +85,7 @@ export const reports = pgTable(
     species: text('species'),
     unit: text('unit'),
     habitat: text('habitat'),
+    statut: text('statut'),
     photoUrl: text('photo_url'),
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),
     userId: uuid('user_id').references(() => users.id),

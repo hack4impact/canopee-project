@@ -20,14 +20,14 @@ const MOCK_REPORTS = [
   {
     latitude: '45.589800',
     longitude: '-73.715600',
-    category: 'fauna_observation' as const,
+    category: 'oiseau' as const,
     resolvedAt: null,
     reporterEmail: 'observateur.faune@example.com',
   },
   {
     latitude: '45.583400',
     longitude: '-73.726800',
-    category: 'flora_observation' as const,
+    category: 'plante_vasculaire' as const,
     resolvedAt: new Date('2026-06-20T09:00:00Z'),
     reporterEmail: 'botaniste@example.com',
   },
@@ -95,7 +95,7 @@ async function seedReports() {
     userReports.push({
       latitude: '45.586500',
       longitude: '-73.724300',
-      category: 'fauna_observation' as const,
+      category: 'reptile' as const,
       resolvedAt: null,
       userId: volunteer.id,
     })
@@ -104,7 +104,7 @@ async function seedReports() {
     userReports.push({
       latitude: '45.588200',
       longitude: '-73.720700',
-      category: 'flora_observation' as const,
+      category: 'bryophyte' as const,
       resolvedAt: new Date('2026-07-10T08:00:00Z'),
       userId: pro.id,
     })

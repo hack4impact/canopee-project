@@ -56,6 +56,7 @@ export async function submitReport(
     species: String(formData.get('species') ?? ''),
     unit: String(formData.get('unit') ?? ''),
     habitat: String(formData.get('habitat') ?? ''),
+    statut: String(formData.get('statut') ?? ''),
   }
 
   const errors = validateReport(input)
@@ -107,6 +108,7 @@ export async function submitReport(
         species: input.species.trim() || null,
         unit: input.unit.trim() || null,
         habitat: input.habitat.trim() || null,
+        statut: input.statut.trim() || null,
         photoUrl: photoPath,
         latitude: input.latitude.toFixed(COORDINATE_SCALE),
         longitude: input.longitude.toFixed(COORDINATE_SCALE),

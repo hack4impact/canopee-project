@@ -43,8 +43,9 @@ describe('validateReport', () => {
       isValidReport(
         validateReport(
           input({
-            category: 'fauna_observation',
+            category: 'reptile',
             typology: undefined,
+            statut: 'menace',
             species: 'Salamandre sombre du Nord',
           }),
         ),
@@ -72,7 +73,11 @@ describe('validateReport', () => {
   it('requires a species for Faune/flore reports', () => {
     expect(
       validateReport(
-        input({ category: 'flora_observation', typology: undefined }),
+        input({
+          category: 'plante_vasculaire',
+          typology: undefined,
+          statut: 'vulnerable',
+        }),
       ).species,
     ).toBeDefined()
   })
@@ -80,8 +85,9 @@ describe('validateReport', () => {
   it('rejects an over-long species', () => {
     const errors = validateReport(
       input({
-        category: 'fauna_observation',
+        category: 'reptile',
         typology: undefined,
+        statut: 'menace',
         species: 'a'.repeat(201),
       }),
     )
@@ -142,8 +148,9 @@ describe('validateReport', () => {
     expect(
       validateReport(
         input({
-          category: 'fauna_observation',
+          category: 'oiseau',
           typology: undefined,
+          statut: 'non_menacee',
           species: 'Oiseau',
           unit: 'tonnes',
         }),

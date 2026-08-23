@@ -29,8 +29,16 @@ export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
   illegal_dumping: 'Dépôt sauvage (déchets, animaux en captivité…)',
   citizen_other: 'Autres',
 
-  fauna_observation: 'Observation de faune',
-  flora_observation: 'Observation de flore',
+  reptile: 'Reptiles',
+  insecte: 'Insectes',
+  oiseau: 'Oiseaux',
+  amphibien: 'Amphibiens',
+  mammifere: 'Mammifères',
+  invertebre: 'Invertébrés',
+  mollusque: 'Mollusques',
+  poisson: 'Poissons',
+  plante_vasculaire: 'Plantes vasculaires',
+  bryophyte: 'Bryophytes',
 }
 
 export const REPORT_CATEGORIES = Object.keys(
@@ -80,7 +88,18 @@ export const REPORT_GROUP_CATEGORIES: Record<
     'illegal_dumping',
     'citizen_other',
   ],
-  faune_flore: ['fauna_observation', 'flora_observation'],
+  faune_flore: [
+    'reptile',
+    'insecte',
+    'oiseau',
+    'amphibien',
+    'mammifere',
+    'invertebre',
+    'mollusque',
+    'poisson',
+    'plante_vasculaire',
+    'bryophyte',
+  ],
 }
 
 export function isReportCategory(value: unknown): value is ReportCategory {
@@ -129,6 +148,21 @@ export function isReportTypology(value: unknown): value is ReportTypology {
   )
 }
 
+export const FAUNE_FLORE_STATUTS = [
+  { value: 'menace', label: 'Menacé' },
+  { value: 'susceptible', label: 'Susceptible' },
+  { value: 'vulnerable', label: 'Vulnérable' },
+  { value: 'candidate', label: 'Candidate' },
+  { value: 'non_menacee', label: 'Non menacée' },
+  {
+    value: 'exotique_envahissante',
+    label: 'Espèce exotique envahissante',
+  },
+] as const
+
+export type FauneFloreStatut = (typeof FAUNE_FLORE_STATUTS)[number]['value']
+
+/** 👇 Déprécié — conservé pour la rétrocompatibilité avec l'ancien schema de validation */
 export const FAUNE_SUBCATEGORIES = [
   { value: 'reptile', label: 'Reptile' },
   { value: 'amphibien', label: 'Amphibien' },
@@ -138,6 +172,7 @@ export const FAUNE_SUBCATEGORIES = [
   { value: 'autre', label: 'Autre' },
 ] as const
 
+/** 👇 Déprécié — conservé pour la rétrocompatibilité */
 export const FLORE_SUBCATEGORIES = [
   {
     value: 'exotique_envahissante',
