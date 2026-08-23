@@ -13,6 +13,7 @@ import {
   startPatrol,
   type PatrolSummary,
 } from '@/app/patrouilles/actions'
+import { PatrolPicto } from '@/components/patrol-picto'
 import { isPublicRoute } from '@/lib/auth/routes'
 import { formatElapsed } from '@/lib/patrols/elapsed'
 import { usePatrolExitWarning } from '@/lib/patrols/use-patrol-exit-warning'
@@ -24,6 +25,14 @@ import {
 const ACTIVE_PATROL_ENDPOINT = '/api/patrols/active'
 
 const UNAVAILABLE_RETRY_DELAY_MS = 2000
+
+const REPORT_ROUTE = '/signaler'
+
+function isReportRoute(pathname: string): boolean {
+  return pathname === REPORT_ROUTE || pathname.startsWith(`${REPORT_ROUTE}/`)
+}
+
+const HOME_ROUTE = '/'
 
 const TICK_MS = 1000
 const NO_READING_YET = '--:--:--'
@@ -169,7 +178,6 @@ function useActivePatrol(initialStartedAt: string | null): {
     }
   }, [])
 
-
   useEffect(() => {
     const frame = requestAnimationFrame(() => void refresh())
 
@@ -228,6 +236,7 @@ export function PatrolControls({
     return (
       <ActivePatrol
         startedAt={state.startedAt}
+        hidden={isReportRoute(pathname)}
         onEnded={(summary) => {
           void refresh()
           router.push(`/patrouilles/${summary.id}?from=patrouille`)
@@ -236,7 +245,29 @@ export function PatrolControls({
     )
   }
 
+  if (isReportRoute(pathname)) {
+    return null
+  }
+
   return <StartPatrolButton onStarted={() => void refresh()} />
+}
+
+function PictoCircle({
+  className,
+  circleClassName = 'bg-white/20',
+  children,
+}: {
+  className?: string
+  circleClassName?: string
+  children: React.ReactNode
+}) {
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center justify-center rounded-full ${circleClassName} ${className ?? ''}`}
+    >
+      {children}
+    </span>
+  )
 }
 
 function StartPatrolButton({ onStarted }: { onStarted: () => void }) {
@@ -262,8 +293,11 @@ function StartPatrolButton({ onStarted }: { onStarted: () => void }) {
         type="button"
         onClick={handleClick}
         disabled={pending}
-        className="inline-flex touch-manipulation items-center justify-center rounded-full bg-canopee-green px-8 py-3.5 text-base font-bold tracking-wide text-white shadow-lg shadow-black/25 ring-1 ring-white/20 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest hover:shadow-xl focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:translate-y-0 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+        className="inline-flex touch-manipulation items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#2fc46c] to-canopee-green px-7 py-3.5 text-base font-bold tracking-wide text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_2px_4px_rgba(0,0,0,0.2),0_12px_28px_-8px_rgba(0,69,35,0.65)] ring-1 ring-white/25 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:from-[#3ad179] hover:to-[#139a4c] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_4px_8px_rgba(0,0,0,0.22),0_18px_36px_-10px_rgba(0,69,35,0.7)] focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:translate-y-0 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       >
+        <PictoCircle className="h-7 w-7">
+          <PatrolPicto name="hiker" className="h-5 w-5" />
+        </PictoCircle>
         {pending ? 'Démarrage…' : 'Démarrer'}
       </button>
 
@@ -279,8 +313,11 @@ function StartPatrolButton({ onStarted }: { onStarted: () => void }) {
   )
 }
 
+const SHELL_BASE =
+  'flex items-center shadow-lg shadow-black/25 ring-1 ring-white/20 backdrop-blur-md transition-all duration-300 ease-out motion-reduce:transition-none'
+
 const ROUND_BUTTON_BASE =
-  'inline-flex h-10 w-10 touch-manipulation items-center justify-center rounded-full shadow-lg shadow-black/25 ring-1 ring-white/20 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-xl focus-visible:ring-2 focus-visible:outline-none active:translate-y-0 active:scale-[0.95] motion-reduce:transition-none motion-reduce:hover:translate-y-0'
+  'inline-flex h-14 w-14 touch-manipulation items-center justify-center rounded-full ring-1 ring-white/25 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:ring-white/40 focus-visible:ring-2 focus-visible:outline-none active:translate-y-0 active:scale-[0.95] motion-reduce:transition-none motion-reduce:hover:translate-y-0'
 
 function PauseResumeButton({
   paused,
@@ -303,9 +340,9 @@ function PauseResumeButton({
       }`}
     >
       {paused ? (
-        <PlayIcon className="h-5 w-5" />
+        <PlayIcon className="h-7 w-7" />
       ) : (
-        <PauseIcon className="h-5 w-5" />
+        <PauseIcon className="h-7 w-7" />
       )}
     </button>
   )
@@ -345,16 +382,18 @@ function EndPatrolButton({
       disabled={pending}
       className={`${ROUND_BUTTON_BASE} bg-canopee-coral text-white hover:bg-canopee-coral-dark focus-visible:ring-canopee-coral`}
     >
-      <StopIcon className="h-5 w-5" />
+      <StopIcon className="h-7 w-7" />
     </button>
   )
 }
 
 function ActivePatrol({
   startedAt,
+  hidden,
   onEnded,
 }: {
   startedAt: string
+  hidden: boolean
   onEnded: (summary: PatrolSummary) => void
 }) {
   const [pause, setPause] = useState<StoredPause>({
@@ -362,9 +401,11 @@ function ActivePatrol({
     pausedAtMs: null,
   })
   const [endError, setEndError] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState(false)
   const { status, flushAndStop } = usePatrolRecorder({ paused: pause.paused })
   usePatrolExitWarning()
 
+  const isHome = usePathname() === HOME_ROUTE
   const recordingNotice = pause.paused ? null : RECORDING_NOTICE[status]
   const notice = endError ?? recordingNotice
 
@@ -389,9 +430,27 @@ function ActivePatrol({
     }
   }
 
+  if (hidden) {
+    return null
+  }
+
+  const shellTint = pause.paused
+    ? 'bg-canopee-sky/30 text-canopee-forest'
+    : 'bg-canopee-forest/35 text-canopee-cream'
+
+  const showControls = isHome || expanded
+
+  const timestamp = (
+    <ActivePatrolStatus
+      startedAt={startedAt}
+      paused={pause.paused}
+      pausedAtMs={pause.pausedAtMs}
+    />
+  )
+
   return (
     <div className="fixed bottom-28 left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-2">
-      {notice && (
+      {showControls && notice && (
         <p
           role={endError ? 'alert' : 'status'}
           className="max-w-64 rounded-full bg-canopee-cream/90 px-3 py-1 text-xs font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
@@ -401,31 +460,56 @@ function ActivePatrol({
       )}
 
       <div
-        className={`flex items-center gap-1.5 rounded-full p-1.5 pl-4 shadow-lg shadow-black/25 ring-1 ring-white/20 backdrop-blur-md transition-colors duration-200 ${
-          pause.paused
-            ? 'bg-canopee-sky/30 text-canopee-forest'
-            : 'bg-canopee-forest/35 text-canopee-cream'
+        className={`${SHELL_BASE} flex-col ${shellTint} ${
+          showControls ? 'rounded-3xl px-4 pt-2.5 pb-3' : 'rounded-2xl p-1.5'
         }`}
       >
-        <ActivePatrolStatus
-          startedAt={startedAt}
-          paused={pause.paused}
-          pausedAtMs={pause.pausedAtMs}
-        />
-
-        <PauseResumeButton paused={pause.paused} onToggle={handleTogglePause} />
-
-        <EndPatrolButton
-          flushAndStop={flushAndStop}
-          onError={setEndError}
-          onPatrolEnded={(summary) => {
-            clearStoredPause(startedAt)
-
-            if (summary) {
-              onEnded(summary)
+        {isHome ? (
+          timestamp
+        ) : (
+          <button
+            type="button"
+            onClick={() => setExpanded((open) => !open)}
+            aria-expanded={expanded}
+            aria-label={
+              expanded
+                ? 'Masquer les commandes de la patrouille'
+                : 'Afficher les commandes de la patrouille'
             }
-          }}
-        />
+            className="touch-manipulation rounded-xl transition-transform duration-150 ease-out active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none motion-reduce:transition-none"
+          >
+            {timestamp}
+          </button>
+        )}
+
+        <div
+          className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${
+            showControls
+              ? 'grid-rows-[1fr] opacity-100'
+              : 'grid-rows-[0fr] opacity-0'
+          }`}
+        >
+          <div className="overflow-hidden">
+            <div className="flex items-center justify-center gap-3 pt-2.5">
+              <PauseResumeButton
+                paused={pause.paused}
+                onToggle={handleTogglePause}
+              />
+
+              <EndPatrolButton
+                flushAndStop={flushAndStop}
+                onError={setEndError}
+                onPatrolEnded={(summary) => {
+                  clearStoredPause(startedAt)
+
+                  if (summary) {
+                    onEnded(summary)
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -456,7 +540,13 @@ function ActivePatrolStatus({
         )
 
   return (
-    <span className="flex items-center pl-1 pr-1">
+    <span
+      className={`flex items-center justify-center rounded-xl px-3.5 py-1.5 ring-1 ring-inset transition-colors duration-200 ${
+        paused
+          ? 'bg-white/40 ring-white/40'
+          : 'bg-canopee-forest/45 ring-white/10'
+      }`}
+    >
       <time
         dateTime={startedAt}
         aria-label={
@@ -464,7 +554,7 @@ function ActivePatrolStatus({
             ? 'Patrouille en pause'
             : 'Temps écoulé depuis le début de la patrouille'
         }
-        className="font-mono text-sm font-semibold whitespace-nowrap tabular-nums"
+        className="font-heading text-2xl leading-none font-bold whitespace-nowrap tabular-nums"
       >
         {elapsedMs === null ? NO_READING_YET : formatElapsed(elapsedMs)}
       </time>
