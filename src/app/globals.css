@@ -106,3 +106,31 @@ html {
     scrollbar-color: rgba(0, 69, 35, 0.4) rgba(0, 69, 35, 0.08);
   }
 }
+
+.canopee-popup .mapboxgl-popup-content {
+  border-radius: 0.9rem;
+  background: #f6f4df;
+  padding: 0.7rem 0.9rem;
+  box-shadow:
+    0 10px 24px -8px rgba(0, 69, 35, 0.45),
+    0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.canopee-popup .mapboxgl-popup-tip {
+  border-top-color: #f6f4df;
+  border-bottom-color: #f6f4df;
+  border-left-color: #f6f4df;
+  border-right-color: #f6f4df;
+}
+
+.canopee-popup .mapboxgl-popup-close-button {
+  padding: 0 0.35rem;
+  color: rgba(0, 69, 35, 0.55);
+  font-size: 1rem;
+  border-radius: 9999px;
+}
+
+.canopee-popup .mapboxgl-popup-close-button:hover {
+  background: rgba(0, 69, 35, 0.1);
+  color: #004523;
+}
