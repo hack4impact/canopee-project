@@ -32,7 +32,7 @@ export function toNativeRecordedPoint(location: NativeLocation): RecordedPoint {
 }
 
 export async function startNativeWatch(
-  onPoint: (point: RecordedPoint) => void,
+  onPoint: (point: RecordedPoint, accuracy: number | null) => void,
   onError: (error: Error) => void,
 ): Promise<void> {
   received = 0
@@ -79,7 +79,7 @@ export async function startNativeWatch(
 
     lastReceivedAtMs = now
 
-    onPoint(toNativeRecordedPoint(location))
+    onPoint(toNativeRecordedPoint(location), location.accuracy)
   })
 
   debugLog('native.start.ok')

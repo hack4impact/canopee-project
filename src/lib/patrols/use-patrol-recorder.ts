@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
 } from 'react'
 import { isGeolocationAvailable } from '@/lib/mapbox'
+import { distanceBetweenMetres } from '@/lib/patrols/distance'
 import {
   debugLog,
   describeError,
@@ -32,7 +33,9 @@ import {
 import {
   classifySyncResponse,
   describeSignalGap,
+  isAccurateEnough,
   isPermissionDenied,
+  isPlausibleStep,
   MAX_BATCH_POINTS,
   shouldRecordPoint,
   SYNC_INTERVAL_MS,
@@ -95,6 +98,7 @@ export function usePatrolRecorder({
   // Refs, not state: a new point every twelve seconds must not re-render the
   // page, and the callbacks below must always see the current values.
   const lastRecordedAtRef = useRef<number | null>(null)
+  const lastAcceptedRef = useRef<RecordedPoint | null>(null)
   const lastDrainedAtRef = useRef<number>(0)
 
   useEffect(() => {
@@ -275,7 +279,7 @@ export function usePatrolRecorder({
       }
     }
 
-    async function record(point: RecordedPoint) {
+    async function record(point: RecordedPoint, accuracy: number | null) {
       if (stopped) {
         debugLog('record.ignored.stopped')
         return
@@ -296,6 +300,24 @@ export function usePatrolRecorder({
         return
       }
 
+      if (!isAccurateEnough(accuracy)) {
+        debugLog('record.inaccurate', { accuracy })
+        return
+      }
+
+      const previous = lastAcceptedRef.current
+
+      if (!isPlausibleStep(previous, point)) {
+        debugLog('record.implausible', {
+          accuracy,
+          metres:
+            previous === null
+              ? null
+              : Math.round(distanceBetweenMetres(previous, point)),
+        })
+        return
+      }
+
       const depth = await storePoint(point)
 
       if (depth === null) {
@@ -303,6 +325,7 @@ export function usePatrolRecorder({
       }
 
       lastRecordedAtRef.current = recordedAtMs
+      lastAcceptedRef.current = point
       stored += 1
 
       debugLog('point.stored', {
@@ -316,8 +339,8 @@ export function usePatrolRecorder({
       }
     }
 
-    function submit(point: RecordedPoint) {
-      void record(point).catch((cause) => {
+    function submit(point: RecordedPoint, accuracy: number | null) {
+      void record(point, accuracy).catch((cause) => {
         debugLog('record.threw', {
           ...describeError(cause),
           recordedAt: point.recordedAt,
@@ -331,7 +354,7 @@ export function usePatrolRecorder({
         timestamp: position.timestamp,
       })
 
-      submit(toRecordedPoint(position))
+      submit(toRecordedPoint(position), position.coords.accuracy)
     }
 
     function handleSignalLoss(reason: string) {
@@ -456,6 +479,7 @@ export function usePatrolRecorder({
       releaseWatch()
 
       lastRecordedAtRef.current = null
+      lastAcceptedRef.current = null
     }
   }, [isSupported, paused])
 
