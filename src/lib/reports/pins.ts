@@ -4,7 +4,11 @@ import type {
   SymbolLayerSpecification,
 } from 'mapbox-gl'
 import { OBSERVATION_CATEGORIES } from '@/lib/observations/collection'
-import type { ReportCategory } from '@/lib/reports/categories'
+import {
+  reportGroupOfCategory,
+  type ReportCategory,
+  type ReportGroup,
+} from '@/lib/reports/categories'
 
 export const REPORT_PINS_SOURCE_ID = 'report-pins'
 
@@ -17,8 +21,6 @@ export const REPORT_CLUSTER_COUNT_LAYER_ID = 'report-pins-cluster-count'
 export const CLUSTER_RADIUS_PX = 48
 
 export const CLUSTER_MAX_ZOOM = 14
-
-export const PIN_COLOR = '#f06053'
 
 export const CLUSTER_COLOR = '#004523'
 
@@ -69,6 +71,7 @@ export type ReportPinProperties = {
   id: string
   eventNumber: number
   category: ReportCategory
+  group: ReportGroup
 }
 
 export type ReportPinCollection = FeatureCollection<Point, ReportPinProperties>
@@ -88,26 +91,31 @@ export function toFeatureCollection(
         id: pin.id,
         eventNumber: pin.eventNumber,
         category: pin.category,
+        group: reportGroupOfCategory(pin.category),
       },
     })),
   }
 }
 
-export function pinPaint(): CircleLayerSpecification['paint'] {
+export function pinImageId(group: ReportGroup): string {
+  return `report-pin-${group}`
+}
+
+export function pinLayout(): SymbolLayerSpecification['layout'] {
   return {
-    'circle-color': PIN_COLOR,
-    'circle-radius': [
+    'icon-image': ['concat', 'report-pin-', ['get', 'group']],
+    'icon-size': [
       'interpolate',
       ['linear'],
       ['zoom'],
       LOW_ZOOM,
-      5,
+      0.65,
       HIGH_ZOOM,
-      11,
+      1,
     ],
-    'circle-stroke-width': 1.5,
-    'circle-stroke-color': CREAM,
-    'circle-opacity': 0.95,
+    'icon-anchor': 'bottom',
+    'icon-allow-overlap': true,
+    'icon-ignore-placement': true,
   }
 }
 

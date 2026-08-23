@@ -72,6 +72,7 @@ describe('toFeatureCollection', () => {
       id: 'a1',
       eventNumber: 12,
       category: 'fallen_tree',
+      group: 'entretien',
     })
   })
 
@@ -83,8 +84,26 @@ describe('toFeatureCollection', () => {
 describe('PIN_EXCLUDED_CATEGORIES', () => {
   it('keeps fauna and flora on their own gated layer', () => {
     expect([...PIN_EXCLUDED_CATEGORIES]).toEqual([
-      'fauna_observation',
-      'flora_observation',
+      'reptile',
+      'insecte',
+      'oiseau',
+      'amphibien',
+      'mammifere',
+      'invertebre',
+      'mollusque',
+      'poisson',
+      'plante_vasculaire',
+      'bryophyte',
     ])
+  })
+})
+
+describe('pin groups', () => {
+  it('tags each pin with the group that colours it', () => {
+    const groups = toFeatureCollection(PINS).features.map(
+      (feature) => feature.properties.group,
+    )
+
+    expect(groups).toEqual(['entretien', 'citoyen'])
   })
 })

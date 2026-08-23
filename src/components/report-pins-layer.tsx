@@ -3,13 +3,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import mapboxgl, { type GeoJSONSource } from 'mapbox-gl'
 import { useSharedMap } from '@/components/map-provider'
-import { REPORT_CATEGORY_LABELS } from '@/lib/reports/categories'
+import {
+  REPORT_CATEGORY_LABELS,
+  REPORT_GROUPS,
+  type ReportGroup,
+} from '@/lib/reports/categories'
 import { formatEventNumber } from '@/lib/reports/format'
+import { reportPinSvg } from '@/lib/reports/group-style'
 import {
   clusterCountLayout,
   clusterCountPaint,
   clusterPaint,
-  pinPaint,
+  pinImageId,
+  pinLayout,
   toFeatureCollection,
   CLUSTER_MAX_ZOOM,
   CLUSTER_RADIUS_PX,
@@ -21,6 +27,32 @@ import {
   type ReportPinProperties,
   type ReportStatus,
 } from '@/lib/reports/pins'
+
+type PinImages = Record<ReportGroup, HTMLImageElement>
+
+function loadPinImage(group: ReportGroup): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error(`Unable to draw the ${group} pin`))
+    image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+      reportPinSvg(group),
+    )}`
+  })
+}
+
+async function loadPinImages(): Promise<PinImages> {
+  const images = await Promise.all(REPORT_GROUPS.map(loadPinImage))
+
+  return Object.fromEntries(
+    REPORT_GROUPS.map((group, index) => [group, images[index]]),
+  ) as PinImages
+}
+
+function prefersHover(): boolean {
+  return window.matchMedia('(hover: hover) and (pointer: fine)').matches
+}
 
 type ReportPinsPayload = {
   status: ReportStatus
@@ -53,6 +85,28 @@ export function ReportPinsLayer({
   const map = useSharedMap()
   const [pins, setPins] = useState<ReportPin[] | null>(null)
   const [failed, setFailed] = useState(false)
+  const [images, setImages] = useState<PinImages | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    loadPinImages()
+      .then((loaded) => {
+        if (!cancelled) {
+          setImages(loaded)
+        }
+      })
+      .catch((cause) => {
+        if (!cancelled) {
+          console.warn('Unable to draw the report pins', cause)
+          setFailed(true)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -93,7 +147,7 @@ export function ReportPinsLayer({
   )
 
   useEffect(() => {
-    if (!map || !collection || collection.features.length === 0) {
+    if (!map || !collection || !images || collection.features.length === 0) {
       return
     }
 
@@ -103,6 +157,12 @@ export function ReportPinsLayer({
     }
 
     map.on('remove', handleRemove)
+
+    for (const group of REPORT_GROUPS) {
+      if (!map.hasImage(pinImageId(group))) {
+        map.addImage(pinImageId(group), images[group], { pixelRatio: 2 })
+      }
+    }
 
     map.addSource(REPORT_PINS_SOURCE_ID, {
       type: 'geojson',
@@ -131,17 +191,19 @@ export function ReportPinsLayer({
 
     map.addLayer({
       id: REPORT_PINS_LAYER_ID,
-      type: 'circle',
+      type: 'symbol',
       source: REPORT_PINS_SOURCE_ID,
       filter: ['!', ['has', 'point_count']],
-      paint: pinPaint(),
+      layout: pinLayout(),
     })
+
+    const hoverOpens = prefersHover()
 
     const popup = new mapboxgl.Popup({
       className: 'canopee-popup',
-      closeButton: true,
-      closeOnClick: true,
-      offset: 14,
+      closeButton: !hoverOpens,
+      closeOnClick: !hoverOpens,
+      offset: [0, -40],
       maxWidth: '260px',
     })
 
@@ -176,7 +238,7 @@ export function ReportPinsLayer({
       })
     }
 
-    const handlePinClick = (
+    const showPopup = (
       event: mapboxgl.MapMouseEvent & {
         features?: mapboxgl.MapboxGeoJSONFeature[]
       },
@@ -195,6 +257,10 @@ export function ReportPinsLayer({
         .addTo(map)
     }
 
+    const hidePopup = () => {
+      popup.remove()
+    }
+
     const showPointer = () => {
       map.getCanvas().style.cursor = 'pointer'
     }
@@ -204,11 +270,17 @@ export function ReportPinsLayer({
     }
 
     map.on('click', REPORT_CLUSTERS_LAYER_ID, handleClusterClick)
-    map.on('click', REPORT_PINS_LAYER_ID, handlePinClick)
     map.on('mouseenter', REPORT_CLUSTERS_LAYER_ID, showPointer)
     map.on('mouseleave', REPORT_CLUSTERS_LAYER_ID, clearPointer)
     map.on('mouseenter', REPORT_PINS_LAYER_ID, showPointer)
     map.on('mouseleave', REPORT_PINS_LAYER_ID, clearPointer)
+
+    if (hoverOpens) {
+      map.on('mousemove', REPORT_PINS_LAYER_ID, showPopup)
+      map.on('mouseleave', REPORT_PINS_LAYER_ID, hidePopup)
+    } else {
+      map.on('click', REPORT_PINS_LAYER_ID, showPopup)
+    }
 
     return () => {
       map.off('remove', handleRemove)
@@ -220,11 +292,13 @@ export function ReportPinsLayer({
       popup.remove()
 
       map.off('click', REPORT_CLUSTERS_LAYER_ID, handleClusterClick)
-      map.off('click', REPORT_PINS_LAYER_ID, handlePinClick)
       map.off('mouseenter', REPORT_CLUSTERS_LAYER_ID, showPointer)
       map.off('mouseleave', REPORT_CLUSTERS_LAYER_ID, clearPointer)
       map.off('mouseenter', REPORT_PINS_LAYER_ID, showPointer)
       map.off('mouseleave', REPORT_PINS_LAYER_ID, clearPointer)
+      map.off('mousemove', REPORT_PINS_LAYER_ID, showPopup)
+      map.off('mouseleave', REPORT_PINS_LAYER_ID, hidePopup)
+      map.off('click', REPORT_PINS_LAYER_ID, showPopup)
 
       for (const layerId of [
         REPORT_PINS_LAYER_ID,
@@ -239,8 +313,14 @@ export function ReportPinsLayer({
       if (map.getSource(REPORT_PINS_SOURCE_ID)) {
         map.removeSource(REPORT_PINS_SOURCE_ID)
       }
+
+      for (const group of REPORT_GROUPS) {
+        if (map.hasImage(pinImageId(group))) {
+          map.removeImage(pinImageId(group))
+        }
+      }
     }
-  }, [map, collection])
+  }, [map, collection, images])
 
   if (failed) {
     return (
