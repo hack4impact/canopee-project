@@ -1,14 +1,29 @@
 import { requireApprovedAccess } from '@/lib/auth/current-user'
-import { listAllReports } from '@/lib/reports/queries'
+import {
+  listAllReports,
+  type ReportSortBy,
+  type ReportStatusFilter,
+} from '@/lib/reports/queries'
 import { IssueList } from './issue-list'
 import { getReportPhotoUrl } from '@/lib/reports/photo'
 
 export const dynamic = 'force-dynamic'
 
-export default async function AdminIssuesPage() {
+export default async function AdminIssuesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sortBy?: string; statusFilter?: string }>
+}) {
   await requireApprovedAccess('pro')
 
-  const rawReports = await listAllReports()
+  const params = await searchParams
+  const sortBy: ReportSortBy = params.sortBy === 'status' ? 'status' : 'date'
+  const statusFilter: ReportStatusFilter =
+    params.statusFilter === 'open' || params.statusFilter === 'resolved'
+      ? params.statusFilter
+      : 'all'
+
+  const rawReports = await listAllReports({ sortBy, statusFilter })
 
   const reports = await Promise.all(
     rawReports.map(async (report) => ({
@@ -28,7 +43,11 @@ export default async function AdminIssuesPage() {
           </h1>
         </header>
 
-        <IssueList reports={reports} />
+        <IssueList
+          reports={reports}
+          sortBy={sortBy}
+          statusFilter={statusFilter}
+        />
       </main>
     </div>
   )
