@@ -1,5 +1,5 @@
 import type { FeatureCollection, Point } from 'geojson'
-import type { ReportCategory } from '@/lib/reports/queries'
+import type { ReportCategory } from '@/lib/reports/categories'
 
 export const OBSERVATION_CATEGORIES = [
   'reptile',
