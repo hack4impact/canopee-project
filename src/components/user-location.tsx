@@ -13,7 +13,7 @@ const LOCATE_CACHE_MAX_AGE_MS = 10_000
 function createUserLocationElement(): HTMLDivElement {
   const element = document.createElement('div')
   element.className =
-    'relative h-[18px] w-[18px] rounded-full border-[3px] border-white bg-canopee-lime shadow-md ring-1 ring-canopee-green/10'
+    'relative h-[18px] w-[18px] rounded-full border-[3px] border-white bg-canopee-sky-dark shadow-md ring-1 ring-canopee-forest/20'
 
   return element
 }
