@@ -439,7 +439,7 @@ function ReportWizard({
         </>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain">
+      <div className="scroll-visible flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain pr-3">
         {step === 'constate' && (
           <div className="flex flex-col gap-2">
             {REPORT_GROUP_CATEGORIES[group].map((value) => (

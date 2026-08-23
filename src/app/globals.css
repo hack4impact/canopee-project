@@ -71,3 +71,38 @@ html {
   width: 100% !important;
   height: 100% !important;
 }
+
+.scroll-visible {
+  scrollbar-gutter: stable;
+}
+
+.scroll-visible::-webkit-scrollbar {
+  width: 10px;
+  background: rgba(0, 69, 35, 0.08);
+}
+
+.scroll-visible::-webkit-scrollbar-track {
+  background: rgba(0, 69, 35, 0.08);
+  border-radius: 9999px;
+}
+
+.scroll-visible::-webkit-scrollbar-thumb {
+  background: rgba(0, 69, 35, 0.4);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 9999px;
+  min-height: 2.5rem;
+}
+
+.scroll-visible::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 69, 35, 0.6);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .scroll-visible {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 69, 35, 0.4) rgba(0, 69, 35, 0.08);
+  }
+}
