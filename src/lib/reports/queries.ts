@@ -4,14 +4,14 @@ import {
   desc,
   eq,
   gte,
+  inArray,
   isNotNull,
   isNull,
   lte,
-  notInArray,
 } from 'drizzle-orm'
 import { db, reports } from '@/db'
 import {
-  PIN_EXCLUDED_CATEGORIES,
+  PIN_CATEGORIES,
   type ReportPin,
   type ReportStatus,
 } from '@/lib/reports/pins'
@@ -84,7 +84,12 @@ export async function listAllReports(): Promise<ReportListItem[]> {
 
 export async function listReportPins(
   status: ReportStatus,
+  categories: readonly ReportCategory[] = PIN_CATEGORIES,
 ): Promise<ReportPin[]> {
+  if (categories.length === 0) {
+    return []
+  }
+
   const rows = await db
     .select({
       id: reports.id,
@@ -99,7 +104,7 @@ export async function listReportPins(
         status === 'open'
           ? isNull(reports.resolvedAt)
           : isNotNull(reports.resolvedAt),
-        notInArray(reports.category, [...PIN_EXCLUDED_CATEGORIES]),
+        inArray(reports.category, [...categories]),
       ),
     )
     .orderBy(desc(reports.createdAt))

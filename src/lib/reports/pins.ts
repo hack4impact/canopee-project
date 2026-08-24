@@ -5,7 +5,9 @@ import type {
 } from 'mapbox-gl'
 import { OBSERVATION_CATEGORIES } from '@/lib/observations/collection'
 import {
+  isReportCategory,
   reportGroupOfCategory,
+  REPORT_CATEGORIES,
   type ReportCategory,
   type ReportGroup,
 } from '@/lib/reports/categories'
@@ -38,6 +40,19 @@ export const DEFAULT_REPORT_STATUS: ReportStatus = 'open'
 
 export const PIN_EXCLUDED_CATEGORIES = OBSERVATION_CATEGORIES
 
+export function isPinCategory(category: ReportCategory): boolean {
+  return !(PIN_EXCLUDED_CATEGORIES as readonly ReportCategory[]).includes(
+    category,
+  )
+}
+
+export const PIN_CATEGORIES: readonly ReportCategory[] =
+  REPORT_CATEGORIES.filter(isPinCategory)
+
+export type ParsedCategories =
+  | { ok: true; categories: readonly ReportCategory[] }
+  | { ok: false; value: string }
+
 export type ParsedStatus =
   { ok: true; status: ReportStatus } | { ok: false; value: string }
 
@@ -57,6 +72,38 @@ export function parseStatusParam(
   return isReportStatus(normalized)
     ? { ok: true, status: normalized }
     : { ok: false, value }
+}
+
+export function parseCategoriesParam(
+  value: string | null | undefined,
+): ParsedCategories {
+  if (value === null || value === undefined || value.trim() === '') {
+    return { ok: true, categories: PIN_CATEGORIES }
+  }
+
+  const requested = value
+    .split(',')
+    .map((part) => part.trim().toLowerCase())
+    .filter((part) => part !== '')
+
+  if (requested.length === 0) {
+    return { ok: true, categories: PIN_CATEGORIES }
+  }
+
+  const unknown = requested.find(
+    (part) => !isReportCategory(part) || !isPinCategory(part),
+  )
+
+  if (unknown !== undefined) {
+    return { ok: false, value: unknown }
+  }
+
+  const chosen = new Set(requested as ReportCategory[])
+
+  return {
+    ok: true,
+    categories: PIN_CATEGORIES.filter((category) => chosen.has(category)),
+  }
 }
 
 export type ReportPin = {
