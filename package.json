@@ -20,6 +20,7 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:seed-reports": "tsx src/db/seed-reports.ts",
     "db:seed-patrols": "tsx src/db/seed-patrols.ts",
+    "db:reseed-reports": "tsx src/db/reseed-reports.ts",
     "email:campaign": "tsx scripts/send-campaign.ts",
     "prepare": "husky"
   },

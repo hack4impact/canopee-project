@@ -1,19 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { OBSERVATION_CATEGORIES } from './collection'
 import {
-  FAUNA_COLOR,
-  FLORA_COLOR,
+  OBSERVATION_COLOR,
   OBSERVATION_LEGEND,
   observationsPaint,
 } from './layer'
 
 describe('observationsPaint', () => {
-  it('colours fauna and flora differently', () => {
-    const color = observationsPaint()?.['circle-color'] as unknown[]
+  it('uses the observation colour', () => {
+    const color = observationsPaint()?.['circle-color']
 
-    expect(color).toContain(FAUNA_COLOR)
-    expect(color).toContain(FLORA_COLOR)
-    expect(FAUNA_COLOR).not.toBe(FLORA_COLOR)
+    expect(color).toBe(OBSERVATION_COLOR)
   })
 
   it('grows the circles as the map zooms in', () => {

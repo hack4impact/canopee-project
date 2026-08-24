@@ -1,9 +1,16 @@
+// Laval is in Eastern Time: EST in winter, EDT in summer.
+const TIME_ZONE = 'America/Toronto'
+
 const dateFormatter = new Intl.DateTimeFormat('fr-CA', {
   dateStyle: 'long',
   timeStyle: 'short',
+  timeZone: TIME_ZONE,
 })
 
-const timeFormatter = new Intl.DateTimeFormat('fr-CA', { timeStyle: 'short' })
+const timeFormatter = new Intl.DateTimeFormat('fr-CA', {
+  timeStyle: 'short',
+  timeZone: TIME_ZONE,
+})
 
 const kilometreFormatter = new Intl.NumberFormat('fr-CA', {
   minimumFractionDigits: 2,

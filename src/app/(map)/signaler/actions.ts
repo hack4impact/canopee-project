@@ -51,6 +51,12 @@ export async function submitReport(
     description: String(formData.get('description') ?? ''),
     latitude: parseCoordinate(formData.get('latitude')),
     longitude: parseCoordinate(formData.get('longitude')),
+    typology: String(formData.get('typology') ?? ''),
+    quantity: String(formData.get('quantity') ?? ''),
+    species: String(formData.get('species') ?? ''),
+    unit: String(formData.get('unit') ?? ''),
+    habitat: String(formData.get('habitat') ?? ''),
+    statut: String(formData.get('statut') ?? ''),
   }
 
   const errors = validateReport(input)
@@ -59,6 +65,10 @@ export async function submitReport(
 
   if (photoError) {
     errors.photo = photoError
+  } else if (!photo && profile.role !== 'admin') {
+    // photo required for volunteers and pros, optional for admins.
+    errors.photo =
+      'Une photo est requise pour ce type de signalement. Ajoutez-la, puis réessayez.'
   }
 
   if (!isValidReport(errors)) {
@@ -93,6 +103,12 @@ export async function submitReport(
         userId: profile.id,
         category: input.category,
         description: input.description.trim(),
+        typology: input.typology.trim() || null,
+        quantity: parseQuantity(input.quantity),
+        species: input.species.trim() || null,
+        unit: input.unit.trim() || null,
+        habitat: input.habitat.trim() || null,
+        statut: input.statut.trim() || null,
         photoUrl: photoPath,
         latitude: input.latitude.toFixed(COORDINATE_SCALE),
         longitude: input.longitude.toFixed(COORDINATE_SCALE),
@@ -107,6 +123,16 @@ export async function submitReport(
       message: 'Impossible d’enregistrer le signalement. Réessayez.',
     }
   }
+}
+
+function parseQuantity(value: string): number | null {
+  if (value.trim() === '') {
+    return null
+  }
+
+  const parsed = Number(value)
+
+  return Number.isInteger(parsed) && parsed >= 1 ? parsed : null
 }
 
 async function uploadPhoto(

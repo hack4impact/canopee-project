@@ -60,13 +60,21 @@ Approval state for the account.
 
 Type of report. Tentative list from PRD — **pending Canopée confirmation before Sprint 1**.
 
-| Value                    | Meaning                                                        |
-| ------------------------ | -------------------------------------------------------------- |
-| `dangerous_tree`         | Dangerous trees or branches (fall risk, dead wood, etc.)       |
-| `damaged_infrastructure` | Damaged benches, signs, fences, paths, etc.                    |
-| `fauna_observation`      | Wildlife sighting. Only visible on the map to pros and admins. |
-| `flora_observation`      | Plant sighting. Only visible on the map to pros and admins.    |
-| `unleashed_dog`          | Off-leash dog observed on the site.                            |
+| Value                    | Meaning                                                  |
+| ------------------------ | -------------------------------------------------------- |
+| `dangerous_tree`         | Dangerous trees or branches (fall risk, dead wood, etc.) |
+| `damaged_infrastructure` | Damaged benches, signs, fences, paths, etc.              |
+| `reptile`                | Reptile sighting (snakes, lizards, turtles).             |
+| `insecte`                | Insect sighting (beetles, butterflies, etc.).            |
+| `oiseau`                 | Bird sighting.                                           |
+| `amphibien`              | Amphibian sighting (frogs, salamanders).                 |
+| `mammifere`              | Mammal sighting (deer, foxes, etc.).                     |
+| `invertebre`             | Invertebrate sighting (spiders, worms, etc.).            |
+| `mollusque`              | Mollusc sighting (snails, slugs).                        |
+| `poisson`                | Fish sighting.                                           |
+| `plante_vasculaire`      | Vascular plant sighting.                                 |
+| `bryophyte`              | Bryophyte sighting (mosses, liverworts).                 |
+| `unleashed_dog`          | Off-leash dog observed on the site.                      |
 
 ## Tables
 

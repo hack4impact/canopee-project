@@ -43,3 +43,6 @@ next-env.d.ts
 
 # docs
 *.pdf
+
+# Canopée spec files (Google Sheets exports)
+*.xlsx

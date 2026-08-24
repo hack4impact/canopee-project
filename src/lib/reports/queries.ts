@@ -1,5 +1,20 @@
-import { and, asc, desc, eq, gte, lte } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  isNotNull,
+  isNull,
+  lte,
+  notInArray,
+} from 'drizzle-orm'
 import { db, reports } from '@/db'
+import {
+  PIN_EXCLUDED_CATEGORIES,
+  type ReportPin,
+  type ReportStatus,
+} from '@/lib/reports/pins'
 
 export {
   REPORT_CATEGORY_LABELS,
@@ -65,4 +80,35 @@ export async function listAllReports(): Promise<ReportListItem[]> {
     })
     .from(reports)
     .orderBy(desc(reports.createdAt))
+}
+
+export async function listReportPins(
+  status: ReportStatus,
+): Promise<ReportPin[]> {
+  const rows = await db
+    .select({
+      id: reports.id,
+      eventNumber: reports.eventNumber,
+      latitude: reports.latitude,
+      longitude: reports.longitude,
+      category: reports.category,
+    })
+    .from(reports)
+    .where(
+      and(
+        status === 'open'
+          ? isNull(reports.resolvedAt)
+          : isNotNull(reports.resolvedAt),
+        notInArray(reports.category, [...PIN_EXCLUDED_CATEGORIES]),
+      ),
+    )
+    .orderBy(desc(reports.createdAt))
+
+  return rows.map((row) => ({
+    id: row.id,
+    eventNumber: row.eventNumber,
+    latitude: Number(row.latitude),
+    longitude: Number(row.longitude),
+    category: row.category,
+  }))
 }

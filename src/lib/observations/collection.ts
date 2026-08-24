@@ -1,9 +1,17 @@
 import type { FeatureCollection, Point } from 'geojson'
-import type { ReportCategory } from '@/lib/reports/queries'
+import type { ReportCategory } from '@/lib/reports/categories'
 
 export const OBSERVATION_CATEGORIES = [
-  'fauna_observation',
-  'flora_observation',
+  'reptile',
+  'insecte',
+  'oiseau',
+  'amphibien',
+  'mammifere',
+  'invertebre',
+  'mollusque',
+  'poisson',
+  'plante_vasculaire',
+  'bryophyte',
 ] as const satisfies readonly ReportCategory[]
 
 export type ObservationCategory = (typeof OBSERVATION_CATEGORIES)[number]

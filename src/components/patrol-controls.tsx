@@ -1,18 +1,38 @@
 'use client'
 
-import { useEffect, useState, useSyncExternalStore, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import {
+  useCallback,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+} from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   endPatrol,
   startPatrol,
   type PatrolSummary,
 } from '@/app/patrouilles/actions'
+import { PatrolPicto } from '@/components/patrol-picto'
+import { isPublicRoute } from '@/lib/auth/routes'
 import { formatElapsed } from '@/lib/patrols/elapsed'
 import { usePatrolExitWarning } from '@/lib/patrols/use-patrol-exit-warning'
 import {
   usePatrolRecorder,
   type RecordingStatus,
 } from '@/lib/patrols/use-patrol-recorder'
+
+const ACTIVE_PATROL_ENDPOINT = '/api/patrols/active'
+
+const UNAVAILABLE_RETRY_DELAY_MS = 2000
+
+const REPORT_ROUTE = '/signaler'
+
+function isReportRoute(pathname: string): boolean {
+  return pathname === REPORT_ROUTE || pathname.startsWith(`${REPORT_ROUTE}/`)
+}
+
+const HOME_ROUTE = '/'
 
 const TICK_MS = 1000
 const NO_READING_YET = '--:--:--'
@@ -59,11 +79,6 @@ function getClock(): number {
 
 function getServerClock(): null {
   return null
-}
-
-type PatrolControlsProps = {
-  /** ISO string, not a Date, because it crosses the server/client boundary. */
-  startedAt: string | null
 }
 
 /**
@@ -117,24 +132,145 @@ function clearStoredPause(startedAt: string): void {
   } catch {}
 }
 
-export function PatrolControls({ startedAt }: PatrolControlsProps) {
-  const router = useRouter()
+type ActivePatrolState =
+  | { status: 'unavailable' }
+  | { status: 'idle' }
+  | { status: 'active'; startedAt: string }
 
-  if (startedAt) {
+/**
+ * The patrol controls live in the root layout and must work on any page. The
+ * root layout renders the initial patrol state server-side (so the button is
+ * there on first paint, with no fetch delay); this hook keeps it in step with
+ * the session afterwards.
+ */
+function useActivePatrol(initialStartedAt: string | null): {
+  state: ActivePatrolState
+  refresh: () => Promise<void>
+} {
+  const pathname = usePathname()
+  const [state, setState] = useState<ActivePatrolState>(() =>
+    initialStartedAt
+      ? { status: 'active', startedAt: initialStartedAt }
+      : { status: 'idle' },
+  )
+
+  const refresh = useCallback(async () => {
+    try {
+      const response = await fetch(ACTIVE_PATROL_ENDPOINT, {
+        redirect: 'manual',
+      })
+
+      if (!response.ok) {
+        // Not signed in, not approved, or the request failed: no controls.
+        setState({ status: 'unavailable' })
+        return
+      }
+
+      const payload = (await response.json()) as { startedAt: string | null }
+
+      setState(
+        payload.startedAt
+          ? { status: 'active', startedAt: payload.startedAt }
+          : { status: 'idle' },
+      )
+    } catch {
+      setState({ status: 'unavailable' })
+    }
+  }, [])
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => void refresh())
+
+    return () => cancelAnimationFrame(frame)
+  }, [refresh, pathname])
+
+  useEffect(() => {
+    if (state.status !== 'unavailable' || isPublicRoute(pathname)) {
+      return
+    }
+
+    const timer = setInterval(() => void refresh(), UNAVAILABLE_RETRY_DELAY_MS)
+
+    return () => clearInterval(timer)
+  }, [state.status, pathname, refresh])
+
+  // The auth state can also change in another tab or when the page is restored
+  // from the back/forward cache.
+  useEffect(() => {
+    function refreshOnVisible() {
+      void refresh()
+    }
+
+    window.addEventListener('focus', refreshOnVisible)
+    window.addEventListener('pageshow', refreshOnVisible)
+
+    return () => {
+      window.removeEventListener('focus', refreshOnVisible)
+      window.removeEventListener('pageshow', refreshOnVisible)
+    }
+  }, [refresh])
+
+  return { state, refresh }
+}
+
+export function PatrolControls({
+  initialStartedAt,
+}: {
+  /** ISO string of the running patrol, or null; rendered server-side. */
+  initialStartedAt: string | null
+}) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const { state, refresh } = useActivePatrol(initialStartedAt)
+
+  // Auth pages must never show the controls, even when a session is active.
+  if (isPublicRoute(pathname)) {
+    return null
+  }
+
+  if (state.status === 'unavailable') {
+    return null
+  }
+
+  if (state.status === 'active') {
     return (
       <ActivePatrol
-        startedAt={startedAt}
-        onEnded={(summary) =>
+        startedAt={state.startedAt}
+        hidden={isReportRoute(pathname)}
+        onEnded={(summary) => {
+          void refresh()
           router.push(`/patrouilles/${summary.id}?from=patrouille`)
-        }
+        }}
       />
     )
   }
 
-  return <StartPatrolButton />
+  if (isReportRoute(pathname)) {
+    return null
+  }
+
+  return <StartPatrolButton onStarted={() => void refresh()} />
 }
 
-function StartPatrolButton() {
+function PictoCircle({
+  className,
+  circleClassName = 'bg-white/20',
+  children,
+}: {
+  className?: string
+  circleClassName?: string
+  children: React.ReactNode
+}) {
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center justify-center rounded-full ${circleClassName} ${className ?? ''}`}
+    >
+      {children}
+    </span>
+  )
+}
+
+function StartPatrolButton({ onStarted }: { onStarted: () => void }) {
   const [pending, startTransition] = useTransition()
   const [message, setMessage] = useState<string | null>(null)
 
@@ -144,18 +280,25 @@ function StartPatrolButton() {
     startTransition(async () => {
       const result = await startPatrol()
       setMessage(result.message ?? null)
+
+      if (!result.message) {
+        onStarted()
+      }
     })
   }
 
   return (
-    <div className="absolute bottom-28 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2">
+    <div className="fixed bottom-28 left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-2">
       <button
         type="button"
         onClick={handleClick}
         disabled={pending}
-        className="inline-flex touch-manipulation items-center justify-center rounded-full bg-canopee-green px-8 py-4 text-base font-bold tracking-wide text-white shadow-xl shadow-black/30 ring-1 ring-white/25 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+        className="inline-flex touch-manipulation items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#2fc46c] to-canopee-green px-7 py-3.5 text-base font-bold tracking-wide text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_2px_4px_rgba(0,0,0,0.2),0_12px_28px_-8px_rgba(0,69,35,0.65)] ring-1 ring-white/25 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:from-[#3ad179] hover:to-[#139a4c] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_4px_8px_rgba(0,0,0,0.22),0_18px_36px_-10px_rgba(0,69,35,0.7)] focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:translate-y-0 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       >
-        {pending ? 'Démarrage…' : 'Démarrer la patrouille'}
+        <PictoCircle className="h-7 w-7">
+          <PatrolPicto name="hiker" className="h-5 w-5" />
+        </PictoCircle>
+        {pending ? 'Démarrage…' : 'Démarrer'}
       </button>
 
       {message && (
@@ -170,8 +313,11 @@ function StartPatrolButton() {
   )
 }
 
+const SHELL_BASE =
+  'flex items-center shadow-lg shadow-black/25 ring-1 ring-white/20 backdrop-blur-md transition-all duration-300 ease-out motion-reduce:transition-none'
+
 const ROUND_BUTTON_BASE =
-  'inline-flex h-14 w-14 touch-manipulation items-center justify-center rounded-full text-white shadow-xl shadow-black/30 ring-1 ring-white/25 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-2xl focus-visible:ring-2 focus-visible:outline-none active:translate-y-0 active:scale-[0.95] motion-reduce:transition-none motion-reduce:hover:translate-y-0'
+  'inline-flex h-14 w-14 touch-manipulation items-center justify-center rounded-full ring-1 ring-white/25 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:ring-white/40 focus-visible:ring-2 focus-visible:outline-none active:translate-y-0 active:scale-[0.95] motion-reduce:transition-none motion-reduce:hover:translate-y-0'
 
 function PauseResumeButton({
   paused,
@@ -189,14 +335,14 @@ function PauseResumeButton({
       }
       className={`${ROUND_BUTTON_BASE} ${
         paused
-          ? 'bg-canopee-green hover:bg-canopee-forest focus-visible:ring-canopee-sky'
+          ? 'bg-canopee-green text-white hover:bg-canopee-forest focus-visible:ring-canopee-sky'
           : 'bg-canopee-sky text-canopee-forest hover:bg-canopee-sky-dark hover:text-white focus-visible:ring-canopee-sky'
       }`}
     >
       {paused ? (
-        <PlayIcon className="h-6 w-6" />
+        <PlayIcon className="h-7 w-7" />
       ) : (
-        <PauseIcon className="h-6 w-6" />
+        <PauseIcon className="h-7 w-7" />
       )}
     </button>
   )
@@ -204,66 +350,64 @@ function PauseResumeButton({
 
 function EndPatrolButton({
   flushAndStop,
+  onError,
   onPatrolEnded,
 }: {
   flushAndStop: () => Promise<void>
+  onError: (message: string) => void
   onPatrolEnded?: (summary?: PatrolSummary) => void
 }) {
   const [pending, startTransition] = useTransition()
-  const [message, setMessage] = useState<string | null>(null)
 
   function handleClick() {
-    setMessage(null)
+    onError('')
 
     startTransition(async () => {
       await flushAndStop()
       const result = await endPatrol()
-      setMessage(result.message ?? null)
 
-      if (!result.message) {
-        onPatrolEnded?.(result.summary)
+      if (result.message) {
+        onError(result.message)
+        return
       }
+
+      onPatrolEnded?.(result.summary)
     })
   }
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={pending}
-        className={`${ROUND_BUTTON_BASE} bg-canopee-coral hover:bg-canopee-coral-dark focus-visible:ring-canopee-coral`}
-      >
-        <StopIcon className="h-6 w-6" />
-      </button>
-
-      {message && (
-        <p
-          role="alert"
-          className="rounded-full bg-canopee-cream/95 px-3 py-1 text-sm font-medium text-canopee-coral-dark shadow-md"
-        >
-          {message}
-        </p>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={pending}
+      className={`${ROUND_BUTTON_BASE} bg-canopee-coral text-white hover:bg-canopee-coral-dark focus-visible:ring-canopee-coral`}
+    >
+      <StopIcon className="h-7 w-7" />
+    </button>
   )
 }
 
 function ActivePatrol({
   startedAt,
+  hidden,
   onEnded,
 }: {
   startedAt: string
+  hidden: boolean
   onEnded: (summary: PatrolSummary) => void
 }) {
   const [pause, setPause] = useState<StoredPause>({
     paused: false,
     pausedAtMs: null,
   })
+  const [endError, setEndError] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState(false)
   const { status, flushAndStop } = usePatrolRecorder({ paused: pause.paused })
   usePatrolExitWarning()
 
-  const notice = pause.paused ? null : RECORDING_NOTICE[status]
+  const isHome = usePathname() === HOME_ROUTE
+  const recordingNotice = pause.paused ? null : RECORDING_NOTICE[status]
+  const notice = endError ?? recordingNotice
 
   useEffect(() => {
     const stored = readStoredPause(startedAt)
@@ -286,39 +430,88 @@ function ActivePatrol({
     }
   }
 
+  if (hidden) {
+    return null
+  }
+
+  const shellTint = pause.paused
+    ? 'bg-canopee-sky/30 text-canopee-forest'
+    : 'bg-canopee-forest/35 text-canopee-cream'
+
+  const showControls = isHome || expanded
+
+  const timestamp = (
+    <ActivePatrolStatus
+      startedAt={startedAt}
+      paused={pause.paused}
+      pausedAtMs={pause.pausedAtMs}
+    />
+  )
+
   return (
-    <>
-      <div className="absolute top-4 left-4 z-10 flex flex-col items-start gap-2">
-        <ActivePatrolStatus
-          startedAt={startedAt}
-          paused={pause.paused}
-          pausedAtMs={pause.pausedAtMs}
-        />
+    <div className="fixed bottom-28 left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-2">
+      {showControls && notice && (
+        <p
+          role={endError ? 'alert' : 'status'}
+          className="max-w-64 rounded-full bg-canopee-cream/90 px-3 py-1 text-xs font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
+        >
+          {notice}
+        </p>
+      )}
 
-        {notice && (
-          <p
-            role="status"
-            className="max-w-72 rounded-full bg-canopee-cream/95 px-3 py-1.5 text-sm font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
-          >
-            {notice}
-          </p>
-        )}
-      </div>
-
-      <div className="absolute bottom-28 left-1/2 z-10 flex -translate-x-1/2 items-center gap-4 rounded-full bg-canopee-forest/30 p-3 shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm">
-        <PauseResumeButton paused={pause.paused} onToggle={handleTogglePause} />
-        <EndPatrolButton
-          flushAndStop={flushAndStop}
-          onPatrolEnded={(summary) => {
-            clearStoredPause(startedAt)
-
-            if (summary) {
-              onEnded(summary)
+      <div
+        className={`${SHELL_BASE} flex-col ${shellTint} ${
+          showControls ? 'rounded-3xl px-4 pt-2.5 pb-3' : 'rounded-2xl p-1.5'
+        }`}
+      >
+        {isHome ? (
+          timestamp
+        ) : (
+          <button
+            type="button"
+            onClick={() => setExpanded((open) => !open)}
+            aria-expanded={expanded}
+            aria-label={
+              expanded
+                ? 'Masquer les commandes de la patrouille'
+                : 'Afficher les commandes de la patrouille'
             }
-          }}
-        />
+            className="touch-manipulation rounded-xl transition-transform duration-150 ease-out active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none motion-reduce:transition-none"
+          >
+            {timestamp}
+          </button>
+        )}
+
+        <div
+          className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${
+            showControls
+              ? 'grid-rows-[1fr] opacity-100'
+              : 'grid-rows-[0fr] opacity-0'
+          }`}
+        >
+          <div className="overflow-hidden">
+            <div className="flex items-center justify-center gap-3 pt-2.5">
+              <PauseResumeButton
+                paused={pause.paused}
+                onToggle={handleTogglePause}
+              />
+
+              <EndPatrolButton
+                flushAndStop={flushAndStop}
+                onError={setEndError}
+                onPatrolEnded={(summary) => {
+                  clearStoredPause(startedAt)
+
+                  if (summary) {
+                    onEnded(summary)
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
-    </>
+    </div>
   )
 }
 
@@ -347,27 +540,25 @@ function ActivePatrolStatus({
         )
 
   return (
-    <div
-      className={`flex items-baseline gap-2 rounded-full px-4 py-2 text-canopee-cream shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm ${
-        paused ? 'bg-canopee-sky-dark/80' : 'bg-canopee-forest/80'
+    <span
+      className={`flex items-center justify-center rounded-xl px-3.5 py-1.5 ring-1 ring-inset transition-colors duration-200 ${
+        paused
+          ? 'bg-white/40 ring-white/40'
+          : 'bg-canopee-forest/45 ring-white/10'
       }`}
     >
-      <span role="status" className="text-sm font-semibold">
-        {paused ? 'Patrouille en pause' : 'Patrouille en cours'}
-      </span>
-
-      {/* Outside the live region above: announcing every tick would make a
-          screen reader unusable. */}
-      {!paused && (
-        <time
-          dateTime={startedAt}
-          aria-label="Temps écoulé depuis le début de la patrouille"
-          className="font-mono text-sm font-medium tabular-nums"
-        >
-          {elapsedMs === null ? NO_READING_YET : formatElapsed(elapsedMs)}
-        </time>
-      )}
-    </div>
+      <time
+        dateTime={startedAt}
+        aria-label={
+          paused
+            ? 'Patrouille en pause'
+            : 'Temps écoulé depuis le début de la patrouille'
+        }
+        className="font-heading text-2xl leading-none font-bold whitespace-nowrap tabular-nums"
+      >
+        {elapsedMs === null ? NO_READING_YET : formatElapsed(elapsedMs)}
+      </time>
+    </span>
   )
 }
 

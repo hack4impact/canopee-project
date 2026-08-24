@@ -6,6 +6,10 @@ type DbInstance = ReturnType<typeof drizzle>
 
 let dbInstance: DbInstance | undefined
 
+type PostgresClient = ReturnType<typeof postgres>
+
+const globalForDb = globalThis as { canopeeDbClient?: PostgresClient }
+
 function getDbInstance(): DbInstance {
   if (dbInstance) {
     return dbInstance
@@ -17,7 +21,18 @@ function getDbInstance(): DbInstance {
     throw new Error('DATABASE_URL is not set')
   }
 
-  const client = postgres(connectionString, { prepare: false })
+  const client =
+    globalForDb.canopeeDbClient ??
+    postgres(connectionString, {
+      prepare: false,
+      max: 5,
+      idle_timeout: 20,
+    })
+
+  if (process.env.NODE_ENV !== 'production') {
+    globalForDb.canopeeDbClient = client
+  }
+
   dbInstance = drizzle(client, { schema })
   return dbInstance
 }

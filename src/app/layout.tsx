@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import { Averia_Serif_Libre, Geist_Mono } from 'next/font/google'
 import localFont from 'next/font/local'
+import { PatrolControls } from '@/components/patrol-controls'
+import { getCurrentUserProfile } from '@/lib/auth/current-user'
+import { getActivePatrol } from '@/lib/patrols/queries'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './globals.css'
 
@@ -53,17 +56,47 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 }
 
-export default function RootLayout({
+/**
+ * The patrol controls are rendered on every page, so their initial state comes
+ * from here instead of a client fetch: the button is in the first paint with
+ * no delay, and the client keeps it in step with the session afterwards.
+ */
+async function resolveInitialPatrolStartedAt(): Promise<string | null> {
+  try {
+    const profile = await getCurrentUserProfile()
+
+    if (!profile) {
+      return null
+    }
+
+    const activePatrol = await getActivePatrol(profile.id)
+
+    return activePatrol?.startedAt.toISOString() ?? null
+  } catch (error) {
+    console.warn(
+      'Unable to resolve the active patrol in the root layout',
+      error,
+    )
+    return null
+  }
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const initialStartedAt = await resolveInitialPatrolStartedAt()
+
   return (
     <html
       lang="fr"
       className={`${averiaSerifLibre.variable} ${museoSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        {children}
+        <PatrolControls initialStartedAt={initialStartedAt} />
+      </body>
     </html>
   )
 }

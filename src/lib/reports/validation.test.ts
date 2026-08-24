@@ -17,14 +17,145 @@ function input(overrides: Partial<ReportInput> = {}): ReportInput {
   return {
     category: 'dangerous_tree',
     description: 'Grosse branche cassée au-dessus du sentier.',
+    typology: 'probleme_observe',
     ...LAVAL,
     ...overrides,
   }
 }
 
 describe('validateReport', () => {
-  it('accepts a complete report', () => {
+  it('accepts a complete Entretien report', () => {
     expect(isValidReport(validateReport(input()))).toBe(true)
+  })
+
+  it('accepts a complete Citoyen report without a count', () => {
+    expect(
+      isValidReport(
+        validateReport(
+          input({ category: 'unleashed_dog', typology: undefined }),
+        ),
+      ),
+    ).toBe(true)
+  })
+
+  it('accepts a complete Faune/flore report', () => {
+    expect(
+      isValidReport(
+        validateReport(
+          input({
+            category: 'reptile',
+            typology: undefined,
+            statut: 'menace',
+            species: 'Salamandre sombre du Nord',
+          }),
+        ),
+      ),
+    ).toBe(true)
+  })
+
+  it('requires a typology for Entretien reports', () => {
+    expect(
+      validateReport(input({ typology: undefined })).typology,
+    ).toBeDefined()
+    expect(
+      validateReport(input({ typology: 'nimporte_quoi' })).typology,
+    ).toBeDefined()
+  })
+
+  it('does not require a typology outside Entretien', () => {
+    const errors = validateReport(
+      input({ category: 'unleashed_dog', typology: undefined }),
+    )
+
+    expect(errors.typology).toBeUndefined()
+  })
+
+  it('requires a species for Faune/flore reports', () => {
+    expect(
+      validateReport(
+        input({
+          category: 'plante_vasculaire',
+          typology: undefined,
+          statut: 'vulnerable',
+        }),
+      ).species,
+    ).toBeDefined()
+  })
+
+  it('rejects an over-long species', () => {
+    const errors = validateReport(
+      input({
+        category: 'reptile',
+        typology: undefined,
+        statut: 'menace',
+        species: 'a'.repeat(201),
+      }),
+    )
+
+    expect(errors.species).toBeDefined()
+  })
+
+  it('accepts an empty count for Citoyen reports', () => {
+    const errors = validateReport(
+      input({ category: 'unleashed_dog', typology: undefined, quantity: '' }),
+    )
+
+    expect(errors.quantity).toBeUndefined()
+  })
+
+  it('rejects a non-integer or negative count', () => {
+    expect(
+      validateReport(
+        input({
+          category: 'unleashed_dog',
+          typology: undefined,
+          quantity: '2.5',
+        }),
+      ).quantity,
+    ).toBeDefined()
+    expect(
+      validateReport(
+        input({
+          category: 'unleashed_dog',
+          typology: undefined,
+          quantity: '-3',
+        }),
+      ).quantity,
+    ).toBeDefined()
+  })
+
+  it('accepts a positive integer count', () => {
+    const errors = validateReport(
+      input({ category: 'unleashed_dog', typology: undefined, quantity: '4' }),
+    )
+
+    expect(errors.quantity).toBeUndefined()
+  })
+
+  it('rejects a count over the cap', () => {
+    expect(
+      validateReport(
+        input({
+          category: 'unleashed_dog',
+          typology: undefined,
+          quantity: '1000001',
+        }),
+      ).quantity,
+    ).toBeDefined()
+  })
+
+  it('rejects an unknown unit for Faune/flore', () => {
+    expect(
+      validateReport(
+        input({
+          category: 'oiseau',
+          typology: undefined,
+          statut: 'non_menacee',
+          species: 'Oiseau',
+          unit: 'tonnes',
+        }),
+      ).unit,
+    ).toBeDefined()
   })
 
   it('rejects a missing category', () => {
