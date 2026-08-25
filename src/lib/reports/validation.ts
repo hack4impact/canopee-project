@@ -64,7 +64,7 @@ export function validateReport(input: ReportInput): ReportErrors {
     !isCoordinate(input.longitude, 180)
   ) {
     errors.latitude =
-      'Votre position est nécessaire pour situer le signalement. Autorisez la localisation, puis réessayez.'
+      'Une position est nécessaire pour situer le signalement. Autorisez la localisation, ou placez le repère sur la carte.'
   }
 
   if (isReportCategory(input.category)) {

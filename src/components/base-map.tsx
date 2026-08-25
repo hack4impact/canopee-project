@@ -14,6 +14,8 @@ import {
 type BaseMapProps = {
   accessToken?: string
   className?: string
+  mapClassName?: string
+  ariaLabel?: string
   viewport?: MapViewport
   onMapReady?: (map: mapboxgl.Map) => void
 }
@@ -54,6 +56,8 @@ function hidePoiLabels(map: mapboxgl.Map): void {
 export function BaseMap({
   accessToken,
   className,
+  mapClassName = 'touch-pan-y',
+  ariaLabel = 'Carte interactive de Laval',
   viewport = LAVAL_WOODED_VIEW,
   onMapReady,
 }: BaseMapProps) {
@@ -213,9 +217,9 @@ export function BaseMap({
     <div className={`relative ${className ?? ''}`}>
       <div
         ref={containerRef}
-        className="mapbox-map h-full w-full touch-pan-y"
+        className={`mapbox-map h-full w-full ${mapClassName}`}
         role="region"
-        aria-label="Carte interactive de Laval"
+        aria-label={ariaLabel}
       />
 
       {!isReady && (
