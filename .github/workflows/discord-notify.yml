@@ -1,0 +1,42 @@
+name: Discord notifications
+
+on:
+  issues:
+    types: [assigned, closed, unlabeled, edited]
+  # pull_request_target (not pull_request) so notifications also work for PRs opened
+  # from forks, which are not given access to secrets. Safe here because the job only
+  # ever runs code from the base branch — it never checks out the PR's own code.
+  pull_request_target:
+    types: [review_requested, closed]
+  pull_request_review:
+    types: [submitted]
+
+# Serialise runs so two issues closing at once cannot both announce the same unblock.
+concurrency:
+  group: discord-notify-${{ github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  issues: read
+  pull-requests: read
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # No `npm install` — the bot is dependency-free on purpose.
+      - name: Send Discord notification
+        run: node .github/discord-bot/notify.js
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_REVIEW_WEBHOOK_URL: ${{ secrets.DISCORD_REVIEW_WEBHOOK_URL }}
+          DISCORD_USER_MAP: ${{ secrets.DISCORD_USER_MAP }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BLOCKED_LABELS: blocked
