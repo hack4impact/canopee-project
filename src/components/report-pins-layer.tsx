@@ -2,12 +2,15 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import mapboxgl, { type GeoJSONSource } from 'mapbox-gl'
+import { useMapFilters } from '@/components/map-filters-provider'
 import { useSharedMap } from '@/components/map-provider'
+import { ReportFilters } from '@/components/report-filters'
 import {
   REPORT_CATEGORY_LABELS,
   REPORT_GROUPS,
   type ReportGroup,
 } from '@/lib/reports/categories'
+import { selectionToParam } from '@/lib/reports/filters'
 import { formatEventNumber } from '@/lib/reports/format'
 import { reportPinSvg } from '@/lib/reports/group-style'
 import {
@@ -24,9 +27,15 @@ import {
   REPORT_PINS_LAYER_ID,
   REPORT_PINS_SOURCE_ID,
   type ReportPin,
+  type ReportPinCollection,
   type ReportPinProperties,
   type ReportStatus,
 } from '@/lib/reports/pins'
+
+const EMPTY_COLLECTION: ReportPinCollection = {
+  type: 'FeatureCollection',
+  features: [],
+}
 
 type PinImages = Record<ReportGroup, HTMLImageElement>
 
@@ -86,6 +95,7 @@ export function ReportPinsLayer({
   const [pins, setPins] = useState<ReportPin[] | null>(null)
   const [failed, setFailed] = useState(false)
   const [images, setImages] = useState<PinImages | null>(null)
+  const { selection } = useMapFilters()
 
   useEffect(() => {
     let cancelled = false
@@ -108,12 +118,21 @@ export function ReportPinsLayer({
     }
   }, [])
 
+  const categoriesParam = selectionToParam(selection)
+
   useEffect(() => {
+    if (categoriesParam === '') {
+      return
+    }
+
     let cancelled = false
 
     async function loadPins() {
       try {
-        const response = await fetch(`/api/reports?status=${status}`, {
+        const suffix =
+          categoriesParam === null ? '' : `&categories=${categoriesParam}`
+
+        const response = await fetch(`/api/reports?status=${status}${suffix}`, {
           redirect: 'manual',
         })
 
@@ -139,15 +158,18 @@ export function ReportPinsLayer({
     return () => {
       cancelled = true
     }
-  }, [status])
+  }, [status, categoriesParam])
 
-  const collection = useMemo(
-    () => (pins ? toFeatureCollection(pins) : null),
-    [pins],
-  )
+  const collection = useMemo(() => {
+    if (categoriesParam === '') {
+      return EMPTY_COLLECTION
+    }
+
+    return pins ? toFeatureCollection(pins) : null
+  }, [pins, categoriesParam])
 
   useEffect(() => {
-    if (!map || !collection || !images || collection.features.length === 0) {
+    if (!map || !images) {
       return
     }
 
@@ -166,7 +188,7 @@ export function ReportPinsLayer({
 
     map.addSource(REPORT_PINS_SOURCE_ID, {
       type: 'geojson',
-      data: collection,
+      data: EMPTY_COLLECTION,
       cluster: true,
       clusterRadius: CLUSTER_RADIUS_PX,
       clusterMaxZoom: CLUSTER_MAX_ZOOM,
@@ -320,6 +342,17 @@ export function ReportPinsLayer({
         }
       }
     }
+  }, [map, images])
+
+  useEffect(() => {
+    if (!map) {
+      return
+    }
+
+    const source = map.getSource(REPORT_PINS_SOURCE_ID) as
+      GeoJSONSource | undefined
+
+    source?.setData(collection ?? EMPTY_COLLECTION)
   }, [map, collection, images])
 
   if (failed) {
@@ -333,5 +366,5 @@ export function ReportPinsLayer({
     )
   }
 
-  return null
+  return <ReportFilters />
 }

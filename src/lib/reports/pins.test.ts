@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  parseCategoriesParam,
   parseStatusParam,
   toFeatureCollection,
   DEFAULT_REPORT_STATUS,
+  PIN_CATEGORIES,
   PIN_EXCLUDED_CATEGORIES,
   type ReportPin,
 } from './pins'
@@ -51,6 +53,51 @@ describe('parseStatusParam', () => {
     expect(parseStatusParam('invalid')).toEqual({ ok: false, value: 'invalid' })
     expect(parseStatusParam('closed')).toEqual({ ok: false, value: 'closed' })
     expect(parseStatusParam('1')).toEqual({ ok: false, value: '1' })
+  })
+})
+
+describe('parseCategoriesParam', () => {
+  it('defaults to every pinnable category when the param is absent or blank', () => {
+    expect(parseCategoriesParam(null)).toEqual({
+      ok: true,
+      categories: PIN_CATEGORIES,
+    })
+    expect(parseCategoriesParam(undefined)).toEqual({
+      ok: true,
+      categories: PIN_CATEGORIES,
+    })
+    expect(parseCategoriesParam('  ')).toEqual({
+      ok: true,
+      categories: PIN_CATEGORIES,
+    })
+  })
+
+  it('accepts a comma separated list regardless of case or padding', () => {
+    expect(parseCategoriesParam('  DANGEROUS_TREE , littering ')).toEqual({
+      ok: true,
+      categories: ['dangerous_tree', 'littering'],
+    })
+  })
+
+  it('drops duplicates and returns a stable order', () => {
+    expect(parseCategoriesParam('littering,dangerous_tree,littering')).toEqual({
+      ok: true,
+      categories: ['dangerous_tree', 'littering'],
+    })
+  })
+
+  it('rejects a category that does not exist', () => {
+    expect(parseCategoriesParam('dangerous_tree,dragons')).toEqual({
+      ok: false,
+      value: 'dragons',
+    })
+  })
+
+  it('rejects a fauna or flora category, which has no pin', () => {
+    expect(parseCategoriesParam('oiseau')).toEqual({
+      ok: false,
+      value: 'oiseau',
+    })
   })
 })
 

@@ -2,7 +2,11 @@ import type { NextRequest } from 'next/server'
 import { getCurrentUserProfile } from '@/lib/auth/current-user'
 import { canAccess } from '@/lib/auth/roles'
 import { listReportPins } from '@/lib/reports/queries'
-import { parseStatusParam, REPORT_STATUSES } from '@/lib/reports/pins'
+import {
+  parseCategoriesParam,
+  parseStatusParam,
+  REPORT_STATUSES,
+} from '@/lib/reports/pins'
 
 export async function GET(request: NextRequest) {
   const profile = await getCurrentUserProfile()
@@ -26,7 +30,22 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const reports = await listReportPins(parsed.status)
+  const selected = parseCategoriesParam(
+    request.nextUrl.searchParams.get('categories'),
+  )
 
-  return Response.json({ status: parsed.status, reports })
+  if (!selected.ok) {
+    return Response.json(
+      { error: `Unknown category "${selected.value}".` },
+      { status: 400 },
+    )
+  }
+
+  const reports = await listReportPins(parsed.status, selected.categories)
+
+  return Response.json({
+    status: parsed.status,
+    categories: selected.categories,
+    reports,
+  })
 }
