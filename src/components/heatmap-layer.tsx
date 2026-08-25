@@ -9,6 +9,7 @@ import {
   HEATMAP_SOURCE_ID,
 } from '@/lib/heatmap/layer'
 import type { HeatmapCollection } from '@/lib/heatmap/zones'
+import { keepHeatmapBelowPins } from '@/lib/map/layer-stacking'
 
 type HeatmapPayload = {
   maxPoints: number
@@ -71,6 +72,8 @@ export function HeatmapLayer() {
       source: HEATMAP_SOURCE_ID,
       paint: heatmapPaint(payload.maxPoints),
     })
+
+    keepHeatmapBelowPins(map)
 
     return () => {
       map.off('remove', handleRemove)
