@@ -28,11 +28,11 @@ async function onReviewRequested(payload) {
 
   await sendDiscord({
     review: true,
-    content: `${reviewer ? mention(reviewer) : `**@${team}**`} — code review requested by **@${author}** on #${pr.number}.`,
+    content: `${reviewer ? mention(reviewer) : `**@${team}**`} — code review requested by ${mention(author)} on #${pr.number}.`,
     pingLogins: reviewer ? [reviewer] : [],
     embed: prEmbed(pr, repository, COLORS.review, [
       { name: "Size", value: size(pr), inline: true },
-      { name: "Reviewer", value: reviewer ? `@${reviewer}` : `team @${team}`, inline: true },
+      { name: "Reviewer", value: reviewer ? mention(reviewer) : `team @${team}`, inline: true },
     ]),
   });
 }
@@ -47,7 +47,7 @@ async function onClosed(payload) {
   const closes = (pr.body ?? "").match(/(?:close[sd]?|fixe?[sd]?|resolve[sd]?)\s+#(\d+)/gi) ?? [];
 
   await sendDiscord({
-    content: `${mention(author)} — your PR #${pr.number} was merged into \`${pr.base?.ref}\` by **@${merger}**. 🎉`,
+    content: `${mention(author)} — your PR #${pr.number} was merged into \`${pr.base?.ref}\` by ${mention(merger)}. 🎉`,
     pingLogins: [...new Set([author, merger].filter(Boolean))],
     embed: prEmbed(pr, repository, COLORS.merged, [
       ...(closes.length ? [{ name: "Closes", value: closes.join(", ") }] : []),
@@ -77,11 +77,11 @@ export async function handlePullRequestReview(payload) {
 
   const line = {
     approved: {
-      text: `${mention(author)} — **@${reviewer}** approved #${pr.number}. Good to merge.`,
+      text: `${mention(author)} — ${mention(reviewer)} approved #${pr.number}. Good to merge.`,
       color: COLORS.unblocked,
     },
     changes_requested: {
-      text: `${mention(author)} — **@${reviewer}** requested changes on #${pr.number}.`,
+      text: `${mention(author)} — ${mention(reviewer)} requested changes on #${pr.number}.`,
       color: COLORS.review,
     },
   }[String(review.state ?? "").toLowerCase()];
