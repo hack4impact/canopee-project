@@ -1,6 +1,8 @@
 import { config } from "./config.mjs";
 
-const API = "https://api.github.com";
+// Actions sets GITHUB_API_URL itself; honouring it also lets the tests point the
+// whole client at a local fixture server instead of the network.
+const API = process.env.GITHUB_API_URL || "https://api.github.com";
 
 /** Raised when a request could not be completed, as opposed to legitimately empty. */
 export class GitHubUnavailable extends Error {
@@ -115,13 +117,34 @@ export async function searchTextDependents(owner, repo, number) {
   return [...found.values()];
 }
 
-export async function listOpenIssues(owner, repo) {
+/**
+ * Paginated issue listing. Pull requests are filtered out — GitHub's issues
+ * endpoint returns them too, and a PR is never a task on a sprint board.
+ */
+async function listIssues(owner, repo, query) {
   const out = [];
   for (let page = 1; page <= 10; page++) {
-    const data = await gh(`/repos/${owner}/${repo}/issues?state=open&per_page=100&page=${page}`);
+    const data = await gh(`/repos/${owner}/${repo}/issues?per_page=100&page=${page}&${query}`);
     if (!Array.isArray(data) || data.length === 0) break;
     out.push(...data.filter((i) => !i.pull_request));
     if (data.length < 100) break;
   }
   return out;
+}
+
+export async function listOpenIssues(owner, repo) {
+  return listIssues(owner, repo, "state=open");
+}
+
+/** Every issue filed against one milestone — closed ones included, for the ratio. */
+export async function listMilestoneIssues(owner, repo, milestone, state = "all") {
+  return listIssues(owner, repo, `state=${state}&milestone=${milestone}`);
+}
+
+/** Sprints. Sorted by due date so the nearest deadline comes first. */
+export async function listMilestones(owner, repo, state = "open") {
+  const data = await gh(
+    `/repos/${owner}/${repo}/milestones?state=${state}&per_page=100&sort=due_on&direction=asc`
+  );
+  return Array.isArray(data) ? data : [];
 }

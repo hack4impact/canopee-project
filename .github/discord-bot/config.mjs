@@ -16,6 +16,9 @@ export const config = {
     process.env.DISCORD_REVIEW_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL || "",
   githubToken: process.env.GITHUB_TOKEN || "",
   blockedLabels: list(process.env.BLOCKED_LABELS || "blocked").map((s) => s.toLowerCase()),
+  // Set ALLOW_EVERYONE=false in a busy server: team-wide messages then name each
+  // mapped teammate individually instead of firing a real @everyone.
+  allowEveryone: (process.env.ALLOW_EVERYONE || "true").toLowerCase() !== "false",
 };
 
 /**
@@ -67,6 +70,19 @@ export function mention(login) {
 export function mentionIds(logins) {
   const map = getUserMap();
   return [...new Set(logins.map((l) => map[String(l ?? "").toLowerCase()]).filter(Boolean))];
+}
+
+/**
+ * How to address the whole team in one line.
+ *
+ * `@everyone` when the server allows it, otherwise every mapped teammate by name —
+ * the same intent, delivered the only other way we can deliver it. Returns the
+ * logins that must be allowlisted so the fallback actually notifies anyone.
+ */
+export function everyoneMention() {
+  if (config.allowEveryone) return { text: "@everyone", logins: [] };
+  const logins = Object.keys(getUserMap());
+  return { text: logins.map(mention).join(" ") || "everyone", logins };
 }
 
 export function assertConfig() {

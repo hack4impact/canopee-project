@@ -13,15 +13,28 @@ export const COLORS = {
  *
  * `pingLogins` are GitHub logins; only their mapped Discord ids end up in
  * allowed_mentions, so an @everyone typed into an issue title stays inert.
+ *
+ * `everyone: true` is the one way to make a real @everyone fire, and only the bot's
+ * own message text can trigger it — never text copied out of GitHub. Reserved for
+ * things the whole team has to see: sprint progress, and work nobody has picked up.
  */
-export async function sendDiscord({ content, embed, pingLogins = [], review = false }) {
+export async function sendDiscord({
+  content,
+  embed,
+  pingLogins = [],
+  review = false,
+  everyone = false,
+}) {
   const url = review ? config.discordReviewWebhookUrl : config.discordWebhookUrl;
   if (!url) return;
 
   const body = {
     content,
     embeds: embed ? [embed] : undefined,
-    allowed_mentions: { parse: [], users: mentionIds(pingLogins) },
+    allowed_mentions: {
+      parse: everyone && config.allowEveryone ? ["everyone"] : [],
+      users: mentionIds(pingLogins),
+    },
   };
 
   for (let attempt = 0; attempt < 3; attempt++) {
