@@ -1,7 +1,15 @@
-import { COLORS, clamp, sendDiscord } from "../discord.js";
-import { getIssue } from "../github.js";
-import { findDependents, formatBlockerList, getBlockState, parseBlockerRefs } from "../blocking.js";
-import { config, mention } from "../config.js";
+import { COLORS, clamp, sendDiscord } from "../discord.mjs";
+import { getIssue } from "../github.mjs";
+import {
+  blockingFieldValue,
+  blockingPhrase,
+  countBlocking,
+  findDependents,
+  formatBlockerList,
+  getBlockState,
+  parseBlockerRefs,
+} from "../blocking.mjs";
+import { config, mention } from "../config.mjs";
 
 const assigneeLogins = (issue) => (issue.assignees ?? []).map((u) => u.login).filter(Boolean);
 
@@ -17,8 +25,12 @@ async function announceUnblocked(owner, repo, issue, { trigger, block }) {
     ? assignees.map(mention).join(" ")
     : "**Up for grabs** — nobody is assigned";
 
+  // How much else is waiting on this decides how urgent it is.
+  const blocking = await countBlocking(owner, repo, issue.number);
+  const urgency = blocking ? ` It's ${blockingPhrase(blocking)}.` : "";
+
   await sendDiscord({
-    content: `${who} — issue #${issue.number} is unblocked. You can start on it.`,
+    content: `${who} — issue #${issue.number} is unblocked. You can start on it.${urgency}`,
     pingLogins: assignees,
     embed: {
       title: `#${issue.number} ${clamp(issue.title, 200)}`,
@@ -32,12 +44,12 @@ async function announceUnblocked(owner, repo, issue, { trigger, block }) {
             ? clamp(formatBlockerList(block.blockers), 800)
             : "a blocking label",
         },
+        { name: "Blocking", value: blockingFieldValue(blocking), inline: true },
         {
           name: "Assigned to",
           value: assignees.length ? assignees.join(", ") : "nobody",
           inline: true,
         },
-        { name: "Repo", value: `${owner}/${repo}`, inline: true },
       ],
       timestamp: new Date().toISOString(),
     },
@@ -48,17 +60,21 @@ async function announceUnblocked(owner, repo, issue, { trigger, block }) {
 async function onAssigned(owner, repo, issue, payload) {
   const target = payload.assignee?.login;
   const block = await getBlockState(owner, repo, issue);
+  const blocking = await countBlocking(owner, repo, issue.number);
+
+  const blockingField = { name: "Blocking", value: blockingFieldValue(blocking), inline: true };
 
   if (!block.blocked) {
+    const urgency = blocking ? ` Worth prioritising — it's ${blockingPhrase(blocking)}.` : "";
     await sendDiscord({
-      content: `${mention(target)} — you're assigned to #${issue.number} and nothing is blocking it. Ready to work.`,
+      content: `${mention(target)} — you're assigned to #${issue.number} and nothing is blocking it. Ready to work.${urgency}`,
       pingLogins: [target],
       embed: {
         title: `#${issue.number} ${clamp(issue.title, 200)}`,
         url: issue.html_url,
         color: COLORS.ready,
         description: clamp(issue.body, 300) || "_No description._",
-        fields: [{ name: "Repo", value: `${owner}/${repo}`, inline: true }],
+        fields: [blockingField, { name: "Repo", value: `${owner}/${repo}`, inline: true }],
         timestamp: new Date().toISOString(),
       },
     });
@@ -79,7 +95,7 @@ async function onAssigned(owner, repo, issue, payload) {
             ? clamp(formatBlockerList(block.openBlockers), 800)
             : "a blocking label",
         },
-        { name: "Repo", value: `${owner}/${repo}`, inline: true },
+        blockingField,
       ],
       timestamp: new Date().toISOString(),
     },

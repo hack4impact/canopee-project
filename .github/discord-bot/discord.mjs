@@ -1,4 +1,4 @@
-import { config, mentionIds } from "./config.js";
+import { config, mentionIds } from "./config.mjs";
 
 export const COLORS = {
   unblocked: 0x2ea043, // green — go

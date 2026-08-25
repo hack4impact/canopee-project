@@ -6,9 +6,9 @@
  * minus the transport, the signature check, and the hosting.
  */
 import fs from "node:fs";
-import { assertConfig } from "./config.js";
-import { handleIssues } from "./handlers/issues.js";
-import { handlePullRequest, handlePullRequestReview } from "./handlers/pull_request.js";
+import { assertConfig } from "./config.mjs";
+import { handleIssues } from "./handlers/issues.mjs";
+import { handlePullRequest, handlePullRequestReview } from "./handlers/pull_request.mjs";
 
 assertConfig();
 

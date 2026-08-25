@@ -11,10 +11,9 @@ on:
   pull_request_review:
     types: [submitted]
 
-# Serialise runs so two issues closing at once cannot both announce the same unblock.
-concurrency:
-  group: discord-notify-${{ github.repository }}
-  cancel-in-progress: false
+# No concurrency group on purpose. Grouping made GitHub cancel queued runs whenever
+# several events arrived together, and real notifications were dropped that way. An
+# occasional duplicate message is a much smaller problem than one that never arrives.
 
 permissions:
   issues: read
@@ -24,16 +23,22 @@ permissions:
 jobs:
   notify:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
+      # Fetch only the bot itself, not the whole app — this repo is a Next.js project
+      # and everything else in it is dead weight for a notification.
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          sparse-checkout: .github/discord-bot
+          sparse-checkout-cone-mode: true
+          fetch-depth: 1
+          persist-credentials: false
 
-      # No `npm install` — the bot is dependency-free on purpose.
+      # No actions/setup-node: the runner image already ships a current Node, and the
+      # bot has no dependencies, so setting one up cost ~5s and bought nothing.
+      # No npm install for the same reason.
       - name: Send Discord notification
-        run: node .github/discord-bot/notify.js
+        run: node .github/discord-bot/notify.mjs
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           DISCORD_REVIEW_WEBHOOK_URL: ${{ secrets.DISCORD_REVIEW_WEBHOOK_URL }}

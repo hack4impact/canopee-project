@@ -1,5 +1,5 @@
-import { config } from "./config.js";
-import { getIssue, nativeBlockedBy, nativeBlocking, searchTextDependents } from "./github.js";
+import { config } from "./config.mjs";
+import { getIssue, nativeBlockedBy, nativeBlocking, searchTextDependents } from "./github.mjs";
 
 // "Blocked by", "blocked-by:", "depends on", "waiting on", "blocker:"
 const KEYWORD = /(?:blocked[\s_-]*by|depends?[\s_-]*(?:up)?on|waiting[\s_-]*on|blockers?)\s*:?/gi;
@@ -112,6 +112,35 @@ export async function findDependents(owner, repo, number) {
   }
 
   return [...found.values()];
+}
+
+/**
+ * How many still-open issues are waiting on this one.
+ *
+ * Uses only the native dependency links — the text search behind findDependents costs
+ * scarce search-API quota, which is too expensive to spend per issue in a digest.
+ */
+export async function countBlocking(owner, repo, number) {
+  try {
+    const deps = await nativeBlocking(owner, repo, number);
+    return deps.filter((d) => d.state === "open").length;
+  } catch (err) {
+    // Unknown is not zero. Callers omit the claim rather than assert "blocks nothing".
+    console.warn(`[blocking] could not count dependents of #${number}: ${err.message}`);
+    return null;
+  }
+}
+
+/** "blocking 3 other issues", or "" for zero and for unknown. */
+export function blockingPhrase(count) {
+  if (!count) return "";
+  return `blocking ${count} other issue${count === 1 ? "" : "s"}`;
+}
+
+/** Embed field value for a blocking count, honest about a failed lookup. */
+export function blockingFieldValue(count) {
+  if (count === null) return "could not check";
+  return count > 0 ? `⛔ ${count} other open issue${count === 1 ? "" : "s"}` : "nothing";
 }
 
 export function formatBlockerList(blockers) {

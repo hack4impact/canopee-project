@@ -1,5 +1,5 @@
-import { COLORS, clamp, sendDiscord } from "../discord.js";
-import { mention } from "../config.js";
+import { COLORS, clamp, sendDiscord } from "../discord.mjs";
+import { mention } from "../config.mjs";
 
 function prEmbed(pr, repository, color, extraFields = []) {
   return {
