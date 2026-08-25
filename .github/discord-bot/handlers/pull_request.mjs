@@ -19,6 +19,53 @@ function prEmbed(pr, repository, color, extraFields = []) {
 const size = (pr) =>
   `+${pr.additions ?? "?"} / -${pr.deletions ?? "?"} across ${pr.changed_files ?? "?"} files`;
 
+/** Issues this PR will close when it lands, as written in the description. */
+const closesIssues = (pr) =>
+  (pr.body ?? "").match(/(?:close[sd]?|fixe?[sd]?|resolve[sd]?)\s+#(\d+)/gi) ?? [];
+
+/**
+ * A PR has just appeared and wants eyes on it.
+ *
+ * Drafts are skipped on purpose — a draft is the author saying "not yet". They are
+ * announced later instead, when the author marks the PR ready for review.
+ *
+ * Reviewers set at creation time get a real ping. A PR opened with nobody on it is
+ * still announced, because a PR no one knows about is exactly the one that rots, but
+ * it pings nobody — there is no one to ping yet.
+ */
+async function onOpened(payload) {
+  const { pull_request: pr, repository } = payload;
+  if (pr.draft) {
+    console.log(`[notify] #${pr.number} is a draft — staying quiet until it is ready`);
+    return;
+  }
+
+  const author = pr.user?.login;
+  const reviewers = (pr.requested_reviewers ?? []).map((r) => r.login).filter(Boolean);
+  const teams = (pr.requested_teams ?? []).map((t) => t.name).filter(Boolean);
+  const closes = closesIssues(pr);
+
+  const asked = [...reviewers.map(mention), ...teams.map((t) => `**@${t}**`)];
+  const opened = payload.action === "ready_for_review" ? "is ready for review" : "is open";
+
+  await sendDiscord({
+    review: true,
+    content: asked.length
+      ? `${asked.join(" ")} — PR #${pr.number} from ${mention(author)} ${opened} and needs your review.`
+      : `PR #${pr.number} from ${mention(author)} ${opened} — no reviewer assigned yet.`,
+    pingLogins: reviewers,
+    embed: prEmbed(pr, repository, asked.length ? COLORS.review : COLORS.ready, [
+      { name: "Size", value: size(pr), inline: true },
+      {
+        name: "Reviewers",
+        value: asked.length ? asked.join(", ") : "_nobody yet_",
+        inline: true,
+      },
+      ...(closes.length ? [{ name: "Closes", value: closes.join(", ") }] : []),
+    ]),
+  });
+}
+
 /** Someone was put on the hook for a review. */
 async function onReviewRequested(payload) {
   const { pull_request: pr, repository } = payload;
@@ -44,7 +91,7 @@ async function onClosed(payload) {
 
   const author = pr.user?.login;
   const merger = payload.sender?.login;
-  const closes = (pr.body ?? "").match(/(?:close[sd]?|fixe?[sd]?|resolve[sd]?)\s+#(\d+)/gi) ?? [];
+  const closes = closesIssues(pr);
 
   await sendDiscord({
     content: `${mention(author)} — your PR #${pr.number} was merged into \`${pr.base?.ref}\` by ${mention(merger)}. 🎉`,
@@ -58,6 +105,9 @@ async function onClosed(payload) {
 
 export async function handlePullRequest(payload) {
   switch (payload.action) {
+    case "opened":
+    case "ready_for_review":
+      return onOpened(payload);
     case "review_requested":
       return onReviewRequested(payload);
     case "closed":
@@ -91,7 +141,9 @@ export async function handlePullRequestReview(payload) {
   await sendDiscord({
     review: true,
     content: line.text,
-    pingLogins: [author],
+    // The reviewer is pinged as well as the author: they asked for a change and will
+    // want the thread in their notifications when the revision lands.
+    pingLogins: [...new Set([author, reviewer].filter(Boolean))],
     embed: prEmbed(pr, repository, line.color, [
       { name: "Review", value: clamp(review.body, 500) || "_No comment left._" },
     ]),

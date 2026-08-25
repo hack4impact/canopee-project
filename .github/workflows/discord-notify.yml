@@ -7,7 +7,9 @@ on:
   # from forks, which are not given access to secrets. Safe here because the job only
   # ever runs code from the base branch — it never checks out the PR's own code.
   pull_request_target:
-    types: [review_requested, closed]
+    # ready_for_review pairs with opened: drafts are skipped when they appear and
+    # announced when the author says they are ready, so neither is missed or early.
+    types: [opened, ready_for_review, review_requested, closed]
   pull_request_review:
     types: [submitted]
 
