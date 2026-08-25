@@ -1,14 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useMapFilters } from '@/components/map-filters-provider'
 import { useSharedMap } from '@/components/map-provider'
 import type { ObservationCollection } from '@/lib/observations/collection'
 import {
   observationsPaint,
-  OBSERVATION_LEGEND,
   OBSERVATIONS_LAYER_ID,
   OBSERVATIONS_SOURCE_ID,
 } from '@/lib/observations/layer'
+import { observationCategoriesOf } from '@/lib/reports/filters'
 
 type ObservationsPayload = {
   observations: ObservationCollection
@@ -18,7 +19,8 @@ export function ObservationsLayer() {
   const map = useSharedMap()
   const [payload, setPayload] = useState<ObservationsPayload | null>(null)
   const [failed, setFailed] = useState(false)
-  const [visible, setVisible] = useState(true)
+  const { selection } = useMapFilters()
+  const categoriesKey = observationCategoriesOf(selection).join(',')
 
   useEffect(() => {
     let cancelled = false
@@ -98,12 +100,12 @@ export function ObservationsLayer() {
       return
     }
 
-    map.setLayoutProperty(
-      OBSERVATIONS_LAYER_ID,
-      'visibility',
-      visible ? 'visible' : 'none',
-    )
-  }, [map, payload, visible])
+    map.setFilter(OBSERVATIONS_LAYER_ID, [
+      'in',
+      ['get', 'category'],
+      ['literal', categoriesKey === '' ? [] : categoriesKey.split(',')],
+    ])
+  }, [map, payload, categoriesKey])
 
   if (failed) {
     return (
@@ -116,40 +118,5 @@ export function ObservationsLayer() {
     )
   }
 
-  if (!payload || payload.observations.features.length === 0) {
-    return null
-  }
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setVisible((current) => !current)}
-        aria-pressed={visible}
-        className="absolute top-20 right-4 z-10 touch-manipulation rounded-full bg-canopee-forest/80 px-4 py-2.5 text-sm font-medium text-canopee-cream shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:scale-95 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-      >
-        {visible
-          ? 'Masquer la faune et la flore'
-          : 'Afficher la faune et la flore'}
-      </button>
-
-      {visible && (
-        <ul
-          aria-label="Légende de la faune et de la flore"
-          className="absolute top-36 right-4 z-10 space-y-1.5 rounded-2xl bg-canopee-forest/80 px-3.5 py-2.5 text-sm font-medium text-canopee-cream shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm"
-        >
-          {OBSERVATION_LEGEND.map((entry) => (
-            <li key={entry.category} className="flex items-center gap-2">
-              <span
-                aria-hidden
-                className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-canopee-cream/70"
-                style={{ backgroundColor: entry.color }}
-              />
-              {entry.label}
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
-  )
+  return null
 }

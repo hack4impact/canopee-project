@@ -1,27 +1,30 @@
 import {
+  OBSERVATION_CATEGORIES,
+  type ObservationCategory,
+} from '@/lib/observations/collection'
+import {
+  REPORT_CATEGORIES,
   REPORT_GROUPS,
   REPORT_GROUP_CATEGORIES,
   type ReportCategory,
   type ReportGroup,
 } from '@/lib/reports/categories'
-import { isPinCategory, PIN_CATEGORIES } from '@/lib/reports/pins'
+import { PIN_CATEGORIES } from '@/lib/reports/pins'
 
 export type CategorySelection = ReadonlySet<ReportCategory>
 
 export type GroupState = 'all' | 'some' | 'none'
 
-export const PIN_GROUPS: readonly ReportGroup[] = REPORT_GROUPS.filter(
-  (group) => REPORT_GROUP_CATEGORIES[group].some(isPinCategory),
-)
+export const FILTER_GROUPS: readonly ReportGroup[] = REPORT_GROUPS
 
-export function pinCategoriesOfGroup(
+export function categoriesOfGroup(
   group: ReportGroup,
 ): readonly ReportCategory[] {
-  return REPORT_GROUP_CATEGORIES[group].filter(isPinCategory)
+  return REPORT_GROUP_CATEGORIES[group]
 }
 
 export function allCategoriesSelected(): Set<ReportCategory> {
-  return new Set(PIN_CATEGORIES)
+  return new Set(REPORT_CATEGORIES)
 }
 
 export function toggleCategory(
@@ -43,7 +46,7 @@ export function groupState(
   selection: CategorySelection,
   group: ReportGroup,
 ): GroupState {
-  const categories = pinCategoriesOfGroup(group)
+  const categories = categoriesOfGroup(group)
   const chosen = categories.filter((category) => selection.has(category)).length
 
   if (chosen === 0) {
@@ -58,7 +61,7 @@ export function toggleGroup(
   group: ReportGroup,
 ): Set<ReportCategory> {
   const next = new Set(selection)
-  const categories = pinCategoriesOfGroup(group)
+  const categories = categoriesOfGroup(group)
 
   if (groupState(selection, group) === 'all') {
     for (const category of categories) {
@@ -74,9 +77,17 @@ export function toggleGroup(
 }
 
 export function selectionToParam(selection: CategorySelection): string | null {
-  if (selection.size >= PIN_CATEGORIES.length) {
+  const chosen = PIN_CATEGORIES.filter((category) => selection.has(category))
+
+  if (chosen.length >= PIN_CATEGORIES.length) {
     return null
   }
 
-  return PIN_CATEGORIES.filter((category) => selection.has(category)).join(',')
+  return chosen.join(',')
+}
+
+export function observationCategoriesOf(
+  selection: CategorySelection,
+): readonly ObservationCategory[] {
+  return OBSERVATION_CATEGORIES.filter((category) => selection.has(category))
 }

@@ -1,35 +1,29 @@
 import { describe, expect, it } from 'vitest'
 import {
   allCategoriesSelected,
+  categoriesOfGroup,
   groupState,
-  pinCategoriesOfGroup,
+  observationCategoriesOf,
   selectionToParam,
   toggleCategory,
   toggleGroup,
-  PIN_GROUPS,
+  FILTER_GROUPS,
 } from './filters'
-import type { ReportCategory } from './categories'
-import { PIN_CATEGORIES, PIN_EXCLUDED_CATEGORIES } from './pins'
+import { OBSERVATION_CATEGORIES } from '../observations/collection'
+import { REPORT_CATEGORIES, type ReportCategory } from './categories'
+import { PIN_CATEGORIES } from './pins'
 
-describe('PIN_GROUPS', () => {
-  it('keeps the groups that own pinnable categories', () => {
-    expect(PIN_GROUPS).toEqual(['entretien', 'citoyen'])
+describe('FILTER_GROUPS', () => {
+  it('offers the fauna and flora group alongside the pin groups', () => {
+    expect(FILTER_GROUPS).toEqual(['entretien', 'citoyen', 'faune_flore'])
   })
 
-  it('leaves the fauna and flora categories out', () => {
-    for (const group of PIN_GROUPS) {
-      for (const category of pinCategoriesOfGroup(group)) {
-        expect(PIN_EXCLUDED_CATEGORIES).not.toContain(category)
-      }
-    }
-  })
-
-  it('covers every pinnable category exactly once', () => {
-    const covered = PIN_GROUPS.flatMap((group) => [
-      ...pinCategoriesOfGroup(group),
+  it('covers every category exactly once', () => {
+    const covered = FILTER_GROUPS.flatMap((group) => [
+      ...categoriesOfGroup(group),
     ])
 
-    expect(covered.toSorted()).toEqual([...PIN_CATEGORIES].toSorted())
+    expect(covered.toSorted()).toEqual([...REPORT_CATEGORIES].toSorted())
   })
 })
 
@@ -105,5 +99,31 @@ describe('selectionToParam', () => {
 
   it('is empty when nothing is selected', () => {
     expect(selectionToParam(new Set())).toBe('')
+  })
+
+  it('stays null when only the fauna and flora group is unchecked', () => {
+    expect(
+      selectionToParam(toggleGroup(allCategoriesSelected(), 'faune_flore')),
+    ).toBeNull()
+  })
+})
+
+describe('observationCategoriesOf', () => {
+  it('keeps every fauna and flora category when nothing is unchecked', () => {
+    expect(observationCategoriesOf(allCategoriesSelected())).toEqual(
+      OBSERVATION_CATEGORIES,
+    )
+  })
+
+  it('is empty once the group is cleared', () => {
+    const cleared = toggleGroup(allCategoriesSelected(), 'faune_flore')
+
+    expect(observationCategoriesOf(cleared)).toEqual([])
+  })
+
+  it('ignores the pin categories', () => {
+    const selection = new Set<ReportCategory>(['dangerous_tree', 'oiseau'])
+
+    expect(observationCategoriesOf(selection)).toEqual(['oiseau'])
   })
 })

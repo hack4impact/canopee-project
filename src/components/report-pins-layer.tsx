@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import mapboxgl, { type GeoJSONSource } from 'mapbox-gl'
+import { useMapFilters } from '@/components/map-filters-provider'
 import { useSharedMap } from '@/components/map-provider'
 import { ReportFilters } from '@/components/report-filters'
 import {
@@ -9,13 +10,7 @@ import {
   REPORT_GROUPS,
   type ReportGroup,
 } from '@/lib/reports/categories'
-import {
-  allCategoriesSelected,
-  selectionToParam,
-  toggleCategory,
-  toggleGroup,
-  type CategorySelection,
-} from '@/lib/reports/filters'
+import { selectionToParam } from '@/lib/reports/filters'
 import { formatEventNumber } from '@/lib/reports/format'
 import { reportPinSvg } from '@/lib/reports/group-style'
 import {
@@ -100,9 +95,7 @@ export function ReportPinsLayer({
   const [pins, setPins] = useState<ReportPin[] | null>(null)
   const [failed, setFailed] = useState(false)
   const [images, setImages] = useState<PinImages | null>(null)
-  const [selection, setSelection] = useState<CategorySelection>(
-    allCategoriesSelected,
-  )
+  const { selection } = useMapFilters()
 
   useEffect(() => {
     let cancelled = false
@@ -373,16 +366,5 @@ export function ReportPinsLayer({
     )
   }
 
-  return (
-    <ReportFilters
-      selection={selection}
-      onToggleCategory={(category) =>
-        setSelection((current) => toggleCategory(current, category))
-      }
-      onToggleGroup={(group) =>
-        setSelection((current) => toggleGroup(current, group))
-      }
-      className="absolute top-20 left-4 z-10"
-    />
-  )
+  return <ReportFilters />
 }
