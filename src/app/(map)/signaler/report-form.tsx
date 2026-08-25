@@ -440,6 +440,7 @@ function ReportWizard({
       </div>
 
       <input type="hidden" name="category" value={category} />
+      <input type="hidden" name="description" value={description} />
       <input type="hidden" name="typology" value={typology} />
       <input type="hidden" name="quantity" value={quantity} />
       <input type="hidden" name="species" value={species} />
