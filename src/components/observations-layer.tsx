@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react'
 import { useSharedMap } from '@/components/map-provider'
 import type { ObservationCollection } from '@/lib/observations/collection'
 import {
-  observationsPaint,
   OBSERVATION_LEGEND,
+  OBSERVATION_PIN_IMAGE_ID,
+  observationPinLayout,
+  observationPinSvg,
   OBSERVATIONS_LAYER_ID,
   OBSERVATIONS_SOURCE_ID,
 } from '@/lib/observations/layer'
@@ -14,11 +16,46 @@ type ObservationsPayload = {
   observations: ObservationCollection
 }
 
+function loadPinImage(): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+
+    image.onload = () => resolve(image)
+    image.onerror = () =>
+      reject(new Error('Unable to draw the fauna/flore pin'))
+    image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+      observationPinSvg(),
+    )}`
+  })
+}
+
 export function ObservationsLayer() {
   const map = useSharedMap()
   const [payload, setPayload] = useState<ObservationsPayload | null>(null)
   const [failed, setFailed] = useState(false)
   const [visible, setVisible] = useState(true)
+  const [image, setImage] = useState<HTMLImageElement | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    loadPinImage()
+      .then((loaded) => {
+        if (!cancelled) {
+          setImage(loaded)
+        }
+      })
+      .catch((cause) => {
+        if (!cancelled) {
+          console.warn('Unable to draw the fauna/flore pins', cause)
+          setFailed(true)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -54,7 +91,12 @@ export function ObservationsLayer() {
   }, [])
 
   useEffect(() => {
-    if (!map || !payload || payload.observations.features.length === 0) {
+    if (
+      !map ||
+      !payload ||
+      !image ||
+      payload.observations.features.length === 0
+    ) {
       return
     }
 
@@ -64,6 +106,11 @@ export function ObservationsLayer() {
     }
 
     map.on('remove', handleRemove)
+
+    if (!map.hasImage(OBSERVATION_PIN_IMAGE_ID)) {
+      map.addImage(OBSERVATION_PIN_IMAGE_ID, image, { pixelRatio: 2 })
+    }
+
     map.addSource(OBSERVATIONS_SOURCE_ID, {
       type: 'geojson',
       data: payload.observations,
@@ -71,9 +118,9 @@ export function ObservationsLayer() {
 
     map.addLayer({
       id: OBSERVATIONS_LAYER_ID,
-      type: 'circle',
+      type: 'symbol',
       source: OBSERVATIONS_SOURCE_ID,
-      paint: observationsPaint(),
+      layout: observationPinLayout(),
     })
 
     return () => {
@@ -90,8 +137,12 @@ export function ObservationsLayer() {
       if (map.getSource(OBSERVATIONS_SOURCE_ID)) {
         map.removeSource(OBSERVATIONS_SOURCE_ID)
       }
+
+      if (map.hasImage(OBSERVATION_PIN_IMAGE_ID)) {
+        map.removeImage(OBSERVATION_PIN_IMAGE_ID)
+      }
     }
-  }, [map, payload])
+  }, [map, payload, image])
 
   useEffect(() => {
     if (!map || !map.getLayer(OBSERVATIONS_LAYER_ID)) {
@@ -103,7 +154,7 @@ export function ObservationsLayer() {
       'visibility',
       visible ? 'visible' : 'none',
     )
-  }, [map, payload, visible])
+  }, [map, payload, image, visible])
 
   if (failed) {
     return (

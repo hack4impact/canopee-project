@@ -1,4 +1,5 @@
-import type { CircleLayerSpecification } from 'mapbox-gl'
+import type { SymbolLayerSpecification } from 'mapbox-gl'
+import { reportPinSvg } from '@/lib/reports/group-style'
 import type { ObservationCategory } from '@/lib/observations/collection'
 
 export const OBSERVATIONS_SOURCE_ID = 'fauna-flora-observations'
@@ -6,6 +7,8 @@ export const OBSERVATIONS_SOURCE_ID = 'fauna-flora-observations'
 export const OBSERVATIONS_LAYER_ID = 'fauna-flora-observations-points'
 
 export const OBSERVATION_COLOR = '#17aa55'
+
+export const OBSERVATION_PIN_IMAGE_ID = 'observation-pin'
 
 type LegendEntry = {
   category: ObservationCategory
@@ -34,20 +37,25 @@ const LOW_ZOOM = 10
 
 const HIGH_ZOOM = 16
 
-export function observationsPaint(): CircleLayerSpecification['paint'] {
+/** The teardrop pin reuses the faune/flore pictogram of the reporting form. */
+export function observationPinSvg(scale = 2): string {
+  return reportPinSvg('faune_flore', scale)
+}
+
+export function observationPinLayout(): SymbolLayerSpecification['layout'] {
   return {
-    'circle-color': OBSERVATION_COLOR,
-    'circle-radius': [
+    'icon-image': OBSERVATION_PIN_IMAGE_ID,
+    'icon-size': [
       'interpolate',
       ['linear'],
       ['zoom'],
       LOW_ZOOM,
-      4,
+      0.65,
       HIGH_ZOOM,
-      10,
+      1,
     ],
-    'circle-stroke-width': 1.5,
-    'circle-stroke-color': '#f6f4df',
-    'circle-opacity': 0.9,
+    'icon-anchor': 'bottom',
+    'icon-allow-overlap': true,
+    'icon-ignore-placement': true,
   }
 }
