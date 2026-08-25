@@ -59,11 +59,24 @@ function loadUserMap() {
 let userMap = null;
 const getUserMap = () => (userMap ??= loadUserMap());
 
-/** A real Discord ping when we know the person, their GitHub handle otherwise. */
+/**
+ * A person, named the way Discord should show them: `@TheirName (their-github-login)`.
+ *
+ * The Discord mention alone renders as a display name that often looks nothing like
+ * the GitHub account it belongs to, which makes "who is that?" a real question on a
+ * team message. Carrying the login in brackets answers it without a second lookup.
+ *
+ * Only a mention that also appears in allowed_mentions actually notifies anyone, so
+ * this is safe to use for third parties we merely want to name — they render as a
+ * highlighted mention but stay silent unless the caller pings them on purpose.
+ *
+ * Someone missing from the user map has no Discord name to show, so their GitHub
+ * handle stands alone.
+ */
 export function mention(login) {
   if (!login) return "someone";
   const id = getUserMap()[String(login).toLowerCase()];
-  return id ? `<@${id}>` : `**@${login}**`;
+  return id ? `<@${id}> (${login})` : `**@${login}**`;
 }
 
 /** Discord ids for allowed_mentions — the allowlist of who this message may ping. */
