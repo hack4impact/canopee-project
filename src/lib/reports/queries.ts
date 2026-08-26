@@ -68,7 +68,27 @@ export type ReportListItem = {
   resolvedAt: Date | null
 }
 
-export async function listAllReports(): Promise<ReportListItem[]> {
+export type ReportSortBy = 'date' | 'status'
+export type ReportStatusFilter = 'open' | 'resolved' | 'all'
+
+export async function listAllReports(
+  options: {
+    sortBy?: ReportSortBy
+    statusFilter?: ReportStatusFilter
+  } = {},
+): Promise<ReportListItem[]> {
+  const { sortBy = 'date', statusFilter = 'all' } = options
+
+  const whereClause =
+    statusFilter === 'open'
+      ? isNull(reports.resolvedAt)
+      : statusFilter === 'resolved'
+        ? isNotNull(reports.resolvedAt)
+        : undefined
+
+  const orderByClause =
+    sortBy === 'status' ? asc(reports.resolvedAt) : desc(reports.createdAt)
+
   return db
     .select({
       id: reports.id,
@@ -79,7 +99,8 @@ export async function listAllReports(): Promise<ReportListItem[]> {
       resolvedAt: reports.resolvedAt,
     })
     .from(reports)
-    .orderBy(desc(reports.createdAt))
+    .where(whereClause)
+    .orderBy(orderByClause)
 }
 
 export async function listReportPins(
