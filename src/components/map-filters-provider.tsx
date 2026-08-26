@@ -4,17 +4,20 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   REPORT_GROUPS,
   type ReportCategory,
   type ReportGroup,
 } from '@/lib/reports/categories'
 import {
-  allCategoriesSelected,
+  selectionToUrlParam,
+  paramToSelection,
   toggleCategory,
   toggleGroup,
   type CategorySelection,
@@ -50,9 +53,29 @@ export function MapFiltersProvider({
   observations: boolean
   children: ReactNode
 }) {
-  const [selection, setSelection] = useState<CategorySelection>(
-    allCategoriesSelected,
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const [selection, setSelection] = useState<CategorySelection>(() =>
+    paramToSelection(searchParams.get('categories')),
   )
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString())
+    const value = selectionToUrlParam(selection)
+
+    if (value === null) {
+      params.delete('categories')
+    } else {
+      params.set('categories', value)
+    }
+
+    const query = params.toString()
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection])
+
   const [heatmapVisible, setHeatmapVisible] = useState(true)
   const [heatmapAvailable, setHeatmapAvailable] = useState(false)
 
