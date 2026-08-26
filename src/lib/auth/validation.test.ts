@@ -8,6 +8,8 @@ import {
 
 function goodInput(overrides: Partial<SignupInput> = {}): SignupInput {
   return {
+    firstName: 'Marie',
+    lastName: 'Tremblay',
     email: 'volunteer@canopee.org',
     password: 'longenough',
     confirmPassword: 'longenough',
@@ -67,11 +69,15 @@ describe('validateSignup', () => {
 
   it('reports every empty field at once', () => {
     const errors = validateSignup({
+      firstName: '',
+      lastName: '',
       email: '',
       password: '',
       confirmPassword: '',
     })
 
+    expect(errors.firstName).toBeDefined()
+    expect(errors.lastName).toBeDefined()
     expect(errors.email).toBeDefined()
     expect(errors.password).toBeDefined()
     expect(errors.confirmPassword).toBeDefined()

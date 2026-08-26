@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useMapFilters } from '@/components/map-filters-provider'
 import { useSharedMap } from '@/components/map-provider'
 import {
   heatmapPaint,
@@ -8,6 +9,7 @@ import {
   HEATMAP_SOURCE_ID,
 } from '@/lib/heatmap/layer'
 import type { HeatmapCollection } from '@/lib/heatmap/zones'
+import { keepHeatmapBelowPins } from '@/lib/map/layer-stacking'
 
 type HeatmapPayload = {
   maxPoints: number
@@ -18,7 +20,7 @@ export function HeatmapLayer() {
   const map = useSharedMap()
   const [payload, setPayload] = useState<HeatmapPayload | null>(null)
   const [failed, setFailed] = useState(false)
-  const [visible, setVisible] = useState(true)
+  const { heatmapVisible, onHeatmapAvailable } = useMapFilters()
 
   useEffect(() => {
     let cancelled = false
@@ -71,6 +73,8 @@ export function HeatmapLayer() {
       paint: heatmapPaint(payload.maxPoints),
     })
 
+    keepHeatmapBelowPins(map)
+
     return () => {
       map.off('remove', handleRemove)
 
@@ -96,9 +100,15 @@ export function HeatmapLayer() {
     map.setLayoutProperty(
       HEATMAP_LAYER_ID,
       'visibility',
-      visible ? 'visible' : 'none',
+      heatmapVisible ? 'visible' : 'none',
     )
-  }, [map, payload, visible])
+  }, [map, payload, heatmapVisible])
+
+  useEffect(() => {
+    onHeatmapAvailable(
+      !failed && payload !== null && payload.zones.features.length > 0,
+    )
+  }, [payload, failed, onHeatmapAvailable])
 
   if (failed) {
     return (
@@ -111,18 +121,5 @@ export function HeatmapLayer() {
     )
   }
 
-  if (!payload || payload.zones.features.length === 0) {
-    return null
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => setVisible((current) => !current)}
-      aria-pressed={visible}
-      className="absolute top-4 right-4 z-10 touch-manipulation rounded-full bg-canopee-forest/80 px-4 py-2.5 text-sm font-medium text-canopee-cream shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:scale-95 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-    >
-      {visible ? 'Masquer la carte de chaleur' : 'Afficher la carte de chaleur'}
-    </button>
-  )
+  return null
 }

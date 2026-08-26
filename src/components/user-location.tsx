@@ -3,20 +3,37 @@
 import { useEffect, useRef } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { useSharedMap } from '@/components/map-provider'
-import { PatrolControls } from '@/components/patrol-controls'
 import { isGeolocationAvailable } from '@/lib/mapbox'
 
 const LOCATE_ZOOM = 16
 const LOCATE_TIMEOUT_MS = 10_000
 const LOCATE_CACHE_MAX_AGE_MS = 10_000
 
-type PatrouilleViewProps = {
-  patrolStartedAt?: string | null
+/**Google Maps style dot : blue circle inside a white ring with a soft shadow */
+function createUserLocationElement(): HTMLDivElement {
+  const element = document.createElement('div')
+  element.className =
+    'relative h-[18px] w-[18px] rounded-full border-[3px] border-white bg-canopee-sky-dark shadow-md ring-1 ring-canopee-forest/20'
+
+  return element
 }
 
-export function PatrouilleView({
-  patrolStartedAt = null,
-}: PatrouilleViewProps) {
+type UserLocationProps = {
+  /** Position of the compass button, to clear fixed headers when needed. */
+  compassClassName?: string
+  /** Fly the camera to the patroller on arrival; false keeps the current view. */
+  flyToOnLocate?: boolean
+}
+
+/**
+ * Locates the patroller on the shared map: drops a marker at their position,
+ * optionally flies the camera to them, and offers a compass button to recenter
+ * on them and face north again. Used by the home, Carte and Patrouiller pages.
+ */
+export function UserLocation({
+  compassClassName = 'absolute top-4 right-4 z-10',
+  flyToOnLocate = true,
+}: UserLocationProps) {
   const map = useSharedMap()
 
   const lastPositionRef = useRef<{
@@ -50,7 +67,7 @@ export function PatrouilleView({
         .setLngLat([longitude, latitude])
         .addTo(targetMap)
 
-      if (moveCamera) {
+      if (moveCamera && flyToOnLocate) {
         targetMap.flyTo({
           center: [longitude, latitude],
           zoom: LOCATE_ZOOM,
@@ -84,35 +101,29 @@ export function PatrouilleView({
       marker?.remove()
       marker = null
     }
-  }, [map])
+  }, [map, flyToOnLocate])
 
   return (
-    <>
-      <CompassButton map={map} lastPositionRef={lastPositionRef} />
-      <PatrolControls startedAt={patrolStartedAt} />
-    </>
+    <CompassButton
+      map={map}
+      lastPositionRef={lastPositionRef}
+      className={compassClassName}
+    />
   )
-}
-
-/**Google Maps style dot : blue circle inside a white ring with a soft shadow */
-function createUserLocationElement(): HTMLDivElement {
-  const element = document.createElement('div')
-  element.className =
-    'relative h-[18px] w-[18px] rounded-full border-[3px] border-white bg-canopee-lime shadow-md ring-1 ring-canopee-green/10'
-
-  return element
 }
 
 /** Spins the map back north and recentres on the patroller's last fix */
 function CompassButton({
   map,
   lastPositionRef,
+  className,
 }: {
   map: mapboxgl.Map | null
   lastPositionRef: React.RefObject<{
     longitude: number
     latitude: number
   } | null>
+  className: string
 }) {
   function handleClick() {
     if (!map) {
@@ -137,7 +148,7 @@ function CompassButton({
       type="button"
       onClick={handleClick}
       aria-label="Ramener le nord en haut de l'écran"
-      className="absolute top-4 right-4 z-10 flex h-12 w-12 touch-manipulation items-center justify-center rounded-full bg-canopee-forest/80 text-canopee-cream shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:scale-95 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+      className={`${className} flex h-12 w-12 touch-manipulation items-center justify-center rounded-full bg-canopee-forest/80 text-canopee-cream shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:scale-95 motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
     >
       <CompassIcon className="h-6 w-6" />
     </button>
