@@ -747,6 +747,7 @@ function ReportWizard({
           <div className="flex flex-col gap-1.5">
             <div className="relative">
               <ReportLocationPicker
+                group={group}
                 position={position}
                 onPositionChange={setOverride}
                 disabled={pending}

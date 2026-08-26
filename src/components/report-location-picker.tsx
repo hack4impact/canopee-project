@@ -3,13 +3,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { BaseMap } from '@/components/base-map'
+import { type ReportGroup } from '@/lib/reports/categories'
+import { REPORT_PIN_SIZE, reportPinSvg } from '@/lib/reports/group-style'
 import { clampToLavalBounds, type ReportPosition } from '@/lib/reports/location'
 
 const PIN_ZOOM = 17
 
-const PIN_COLOR = '#c53f31'
+function createPinElement(group: ReportGroup): HTMLDivElement {
+  const element = document.createElement('div')
+
+  element.innerHTML = reportPinSvg(group, 1)
+  element.style.width = `${REPORT_PIN_SIZE.width}px`
+  element.style.height = `${REPORT_PIN_SIZE.height}px`
+  element.style.lineHeight = '0'
+  element.style.cursor = 'grab'
+
+  return element
+}
 
 type ReportLocationPickerProps = {
+  group: ReportGroup
   position: ReportPosition | null
   onPositionChange: (position: ReportPosition) => void
   disabled?: boolean
@@ -17,6 +30,7 @@ type ReportLocationPickerProps = {
 }
 
 export function ReportLocationPicker({
+  group,
   position,
   onPositionChange,
   disabled = false,
@@ -46,7 +60,8 @@ export function ReportLocationPicker({
       marker.setLngLat([position.longitude, position.latitude])
     } else {
       const created = new mapboxgl.Marker({
-        color: PIN_COLOR,
+        element: createPinElement(group),
+        anchor: 'bottom',
         draggable: !disabled,
       })
         .setLngLat([position.longitude, position.latitude])
@@ -74,7 +89,7 @@ export function ReportLocationPicker({
     } else if (!map.getBounds()?.contains(center)) {
       map.easeTo({ center, essential: true })
     }
-  }, [map, position, disabled])
+  }, [map, position, disabled, group])
 
   useEffect(() => {
     markerRef.current?.setDraggable(!disabled)
