@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
 } from 'react'
 import Image from 'next/image'
+import { ReportLocationPicker } from '@/components/report-location-picker'
 import { SpeciesPicto } from '@/components/species-picto'
 import { Spinner } from '@/components/spinner'
 import { isGeolocationAvailable } from '@/lib/mapbox'
@@ -22,6 +23,7 @@ import {
   type ReportGroup,
 } from '@/lib/reports/categories'
 import { downscalePhoto } from '@/lib/reports/downscale'
+import { type ReportPosition } from '@/lib/reports/location'
 import {
   isValidReport,
   MAX_DESCRIPTION_LENGTH,
@@ -43,20 +45,21 @@ const LABEL = 'text-sm font-medium text-canopee-forest'
 
 const ERROR = 'text-sm font-medium text-canopee-coral-dark'
 
+const MAP_CONTROL =
+  'absolute top-2 right-2 z-10 inline-flex touch-manipulation items-center rounded-lg border border-canopee-green/40 bg-white/95 px-2.5 py-1.5 text-xs font-semibold text-canopee-forest shadow-sm backdrop-blur-sm transition-colors hover:bg-canopee-green/10 focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none'
+
 const UNSUPPORTED_MESSAGE =
-  'Ce navigateur ne peut pas fournir votre position, nécessaire pour situer le signalement.'
+  'Ce navigateur ne peut pas fournir votre position. Placez le repère sur la carte.'
 
 const LOCATION_FAILURE: Record<number, string> = {
-  1: 'Localisation refusée. Autorisez-la dans les réglages de votre navigateur pour envoyer un signalement.',
-  2: 'Position indisponible. Placez-vous à découvert, puis réessayez.',
-  3: 'La localisation a pris trop de temps. Réessayez.',
+  1: 'Localisation refusée. Autorisez-la dans vos réglages, ou placez le repère sur la carte.',
+  2: 'Position indisponible. Placez-vous à découvert et réessayez, ou placez le repère sur la carte.',
+  3: 'La localisation a pris trop de temps. Réessayez, ou placez le repère sur la carte.',
 }
 
-type Position = { latitude: number; longitude: number }
-
-type LocationState =
+type FixState =
   | { status: 'locating' }
-  | { status: 'ready'; position: Position }
+  | { status: 'ready'; position: ReportPosition }
   | { status: 'failed'; message: string }
 
 function subscribeToSupport(): () => void {
@@ -153,6 +156,7 @@ type StepKey =
   | 'espece'
   | 'details'
   | 'commentaire'
+  | 'position'
 
 const STEP_TITLES: Record<StepKey, string> = {
   constate: 'Qu’avez-vous constaté ?',
@@ -164,13 +168,21 @@ const STEP_TITLES: Record<StepKey, string> = {
   espece: 'Quelle espèce avez-vous observé ?',
   details: 'Détails',
   commentaire: 'Commentaire',
+  position: 'Où exactement ?',
 }
 
 /** Step order per group, following the Google Sheets spec. */
 const GROUP_STEPS: Record<ReportGroup, readonly StepKey[]> = {
-  entretien: ['constate', 'typologie', 'photo', 'commentaire'],
-  citoyen: ['constate', 'photo', 'nombre', 'commentaire'],
-  faune_flore: ['categorie', 'statut', 'photo', 'espece', 'details'],
+  entretien: ['constate', 'typologie', 'photo', 'commentaire', 'position'],
+  citoyen: ['constate', 'photo', 'nombre', 'commentaire', 'position'],
+  faune_flore: [
+    'categorie',
+    'statut',
+    'photo',
+    'espece',
+    'details',
+    'position',
+  ],
 }
 
 function UploadIcon({ className }: { className?: string }) {
@@ -212,7 +224,9 @@ function ReportWizard({
   const [preview, setPreview] = useState<string | null>(null)
   const [preparingPhoto, setPreparingPhoto] = useState(false)
   const [clientErrors, setClientErrors] = useState<ReportErrors>({})
-  const [fix, setFix] = useState<LocationState | null>(null)
+  const [fix, setFix] = useState<FixState>({ status: 'locating' })
+  const [override, setOverride] = useState<ReportPosition | null>(null)
+  const [locateAttempt, setLocateAttempt] = useState(0)
   const photoInputRef = useRef<HTMLInputElement>(null)
 
   const isSupported = useSyncExternalStore(
@@ -221,9 +235,12 @@ function ReportWizard({
     isSupportedOnServer,
   )
 
-  const location: LocationState = !isSupported
-    ? { status: 'failed', message: UNSUPPORTED_MESSAGE }
-    : (fix ?? { status: 'locating' })
+  const gpsFix: FixState = isSupported
+    ? fix
+    : { status: 'failed', message: UNSUPPORTED_MESSAGE }
+
+  const position: ReportPosition | null =
+    override ?? (gpsFix.status === 'ready' ? gpsFix.position : null)
 
   const errors = { ...serverErrors, ...clientErrors }
 
@@ -265,7 +282,7 @@ function ReportWizard({
     return () => {
       cancelled = true
     }
-  }, [isSupported])
+  }, [isSupported, locateAttempt])
 
   useEffect(() => {
     if (!preview) {
@@ -327,6 +344,8 @@ function ReportWizard({
         return description.trim() !== ''
       case 'commentaire':
         return description.trim() !== ''
+      case 'position':
+        return position !== null
     }
   }
 
@@ -356,8 +375,6 @@ function ReportWizard({
   }
 
   function submit(formData: FormData) {
-    const position = location.status === 'ready' ? location.position : null
-
     const found = validateReport({
       category,
       description,
@@ -423,6 +440,7 @@ function ReportWizard({
       </div>
 
       <input type="hidden" name="category" value={category} />
+      <input type="hidden" name="description" value={description} />
       <input type="hidden" name="typology" value={typology} />
       <input type="hidden" name="quantity" value={quantity} />
       <input type="hidden" name="species" value={species} />
@@ -430,18 +448,10 @@ function ReportWizard({
       <input type="hidden" name="habitat" value={habitat} />
       <input type="hidden" name="statut" value={statut} />
 
-      {location.status === 'ready' && (
+      {position && (
         <>
-          <input
-            type="hidden"
-            name="latitude"
-            value={location.position.latitude}
-          />
-          <input
-            type="hidden"
-            name="longitude"
-            value={location.position.longitude}
-          />
+          <input type="hidden" name="latitude" value={position.latitude} />
+          <input type="hidden" name="longitude" value={position.longitude} />
         </>
       )}
 
@@ -732,21 +742,76 @@ function ReportWizard({
             remaining={remaining}
           />
         )}
+
+        {step === 'position' && (
+          <div className="flex flex-col gap-1.5">
+            <div className="relative">
+              <ReportLocationPicker
+                group={group}
+                position={position}
+                onPositionChange={setOverride}
+                disabled={pending}
+              />
+
+              {override && gpsFix.status === 'ready' && (
+                <button
+                  type="button"
+                  onClick={() => setOverride(null)}
+                  aria-label="Revenir à ma position GPS"
+                  className={MAP_CONTROL}
+                >
+                  Ma position GPS
+                </button>
+              )}
+
+              {isSupported && gpsFix.status === 'failed' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFix({ status: 'locating' })
+                    setLocateAttempt((attempt) => attempt + 1)
+                  }}
+                  aria-label="Réessayer la localisation"
+                  className={MAP_CONTROL}
+                >
+                  Réessayer
+                </button>
+              )}
+            </div>
+
+            <p aria-live="polite" className="text-sm text-canopee-forest/70">
+              {!position
+                ? 'Touchez la carte pour placer le repère à l’endroit du problème.'
+                : override
+                  ? 'Repère placé à la main. Touchez la carte ou faites-le glisser pour l’ajuster.'
+                  : 'Position GPS. Touchez la carte ou faites glisser le repère pour la corriger.'}
+            </p>
+
+            {gpsFix.status === 'locating' && !override && (
+              <p role="status" className="text-sm text-canopee-forest/70">
+                Recherche de votre position…
+              </p>
+            )}
+
+            {gpsFix.status === 'failed' && (
+              <p
+                role="alert"
+                className={`text-sm ${position ? 'text-canopee-forest/70' : 'font-medium text-canopee-coral-dark'}`}
+              >
+                {gpsFix.message}
+              </p>
+            )}
+
+            {errors.latitude && (
+              <p id="latitude-error" className={ERROR}>
+                {errors.latitude}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex shrink-0 flex-col gap-2">
-        {location.status === 'locating' && (
-          <p role="status" className="text-sm text-canopee-forest/70">
-            Recherche de votre position…
-          </p>
-        )}
-
-        {location.status === 'failed' && (
-          <p role="alert" className={ERROR}>
-            {location.message}
-          </p>
-        )}
-
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
@@ -759,13 +824,9 @@ function ReportWizard({
 
           {isLastStep ? (
             <button
+              key="send"
               type="submit"
-              disabled={
-                pending ||
-                location.status !== 'ready' ||
-                preparingPhoto ||
-                !stepIsComplete(step)
-              }
+              disabled={pending || preparingPhoto || !stepIsComplete(step)}
               className="inline-flex touch-manipulation items-center justify-center gap-2 rounded-lg bg-canopee-green px-4 py-2.5 font-bold text-white shadow-sm transition-[background-color,transform] duration-150 ease-out hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/50 focus-visible:outline-none active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
             >
               {pending && <Spinner />}
@@ -773,6 +834,7 @@ function ReportWizard({
             </button>
           ) : (
             <button
+              key="next"
               type="button"
               onClick={next}
               disabled={!stepIsComplete(step) || preparingPhoto}

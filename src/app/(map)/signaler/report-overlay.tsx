@@ -41,7 +41,7 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
             </h1>
             <p className="text-sm text-canopee-forest/70">
               Le signalement est enregistré à l&apos;endroit où vous vous
-              trouvez.
+              trouvez. Vous pourrez ajuster le repère sur la carte.
             </p>
           </div>
 
