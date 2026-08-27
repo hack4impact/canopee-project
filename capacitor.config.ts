@@ -7,6 +7,10 @@ const config: CapacitorConfig = {
   server: {
     url:
       process.env.CAPACITOR_SERVER_URL ?? 'https://canopee-project.vercel.app',
+    errorPath: 'index.html',
+  },
+  android: {
+    useLegacyBridge: true,
   },
 }
 
