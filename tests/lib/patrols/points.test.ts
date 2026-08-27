@@ -9,6 +9,7 @@ import {
   isPermissionDenied,
   MAX_BATCH_POINTS,
   MAX_BUFFERED_POINTS,
+  parseNativeLocation,
   parsePatrolPointBatch,
   POINT_INTERVAL_MS,
   shouldRecordPoint,
@@ -376,5 +377,47 @@ describe('isPlausibleStep', () => {
 
   it('keeps a point whose clock went backwards rather than guessing', () => {
     expect(isPlausibleStep(from, after(-60, 45.61, -73.723))).toBe(true)
+  })
+})
+
+describe('parseNativeLocation', () => {
+  const body = {
+    latitude: 45.5885,
+    longitude: -73.723,
+    accuracy: 8,
+    time: Date.parse('2026-08-27T12:00:00.000Z'),
+    source: 'native',
+  }
+
+  it('reads the point and the accuracy from a native post', () => {
+    expect(parseNativeLocation(body)).toEqual({
+      point: {
+        latitude: 45.5885,
+        longitude: -73.723,
+        recordedAt: '2026-08-27T12:00:00.000Z',
+      },
+      accuracy: 8,
+    })
+  })
+
+  it('rejects a body with no usable timestamp', () => {
+    expect(parseNativeLocation({ ...body, time: null })).toBeNull()
+  })
+
+  it('rejects coordinates outside the column range', () => {
+    expect(parseNativeLocation({ ...body, latitude: 91 })).toBeNull()
+    expect(parseNativeLocation({ ...body, longitude: -181 })).toBeNull()
+  })
+
+  it('keeps the point when accuracy is missing', () => {
+    const parsed = parseNativeLocation({ ...body, accuracy: undefined })
+
+    expect(parsed?.accuracy).toBeNull()
+    expect(parsed?.point.latitude).toBe(45.5885)
+  })
+
+  it('rejects anything that is not an object', () => {
+    expect(parseNativeLocation(null)).toBeNull()
+    expect(parseNativeLocation('nope')).toBeNull()
   })
 })

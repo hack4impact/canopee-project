@@ -192,6 +192,47 @@ export function isAccurateEnough(accuracy: number | null | undefined): boolean {
   return accuracy <= MAX_ACCURACY_METRES
 }
 
+export type NativeLocationBody = {
+  point: RecordedPoint
+  accuracy: number | null
+}
+
+export function parseNativeLocation(
+  payload: unknown,
+): NativeLocationBody | null {
+  if (typeof payload !== 'object' || payload === null) {
+    return null
+  }
+
+  const { latitude, longitude, time, accuracy } = payload as Record<
+    string,
+    unknown
+  >
+
+  if (!isCoordinate(latitude, 90) || !isCoordinate(longitude, 180)) {
+    return null
+  }
+
+  const recordedMs =
+    typeof time === 'number' && Number.isFinite(time) ? time : null
+
+  if (recordedMs === null) {
+    return null
+  }
+
+  return {
+    point: {
+      latitude,
+      longitude,
+      recordedAt: new Date(recordedMs).toISOString(),
+    },
+    accuracy:
+      typeof accuracy === 'number' && Number.isFinite(accuracy)
+        ? accuracy
+        : null,
+  }
+}
+
 export function isPlausibleStep(
   previous: RecordedPoint | null,
   next: RecordedPoint,
