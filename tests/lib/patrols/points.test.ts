@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   capBuffer,
+  classifySyncResponse,
+  isAccurateEnough,
+  isPlausibleStep,
+  MAX_ACCURACY_METRES,
   describeSignalGap,
   isPermissionDenied,
   MAX_BATCH_POINTS,
@@ -158,6 +162,27 @@ describe('isPermissionDenied', () => {
   })
 })
 
+describe('classifySyncResponse', () => {
+  it('accepts a 2xx, the only proof the points reached the database', () => {
+    expect(classifySyncResponse(200)).toBe('accepted')
+    expect(classifySyncResponse(201)).toBe('accepted')
+  })
+
+  it('retries a 5xx, where the server failed rather than refused', () => {
+    expect(classifySyncResponse(500)).toBe('retry')
+    expect(classifySyncResponse(503)).toBe('retry')
+  })
+
+  it('gives up on a 4xx, which would be refused identically forever', () => {
+    expect(classifySyncResponse(400)).toBe('fatal')
+    expect(classifySyncResponse(409)).toBe('fatal')
+  })
+
+  it('gives up on status 0, the opaque redirect of an expired session', () => {
+    expect(classifySyncResponse(0)).toBe('fatal')
+  })
+})
+
 describe('parsePatrolPointBatch', () => {
   it('rejects a payload that is not an array', () => {
     expect(parsePatrolPointBatch({ latitude: 45 }, BOUNDS)).toEqual({
@@ -291,5 +316,65 @@ describe('parsePatrolPointBatch', () => {
 
     expect(batch).toEqual({ points: expect.any(Array), dropped: 1 })
     expect(pointsOf(batch)).toHaveLength(2)
+  })
+})
+
+describe('isAccurateEnough', () => {
+  it('keeps a normal outdoor fix', () => {
+    expect(isAccurateEnough(8)).toBe(true)
+    expect(isAccurateEnough(MAX_ACCURACY_METRES)).toBe(true)
+  })
+
+  it('drops a vague fix, the kind that lands the route inside a house', () => {
+    expect(isAccurateEnough(MAX_ACCURACY_METRES + 1)).toBe(false)
+    expect(isAccurateEnough(500)).toBe(false)
+  })
+
+  it('keeps a fix whose accuracy the device never reported', () => {
+    expect(isAccurateEnough(null)).toBe(true)
+    expect(isAccurateEnough(undefined)).toBe(true)
+    expect(isAccurateEnough(Number.NaN)).toBe(true)
+  })
+})
+
+describe('isPlausibleStep', () => {
+  const from = {
+    latitude: 45.5885,
+    longitude: -73.723,
+    recordedAt: '2026-08-11T14:10:00.000Z',
+  } as RecordedPoint
+
+  function after(seconds: number, latitude: number, longitude: number) {
+    return {
+      latitude,
+      longitude,
+      recordedAt: new Date(
+        Date.parse(from.recordedAt) + seconds * SECOND,
+      ).toISOString(),
+    } as RecordedPoint
+  }
+
+  it('keeps the first point, which has nothing to be implausible against', () => {
+    expect(isPlausibleStep(null, from)).toBe(true)
+  })
+
+  it('keeps a walking pace step', () => {
+    expect(isPlausibleStep(from, after(12, 45.58865, -73.723))).toBe(true)
+  })
+
+  it('keeps jitter while standing still', () => {
+    expect(isPlausibleStep(from, after(12, 45.58851, -73.72301))).toBe(true)
+  })
+
+  it('drops a jump no walker could have made', () => {
+    expect(isPlausibleStep(from, after(12, 45.61, -73.723))).toBe(false)
+  })
+
+  it('allows a long stride again once the signal has been gone a while', () => {
+    expect(isPlausibleStep(from, after(600, 45.61, -73.723))).toBe(true)
+  })
+
+  it('keeps a point whose clock went backwards rather than guessing', () => {
+    expect(isPlausibleStep(from, after(-60, 45.61, -73.723))).toBe(true)
   })
 })

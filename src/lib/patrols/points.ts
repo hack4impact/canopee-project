@@ -1,3 +1,5 @@
+import { distanceBetweenMetres } from '@/lib/patrols/distance'
+
 export const POINT_INTERVAL_MS = 12_000
 
 export const SYNC_INTERVAL_MS = 60_000
@@ -87,6 +89,20 @@ export function isPermissionDenied(
   return error.code === 1
 }
 
+export type SyncOutcome = 'accepted' | 'retry' | 'fatal'
+
+export function classifySyncResponse(status: number): SyncOutcome {
+  if (status >= 200 && status < 300) {
+    return 'accepted'
+  }
+
+  if (status >= 500) {
+    return 'retry'
+  }
+
+  return 'fatal'
+}
+
 export function parsePatrolPointBatch(
   payload: unknown,
   bounds: BatchBounds,
@@ -160,4 +176,39 @@ function isCoordinate(value: unknown, limit: number): value is number {
     Number.isFinite(value) &&
     Math.abs(value) <= limit
   )
+}
+
+export const MAX_ACCURACY_METRES = 50
+
+export const MAX_STEP_SPEED_MPS = 8
+
+export const STEP_NOISE_TOLERANCE_METRES = 25
+
+export function isAccurateEnough(accuracy: number | null | undefined): boolean {
+  if (typeof accuracy !== 'number' || !Number.isFinite(accuracy)) {
+    return true
+  }
+
+  return accuracy <= MAX_ACCURACY_METRES
+}
+
+export function isPlausibleStep(
+  previous: RecordedPoint | null,
+  next: RecordedPoint,
+): boolean {
+  if (previous === null) {
+    return true
+  }
+
+  const elapsedMs =
+    Date.parse(next.recordedAt) - Date.parse(previous.recordedAt)
+
+  if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) {
+    return true
+  }
+
+  const allowed =
+    STEP_NOISE_TOLERANCE_METRES + (elapsedMs / 1000) * MAX_STEP_SPEED_MPS
+
+  return distanceBetweenMetres(previous, next) <= allowed
 }

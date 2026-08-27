@@ -41,9 +41,9 @@ ESLint covers correctness, Prettier covers style. They don't overlap:
 Prettier.
 
 ```bash
-npm run lint        
+npm run lint
 npm run format
-npm run format:check 
+npm run format:check
 ```
 
 You won't usually run these by hand. A Husky pre-commit hook runs lint-staged on
@@ -61,9 +61,9 @@ Unit tests live in `tests/` run on Vitest and import the
 code under test through the `@/` alias.
 
 ```bash
-npm test               
-npm test tests/lib/auth/validation.test.ts 
-npm run test:one -- -t "clampToLavalBounds"   
+npm test
+npm test tests/lib/auth/validation.test.ts
+npm run test:one -- -t "clampToLavalBounds"
 ```
 
 `npm test` runs everything from the `tests/` folder. To run just one file, pass

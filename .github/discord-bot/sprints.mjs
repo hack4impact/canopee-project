@@ -7,18 +7,18 @@
  * counters also include pull requests filed against the milestone.
  */
 
-const DAY = 86_400_000;
+const DAY = 86_400_000
 
 export function percent(closed, total) {
-  if (!total) return 0;
-  return Math.round((closed / total) * 100);
+  if (!total) return 0
+  return Math.round((closed / total) * 100)
 }
 
 /** `████████░░░░░░░░░░░░` — a bar that survives Discord's proportional font. */
 export function progressBar(pct, width = 20) {
-  const safe = Math.max(0, Math.min(100, Number(pct) || 0));
-  const filled = Math.round((safe / 100) * width);
-  return "█".repeat(filled) + "░".repeat(width - filled);
+  const safe = Math.max(0, Math.min(100, Number(pct) || 0))
+  const filled = Math.round((safe / 100) * width)
+  return '█'.repeat(filled) + '░'.repeat(width - filled)
 }
 
 /**
@@ -27,31 +27,35 @@ export function progressBar(pct, width = 20) {
  */
 export function dueState(milestone, now = Date.now()) {
   if (!milestone?.due_on) {
-    return { dated: false, overdue: false, days: 0, text: "no due date set" };
+    return { dated: false, overdue: false, days: 0, text: 'no due date set' }
   }
 
-  const remaining = new Date(milestone.due_on).getTime() - now;
+  const remaining = new Date(milestone.due_on).getTime() - now
 
   if (remaining >= 0) {
-    const days = Math.ceil(remaining / DAY);
+    const days = Math.ceil(remaining / DAY)
     return {
       dated: true,
       overdue: false,
       days,
-      text: days <= 1 ? "due within a day" : `due in ${days} days`,
-    };
+      text: days <= 1 ? 'due within a day' : `due in ${days} days`,
+    }
   }
 
-  const days = Math.floor(-remaining / DAY);
+  const days = Math.floor(-remaining / DAY)
   return {
     dated: true,
     overdue: true,
     days,
-    text: days === 0 ? "overdue since earlier today" : `overdue by ${days} day${days === 1 ? "" : "s"}`,
-  };
+    text:
+      days === 0
+        ? 'overdue since earlier today'
+        : `overdue by ${days} day${days === 1 ? '' : 's'}`,
+  }
 }
 
-export const isOverdue = (milestone, now = Date.now()) => dueState(milestone, now).overdue;
+export const isOverdue = (milestone, now = Date.now()) =>
+  dueState(milestone, now).overdue
 
 /**
  * The sprint the team is in right now.
@@ -63,18 +67,18 @@ export const isOverdue = (milestone, now = Date.now()) => dueState(milestone, no
  * number on Wednesday.
  */
 export function pickCurrentSprint(milestones, now = Date.now()) {
-  const open = (milestones ?? []).filter((m) => m && m.state !== "closed");
+  const open = (milestones ?? []).filter((m) => m && m.state !== 'closed')
 
   const dated = open
     .filter((m) => m.due_on)
-    .sort((a, b) => new Date(a.due_on) - new Date(b.due_on));
+    .sort((a, b) => new Date(a.due_on) - new Date(b.due_on))
 
-  const upcoming = dated.find((m) => new Date(m.due_on).getTime() >= now);
-  if (upcoming) return upcoming;
-  if (dated.length > 0) return dated[dated.length - 1];
+  const upcoming = dated.find((m) => new Date(m.due_on).getTime() >= now)
+  if (upcoming) return upcoming
+  if (dated.length > 0) return dated[dated.length - 1]
 
-  const undated = open.slice().sort((a, b) => b.number - a.number);
-  return undated[0] ?? null;
+  const undated = open.slice().sort((a, b) => b.number - a.number)
+  return undated[0] ?? null
 }
 
 /**
@@ -85,38 +89,47 @@ export function pickCurrentSprint(milestones, now = Date.now()) {
  * both people own it.
  */
 export function tallyIssues(issues) {
-  let closed = 0;
-  let open = 0;
-  const byPerson = new Map();
-  const unassignedOpen = [];
+  let closed = 0
+  let open = 0
+  const byPerson = new Map()
+  const unassignedOpen = []
 
   for (const issue of issues ?? []) {
-    const done = issue.state === "closed";
-    if (done) closed++;
-    else open++;
+    const done = issue.state === 'closed'
+    if (done) closed++
+    else open++
 
-    const logins = (issue.assignees ?? []).map((a) => a.login).filter(Boolean);
+    const logins = (issue.assignees ?? []).map((a) => a.login).filter(Boolean)
     if (logins.length === 0) {
-      if (!done) unassignedOpen.push(issue);
-      continue;
+      if (!done) unassignedOpen.push(issue)
+      continue
     }
 
     for (const login of logins) {
-      const row = byPerson.get(login) ?? { closed: 0, open: 0, openIssues: [] };
-      if (done) row.closed++;
+      const row = byPerson.get(login) ?? { closed: 0, open: 0, openIssues: [] }
+      if (done) row.closed++
       else {
-        row.open++;
-        row.openIssues.push(issue);
+        row.open++
+        row.openIssues.push(issue)
       }
-      byPerson.set(login, row);
+      byPerson.set(login, row)
     }
   }
 
-  const total = closed + open;
-  return { closed, open, total, pct: percent(closed, total), byPerson, unassignedOpen };
+  const total = closed + open
+  return {
+    closed,
+    open,
+    total,
+    pct: percent(closed, total),
+    byPerson,
+    unassignedOpen,
+  }
 }
 
 /** People with unfinished work first; ties broken by who has closed the least. */
 export function sortByRemaining(byPerson) {
-  return [...byPerson.entries()].sort((a, b) => b[1].open - a[1].open || a[1].closed - b[1].closed);
+  return [...byPerson.entries()].sort(
+    (a, b) => b[1].open - a[1].open || a[1].closed - b[1].closed,
+  )
 }
