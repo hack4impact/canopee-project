@@ -16,8 +16,8 @@ Grab the connection string from Supabase (Project Settings → Database → Conn
 Then set up the database and start the dev server:
 
 ```bash
-npm run db:migrate   # apply migrations
-npm run db:seed      # a few demo users
+npm run db:migrate
+npm run db:seed
 npm run dev
 ```
 
@@ -28,8 +28,8 @@ The home page at http://localhost:3000 lists users read straight from Postgres t
 Schema lives in `src/db/schema.ts`. After changing it:
 
 ```bash
-npm run db:generate   # writes a migration to drizzle/
-npm run db:migrate    # applies it
+npm run db:generate
+npm run db:migrate
 ```
 
 Commit the generated files in `drizzle/`. `npm run db:studio` opens Drizzle Studio if you want to poke around.
@@ -41,9 +41,9 @@ ESLint covers correctness, Prettier covers style. They don't overlap:
 Prettier.
 
 ```bash
-npm run lint           # ESLint
-npm run format         # Prettier, rewrites files
-npm run format:check   # Prettier, reports only
+npm run lint        
+npm run format
+npm run format:check 
 ```
 
 You won't usually run these by hand. A Husky pre-commit hook runs lint-staged on
@@ -61,9 +61,9 @@ Unit tests live in `tests/` run on Vitest and import the
 code under test through the `@/` alias.
 
 ```bash
-npm test               # run the whole suite
-npm test tests/lib/auth/validation.test.ts  # run a single file
-npm run test:one -- -t "clampToLavalBounds"    # run by test name pattern
+npm test               
+npm test tests/lib/auth/validation.test.ts 
+npm run test:one -- -t "clampToLavalBounds"   
 ```
 
 `npm test` runs everything from the `tests/` folder. To run just one file, pass
