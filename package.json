@@ -13,6 +13,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "test:one": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -20,6 +21,7 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:seed-reports": "tsx src/db/seed-reports.ts",
     "db:seed-patrols": "tsx src/db/seed-patrols.ts",
+    "db:reseed-reports": "tsx src/db/reseed-reports.ts",
     "email:campaign": "tsx scripts/send-campaign.ts",
     "prepare": "husky"
   },

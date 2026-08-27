@@ -32,6 +32,8 @@ export async function signup(
   formData: FormData,
 ): Promise<SignupState> {
   const input = {
+    firstName: String(formData.get('firstName') ?? ''),
+    lastName: String(formData.get('lastName') ?? ''),
     email: String(formData.get('email') ?? ''),
     password: String(formData.get('password') ?? ''),
     confirmPassword: String(formData.get('confirmPassword') ?? ''),
@@ -43,8 +45,8 @@ export async function signup(
   }
 
   const email = input.email.trim().toLowerCase()
-  const firstName = String(formData.get('firstName') ?? '').trim()
-  const lastName = String(formData.get('lastName') ?? '').trim()
+  const firstName = input.firstName.trim()
+  const lastName = input.lastName.trim()
   const supabase = await createClient()
 
   const { data, error } = await supabase.auth.signUp({

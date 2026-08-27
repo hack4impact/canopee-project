@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { TopPanel } from '@/components/top-panel'
+import { UserLocation } from '@/components/user-location'
 
 export const metadata: Metadata = {
   title: 'Accueil | Canopée',
@@ -9,5 +10,10 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 export default function AccueilPage() {
-  return <TopPanel />
+  return (
+    <>
+      <TopPanel />
+      <UserLocation compassClassName="absolute top-[calc(7rem+env(safe-area-inset-top))] right-4 z-10" />
+    </>
+  )
 }

@@ -1,5 +1,5 @@
 {
-  "id": "670ecbbd-07ca-4c17-8a66-e3dbc980e629",
+  "id": "60c967a6-d474-45b1-966a-2f9733c8a157",
   "prevId": "fa400ac7-fba7-4424-a1d3-e1d3300a5145",
   "version": "7",
   "dialect": "postgresql",
@@ -90,7 +90,7 @@
               "nulls": "last"
             }
           ],
-          "isUnique": true,
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -481,10 +481,30 @@
       "schema": "public",
       "values": [
         "dangerous_tree",
+        "fallen_tree",
+        "littering",
+        "blocked_trail",
+        "damaged_trail",
+        "unofficial_trail",
+        "bridge_repair",
         "damaged_infrastructure",
+        "signage_fix",
+        "site_maintenance",
+        "maintenance_other",
+        "bicycles",
+        "motor_vehicle",
+        "foraging",
+        "off_trail",
+        "encroachment",
+        "unleashed_dog",
+        "dog_waste",
+        "campfire",
+        "built_shelter",
+        "homeless_camp",
+        "illegal_dumping",
+        "citizen_other",
         "fauna_observation",
-        "flora_observation",
-        "unleashed_dog"
+        "flora_observation"
       ]
     },
     "public.role": {

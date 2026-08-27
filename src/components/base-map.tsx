@@ -14,13 +14,50 @@ import {
 type BaseMapProps = {
   accessToken?: string
   className?: string
+  mapClassName?: string
+  ariaLabel?: string
   viewport?: MapViewport
   onMapReady?: (map: mapboxgl.Map) => void
+}
+
+/**
+ * Hides the POI label layer (restaurants, shops, businesses…) so the map only
+ * keeps meaningful names: roads, wooded areas and other landuse labels. In the
+ * Mapbox v12 styles the business names live in the `poi_label` source layer;
+ * road and landuse names come from other source layers and stay untouched.
+ */
+function hidePoiLabels(map: mapboxgl.Map): void {
+  const style = map.getStyle()
+
+  if (!style) {
+    return
+  }
+
+  for (const layer of style.layers) {
+    if (layer.type !== 'symbol') {
+      continue
+    }
+
+    const sourceLayer = (layer as { 'source-layer'?: string })['source-layer']
+
+    // Business names (restaurants, shops…) come from the `poi_label` source
+    // layer (layer id `poi-label`); road, landuse and natural labels use other
+    // source layers and stay visible.
+    if (sourceLayer !== 'poi_label') {
+      continue
+    }
+
+    if (map.getLayoutProperty(layer.id, 'visibility') !== 'none') {
+      map.setLayoutProperty(layer.id, 'visibility', 'none')
+    }
+  }
 }
 
 export function BaseMap({
   accessToken,
   className,
+  mapClassName = 'touch-pan-y',
+  ariaLabel = 'Carte interactive de Laval',
   viewport = LAVAL_WOODED_VIEW,
   onMapReady,
 }: BaseMapProps) {
@@ -99,6 +136,12 @@ export function BaseMap({
     syncZoomFloor()
     map.on('resize', syncZoomFloor)
 
+    // Hide business names as soon as the style is ready (and again if it
+    // reloads, e.g. after the style finishes applying).
+    const handleStyleData = () => hidePoiLabels(map)
+    map.on('load', handleStyleData)
+    map.on('styledata', handleStyleData)
+
     let hasTrackedLoad = false
     let hasNotifiedReady = false
     const handleReady = () => {
@@ -174,9 +217,9 @@ export function BaseMap({
     <div className={`relative ${className ?? ''}`}>
       <div
         ref={containerRef}
-        className="mapbox-map h-full w-full touch-pan-y"
+        className={`mapbox-map h-full w-full ${mapClassName}`}
         role="region"
-        aria-label="Carte interactive de Laval"
+        aria-label={ariaLabel}
       />
 
       {!isReady && (

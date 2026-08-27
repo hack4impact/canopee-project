@@ -5,6 +5,15 @@ import { fileURLToPath } from 'node:url'
 const projectRoot = path.dirname(fileURLToPath(import.meta.url))
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'afgwpbrkliamiopciuic.supabase.co',
+        pathname: '/storage/v1/object/sign/**',
+      },
+    ],
+  },
   experimental: {
     authInterrupts: true,
     viewTransition: true,
@@ -15,6 +24,16 @@ const nextConfig: NextConfig = {
   },
   turbopack: {
     root: projectRoot,
+  },
+  async redirects() {
+    return [
+      {
+        // The Patrouiller page was merged into the home page.
+        source: '/patrouilles',
+        destination: '/',
+        permanent: true,
+      },
+    ]
   },
 }
 

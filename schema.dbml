@@ -23,8 +23,16 @@ Enum report_category {
   damaged_infrastructure
   bicycle
   motorized_vehicle
-  fauna_observation
-  flora_observation
+  reptile
+  insecte
+  oiseau
+  amphibien
+  mammifere
+  invertebre
+  mollusque
+  poisson
+  plante_vasculaire
+  bryophyte
   unleashed_dog
   campfire
   others
