@@ -1,11 +1,31 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { drainQueuedReports, pendingReportCount } from '@/lib/reports/send'
 import { ReportFlow } from './report-flow'
 
 export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
   const router = useRouter()
+  const [pendingReports, setPendingReports] = useState(0)
+
+  const drain = useCallback(() => {
+    drainQueuedReports()
+      .then(setPendingReports)
+      .catch(() => setPendingReports(0))
+  }, [])
+
+  useEffect(() => {
+    pendingReportCount()
+      .then(setPendingReports)
+      .catch(() => setPendingReports(0))
+
+    drain()
+
+    window.addEventListener('online', drain)
+
+    return () => window.removeEventListener('online', drain)
+  }, [drain])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -66,6 +86,17 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
             </svg>
           </button>
         </header>
+
+        {pendingReports > 0 && (
+          <p
+            aria-live="polite"
+            className="shrink-0 rounded-lg bg-canopee-green/10 px-3 py-2.5 text-sm font-medium text-canopee-forest"
+          >
+            {pendingReports === 1
+              ? '1 signalement en attente d’envoi.'
+              : `${pendingReports} signalements en attente d’envoi.`}
+          </p>
+        )}
 
         <div className="flex min-h-0 flex-1 flex-col justify-center">
           <ReportFlow photoRequired={photoRequired} />

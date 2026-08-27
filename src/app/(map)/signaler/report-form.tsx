@@ -31,7 +31,8 @@ import {
   validateReport,
   type ReportErrors,
 } from '@/lib/reports/validation'
-import { submitReport, type ReportFormState } from './actions'
+import { sendReport } from '@/lib/reports/send'
+import type { ReportFormState } from '@/lib/reports/submit'
 import { REPORT_THEMES } from './report-theme'
 
 const initialState: ReportFormState = {}
@@ -79,10 +80,7 @@ export function ReportForm({
   onBack: () => void
   photoRequired: boolean
 }) {
-  const [state, formAction, pending] = useActionState(
-    submitReport,
-    initialState,
-  )
+  const [state, formAction, pending] = useActionState(sendReport, initialState)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -122,7 +120,9 @@ export function ReportForm({
           aria-live="polite"
           className="rounded-lg bg-canopee-green/10 px-3 py-2.5 text-sm font-medium text-canopee-forest"
         >
-          Signalement envoyé. Merci!
+          {state.queued
+            ? 'Signalement enregistré. Il partira au retour du réseau.'
+            : 'Signalement envoyé. Merci!'}
         </p>
       )}
 
