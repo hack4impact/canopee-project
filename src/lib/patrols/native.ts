@@ -56,8 +56,7 @@ function nativeUploadOptions(token: string | null) {
   }
 }
 
-// The access token outlives a short walk but not a long one, so it is replaced
-// while the service runs rather than only at start.
+
 function startTokenRefresh(): void {
   stopTokenRefresh()
 
