@@ -15,9 +15,77 @@ const START_OPTIONS = {
   stale: false,
 }
 
+const TOKEN_ENDPOINT = '/api/patrols/upload-token'
+
+const NATIVE_ENDPOINT = '/api/patrol-points/native'
+
+const TOKEN_REFRESH_MS = 15 * 60_000
+
 let received = 0
 
 let lastReceivedAtMs: number | null = null
+
+let refreshTimer: ReturnType<typeof setInterval> | null = null
+
+async function fetchUploadToken(): Promise<string | null> {
+  try {
+    const response = await fetch(TOKEN_ENDPOINT, { redirect: 'manual' })
+
+    if (!response.ok) {
+      debugLog('native.token.rejected', { status: response.status })
+      return null
+    }
+
+    const { token } = (await response.json()) as { token?: string }
+
+    return typeof token === 'string' && token.length > 0 ? token : null
+  } catch (cause) {
+    debugLog('native.token.failed', describeError(cause))
+    return null
+  }
+}
+
+function nativeUploadOptions(token: string | null) {
+  if (!token) {
+    return {}
+  }
+
+  return {
+    url: new URL(NATIVE_ENDPOINT, window.location.origin).toString(),
+    headers: { Authorization: `Bearer ${token}` },
+  }
+}
+
+
+function startTokenRefresh(): void {
+  stopTokenRefresh()
+
+  refreshTimer = setInterval(() => {
+    void (async () => {
+      const token = await fetchUploadToken()
+
+      if (!token) {
+        return
+      }
+
+      try {
+        await BackgroundGeolocation.updateHeaders({
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        debugLog('native.token.refreshed')
+      } catch (cause) {
+        debugLog('native.token.refresh.failed', describeError(cause))
+      }
+    })()
+  }, TOKEN_REFRESH_MS)
+}
+
+function stopTokenRefresh(): void {
+  if (refreshTimer !== null) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+}
 
 export function isNativeApp(): boolean {
   return typeof window !== 'undefined' && Capacitor.isNativePlatform()
@@ -38,7 +106,13 @@ export async function startNativeWatch(
   received = 0
   lastReceivedAtMs = null
 
-  debugLog('native.start.requested', { options: START_OPTIONS })
+  const token = await fetchUploadToken()
+  const options = { ...START_OPTIONS, ...nativeUploadOptions(token) }
+
+  debugLog('native.start.requested', {
+    options: START_OPTIONS,
+    nativeUpload: token !== null,
+  })
 
   try {
     const permissions = await BackgroundGeolocation.checkPermissions()
@@ -47,7 +121,7 @@ export async function startNativeWatch(
     debugLog('native.permissions.failed', describeError(cause))
   }
 
-  await BackgroundGeolocation.start(START_OPTIONS, (location, error) => {
+  await BackgroundGeolocation.start(options, (location, error) => {
     if (error) {
       debugLog('native.error', {
         ...describeError(error),
@@ -82,11 +156,17 @@ export async function startNativeWatch(
     onPoint(toNativeRecordedPoint(location), location.accuracy)
   })
 
+  if (token) {
+    startTokenRefresh()
+  }
+
   debugLog('native.start.ok')
 }
 
 export async function stopNativeWatch(): Promise<void> {
   debugLog('native.stop.requested', { received })
+
+  stopTokenRefresh()
 
   try {
     await BackgroundGeolocation.stop()
