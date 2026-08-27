@@ -1,5 +1,6 @@
 'use server'
 
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { db, users } from '@/db'
 import {
@@ -49,9 +50,14 @@ export async function signup(
   const lastName = input.lastName.trim()
   const supabase = await createClient()
 
+  const origin = (await headers()).get('origin')
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password: input.password,
+    options: origin
+      ? { emailRedirectTo: `${origin}/auth/confirm?next=/` }
+      : undefined,
   })
 
   if (error) {
