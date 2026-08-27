@@ -85,6 +85,35 @@ export function selectionToParam(selection: CategorySelection): string | null {
 
   return chosen.join(',')
 }
+export function selectionToUrlParam(
+  selection: CategorySelection,
+): string | null {
+  if (selection.size >= REPORT_CATEGORIES.length) {
+    return null
+  }
+
+  return REPORT_CATEGORIES.filter((category) => selection.has(category)).join(
+    ',',
+  )
+}
+
+export function paramToSelection(param: string | null): Set<ReportCategory> {
+  if (param === null) {
+    return allCategoriesSelected()
+  }
+
+  if (param === '') {
+    return new Set()
+  }
+
+  return new Set(
+    param
+      .split(',')
+      .filter((value): value is ReportCategory =>
+        REPORT_CATEGORIES.includes(value as ReportCategory),
+      ),
+  )
+}
 
 export function observationCategoriesOf(
   selection: CategorySelection,
