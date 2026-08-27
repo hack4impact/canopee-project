@@ -56,7 +56,6 @@ function nativeUploadOptions(token: string | null) {
   }
 }
 
-
 function startTokenRefresh(): void {
   stopTokenRefresh()
 

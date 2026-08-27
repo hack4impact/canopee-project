@@ -47,3 +47,7 @@ next-env.d.ts
 
 # Canopée spec files (Google Sheets exports)
 *.xlsx
+
+# Chapter documents, not part of the project
+/documents
+/docs/chapitre

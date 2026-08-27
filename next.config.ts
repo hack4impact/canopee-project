@@ -25,6 +25,14 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/.well-known/assetlinks.json',
+        destination: '/api/assetlinks',
+      },
+    ]
+  },
   async redirects() {
     return [
       {

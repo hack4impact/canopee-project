@@ -3,6 +3,7 @@ import { Averia_Serif_Libre, Geist_Mono } from 'next/font/google'
 import localFont from 'next/font/local'
 import { PatrolControls } from '@/components/patrol-controls'
 import { ReportSync } from '@/components/report-sync'
+import { DeepLink } from '@/components/deep-link'
 import { getCurrentUserProfile } from '@/lib/auth/current-user'
 import { getActivePatrol } from '@/lib/patrols/queries'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -98,6 +99,7 @@ export default async function RootLayout({
         {children}
         <PatrolControls initialStartedAt={initialStartedAt} />
         <ReportSync />
+        <DeepLink />
       </body>
     </html>
   )

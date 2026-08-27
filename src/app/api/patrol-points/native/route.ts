@@ -7,10 +7,6 @@ import {
 import { getActivePatrol } from '@/lib/patrols/queries'
 import { readUploadToken } from '@/lib/patrols/upload-token'
 
-/**
- * Receives a single GPS point posted by the native tracking service. Unlike the
- * batch endpoint this carries no cookies, so it authenticates with a token.
- */
 export async function POST(request: Request) {
   const header = request.headers.get('authorization')
   const session = header?.startsWith('Bearer ')
@@ -41,8 +37,6 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Expected a location.' }, { status: 400 })
   }
 
-  // The WebView path drops these client-side, so the native path must too or
-  // the same walk records different points depending on which one delivered.
   if (!isAccurateEnough(location.accuracy)) {
     return Response.json({ accepted: 0, dropped: 1 })
   }
