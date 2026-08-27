@@ -4,4 +4,7 @@
     <string name="title_activity_main">Canopée</string>
     <string name="package_name">org.reseaucanopee.app</string>
     <string name="custom_url_scheme">org.reseaucanopee.app</string>
+    <string name="capacitor_background_geolocation_notification_channel_name">Suivi de patrouille</string>
+    <string name="capacitor_background_geolocation_notification_icon">drawable/ic_tracking</string>
+    <string name="capacitor_background_geolocation_notification_color">#004523</string>
 </resources>
