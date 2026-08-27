@@ -53,6 +53,22 @@ that ESLint can't fix will reject the commit until you sort them out.
 The hook installs itself on `npm install` via the `prepare` script, so there's
 nothing to set up. `git commit --no-verify` skips it if you need an escape hatch.
 
+## Testing
+
+Download **Vitest VSCode Extension** for a better testing experience within the editor. Right click the test file/folder in your editor and select "Run tests" or equivalent.
+
+Unit tests live in `tests/` run on Vitest and import the
+code under test through the `@/` alias.
+
+```bash
+npm test               # run the whole suite
+npm test tests/lib/auth/validation.test.ts  # run a single file
+npm run test:one -- -t "clampToLavalBounds"    # run by test name pattern
+```
+
+`npm test` runs everything from the `tests/` folder. To run just one file, pass
+its path (either `npm test <path>` or `npm run test:one <path>`)
+
 ## Deploying
 
 Vercel is wired up to the repo. `develop` is the production branch; every PR gets a preview URL. `DATABASE_URL` needs to be set in the Vercel project for both Production and Preview.
