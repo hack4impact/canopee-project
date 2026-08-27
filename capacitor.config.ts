@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
-  appId: 'ca.canopee.app',
+  appId: 'org.reseaucanopee.app',
   appName: 'Canopée',
   webDir: 'www',
   server: {

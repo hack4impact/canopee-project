@@ -1,4 +1,4 @@
-package ca.canopee.app;
+package org.reseaucanopee.app;
 
 import com.getcapacitor.BridgeActivity;
 
