@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm'
 import { db, patrolPoints, patrols, users } from '@/db'
 import { totalDistanceMetres, type Coordinate } from './distance'
 
@@ -31,6 +31,24 @@ export async function getActivePatrol(userId: string): Promise<Patrol | null> {
     .limit(1)
 
   return patrol ?? null
+}
+
+export async function listPatrolsCovering(
+  userId: string,
+  from: Date,
+  to: Date,
+): Promise<Patrol[]> {
+  return db
+    .select()
+    .from(patrols)
+    .where(
+      and(
+        eq(patrols.userId, userId),
+        lte(patrols.startedAt, to),
+        or(isNull(patrols.endedAt), gte(patrols.endedAt, from)),
+      ),
+    )
+    .orderBy(desc(patrols.startedAt))
 }
 
 export function parsePageParam(value: string | null | undefined): number {

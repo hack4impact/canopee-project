@@ -233,6 +233,96 @@ export function parseNativeLocation(
   }
 }
 
+export type NativeLocationBatch = {
+  locations: NativeLocationBody[]
+  dropped: number
+}
+
+export function parseNativeLocationBatch(
+  payload: unknown,
+): NativeLocationBatch | { error: string } {
+  const items = Array.isArray(payload) ? payload : [payload]
+
+  if (items.length > MAX_BATCH_POINTS) {
+    return { error: `Expected at most ${MAX_BATCH_POINTS} points.` }
+  }
+
+  const locations: NativeLocationBody[] = []
+  let dropped = 0
+
+  for (const item of items) {
+    const location = parseNativeLocation(item)
+
+    if (location === null || !isAccurateEnough(location.accuracy)) {
+      dropped += 1
+      continue
+    }
+
+    locations.push(location)
+  }
+
+  return { locations, dropped }
+}
+
+export type PatrolWindow = {
+  id: string
+  startedAt: Date
+  endedAt: Date | null
+}
+
+export type PatrolGroup = {
+  patrolId: string
+  startedAt: Date
+  points: RecordedPoint[]
+}
+
+export function groupPointsByPatrol(
+  points: RecordedPoint[],
+  windows: PatrolWindow[],
+  now: Date,
+): { groups: PatrolGroup[]; dropped: number } {
+  const groups = new Map<string, PatrolGroup>()
+  let dropped = 0
+
+  for (const point of points) {
+    const recordedMs = Date.parse(point.recordedAt)
+
+    if (Number.isNaN(recordedMs)) {
+      dropped += 1
+      continue
+    }
+
+    const window = windows.find((candidate) => {
+      const earliest = candidate.startedAt.getTime() - PATROL_START_GRACE_MS
+      const latest =
+        (candidate.endedAt ?? now).getTime() +
+        (candidate.endedAt ? 0 : CLOCK_SKEW_MS)
+
+      return recordedMs >= earliest && recordedMs <= latest
+    })
+
+    if (!window) {
+      dropped += 1
+      continue
+    }
+
+    const group = groups.get(window.id)
+
+    if (group) {
+      group.points.push(point)
+      continue
+    }
+
+    groups.set(window.id, {
+      patrolId: window.id,
+      startedAt: window.startedAt,
+      points: [point],
+    })
+  }
+
+  return { groups: [...groups.values()], dropped }
+}
+
 export function isPlausibleStep(
   previous: RecordedPoint | null,
   next: RecordedPoint,

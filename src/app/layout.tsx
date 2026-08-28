@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Averia_Serif_Libre, Geist_Mono } from 'next/font/google'
 import localFont from 'next/font/local'
 import { PatrolControls } from '@/components/patrol-controls'
+import { PatrolSync } from '@/components/patrol-sync'
 import { ReportSync } from '@/components/report-sync'
 import { DeepLink } from '@/components/deep-link'
 import { getCurrentUserProfile } from '@/lib/auth/current-user'
@@ -98,6 +99,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         {children}
         <PatrolControls initialStartedAt={initialStartedAt} />
+        <PatrolSync />
         <ReportSync />
         <DeepLink />
       </body>

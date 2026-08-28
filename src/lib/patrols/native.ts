@@ -98,6 +98,27 @@ export function toNativeRecordedPoint(location: NativeLocation): RecordedPoint {
   }
 }
 
+export async function flushNativeQueue(): Promise<void> {
+  if (!isNativeApp()) {
+    return
+  }
+
+  const token = await fetchUploadToken()
+
+  if (!token) {
+    return
+  }
+
+  try {
+    await BackgroundGeolocation.updateHeaders({
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    debugLog('native.flush.requested')
+  } catch (cause) {
+    debugLog('native.flush.failed', describeError(cause))
+  }
+}
+
 export async function startNativeWatch(
   onPoint: (point: RecordedPoint, accuracy: number | null) => void,
   onError: (error: Error) => void,
