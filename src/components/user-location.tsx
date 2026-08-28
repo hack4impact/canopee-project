@@ -31,7 +31,7 @@ type UserLocationProps = {
  * on them and face north again. Used by the home, Carte and Patrouiller pages.
  */
 export function UserLocation({
-  compassClassName = 'absolute top-4 right-4 z-10',
+  compassClassName = 'absolute top-[calc(1rem+env(safe-area-inset-top))] right-4 z-10',
   flyToOnLocate = true,
 }: UserLocationProps) {
   const map = useSharedMap()

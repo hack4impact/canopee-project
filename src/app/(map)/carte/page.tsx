@@ -25,7 +25,7 @@ export default async function CartePage() {
       {observations && <ObservationsLayer />}
       <UserLocation
         flyToOnLocate={false}
-        compassClassName="absolute top-4 left-4 z-10"
+        compassClassName="absolute top-[calc(1rem+env(safe-area-inset-top))] left-4 z-10"
       />
     </MapFiltersProvider>
   )
