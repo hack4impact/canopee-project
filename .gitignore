@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+.idea/
 
 # debug
 npm-debug.log*
@@ -41,4 +42,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-Canop\303\251e Project PRD - PolyMTL.pdf
+# docs
+*.pdf
+
+# Canopée spec files (Google Sheets exports)
+*.xlsx
+
+# Chapter documents, not part of the project
+/documents
+/docs/chapitre

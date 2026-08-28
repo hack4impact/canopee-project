@@ -1,5 +1,6 @@
 'use server'
 
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { db, users } from '@/db'
 import {
@@ -32,6 +33,8 @@ export async function signup(
   formData: FormData,
 ): Promise<SignupState> {
   const input = {
+    firstName: String(formData.get('firstName') ?? ''),
+    lastName: String(formData.get('lastName') ?? ''),
     email: String(formData.get('email') ?? ''),
     password: String(formData.get('password') ?? ''),
     confirmPassword: String(formData.get('confirmPassword') ?? ''),
@@ -43,11 +46,18 @@ export async function signup(
   }
 
   const email = input.email.trim().toLowerCase()
+  const firstName = input.firstName.trim()
+  const lastName = input.lastName.trim()
   const supabase = await createClient()
+
+  const origin = (await headers()).get('origin')
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password: input.password,
+    options: origin
+      ? { emailRedirectTo: `${origin}/auth/confirm?next=/` }
+      : undefined,
   })
 
   if (error) {
@@ -63,7 +73,9 @@ export async function signup(
   }
 
   try {
-    await db.insert(users).values({ authUserId: data.user.id, email })
+    await db
+      .insert(users)
+      .values({ authUserId: data.user.id, email, firstName, lastName })
   } catch (cause) {
     if (isUniqueViolation(cause)) {
       return { errors: { email: EMAIL_TAKEN } }

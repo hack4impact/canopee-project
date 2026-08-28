@@ -60,13 +60,21 @@ Approval state for the account.
 
 Type of report. Tentative list from PRD — **pending Canopée confirmation before Sprint 1**.
 
-| Value                    | Meaning                                                        |
-| ------------------------ | -------------------------------------------------------------- |
-| `dangerous_tree`         | Dangerous trees or branches (fall risk, dead wood, etc.)       |
-| `damaged_infrastructure` | Damaged benches, signs, fences, paths, etc.                    |
-| `fauna_observation`      | Wildlife sighting. Only visible on the map to pros and admins. |
-| `flora_observation`      | Plant sighting. Only visible on the map to pros and admins.    |
-| `unleashed_dog`          | Off-leash dog observed on the site.                            |
+| Value                    | Meaning                                                  |
+| ------------------------ | -------------------------------------------------------- |
+| `dangerous_tree`         | Dangerous trees or branches (fall risk, dead wood, etc.) |
+| `damaged_infrastructure` | Damaged benches, signs, fences, paths, etc.              |
+| `reptile`                | Reptile sighting (snakes, lizards, turtles).             |
+| `insecte`                | Insect sighting (beetles, butterflies, etc.).            |
+| `oiseau`                 | Bird sighting.                                           |
+| `amphibien`              | Amphibian sighting (frogs, salamanders).                 |
+| `mammifere`              | Mammal sighting (deer, foxes, etc.).                     |
+| `invertebre`             | Invertebrate sighting (spiders, worms, etc.).            |
+| `mollusque`              | Mollusc sighting (snails, slugs).                        |
+| `poisson`                | Fish sighting.                                           |
+| `plante_vasculaire`      | Vascular plant sighting.                                 |
+| `bryophyte`              | Bryophyte sighting (mosses, liverworts).                 |
+| `unleashed_dog`          | Off-leash dog observed on the site.                      |
 
 ## Tables
 
@@ -81,12 +89,19 @@ Application user profile. One row per non-citizen user. Linked one-to-one with a
 | `id`           | Internal user id                                                   |
 | `auth_user_id` | Links this profile to the Supabase Auth user. Cascade delete.      |
 | `email`        | Contact email. Duplicated from `auth.users.email` for convenience. |
+| `first_name`   | Given name. Nullable — see business rules.                         |
+| `last_name`    | Family name. Nullable — see business rules.                        |
 | `role`         | Permission level. See `user_role` enum.                            |
 | `status`       | Approval state. See `user_status` enum.                            |
 | `created_at`   | Row creation time                                                  |
 
 **Business rules**
 
+- `first_name` and `last_name` are nullable at the database level. Rows created
+  before the columns existed have neither, and `ensureUserProfile` — the login
+  fallback that creates a missing profile from the Supabase Auth user — only has
+  an id and an email to work with. Requiring a name would break both. Collecting
+  names at signup, and whether they are mandatory there, is a separate decision.
 - Public signups create `role = 'volunteer'`, `status = 'pending'`.
 - Pros and admins are created manually by an existing admin. They are never created through the public signup form.
 - Admins are always `approved`. Enforced at the application layer per the convention above.
@@ -191,12 +206,13 @@ An ordered stream of GPS coordinates belonging to a patrol. Rendered as a polyli
 
 - Points are recorded by the mobile app at a fixed interval (interval TBD with product).
 - Ordering within a patrol is by `recorded_at`, not `id`.
+- A patrol cannot hold two points with the same `recorded_at`. Uploads are idempotent, so a client that resends a batch after a lost response does not duplicate the route.
 - Points are deleted on cascade if the parent patrol is deleted.
 - No `created_at` — for high-volume rows the row's timestamp is `recorded_at`.
 
 **Indexes**
 
-- `(patrol_id, recorded_at)` — every route render orders points by this. Critical for performance since this table will grow the fastest.
+- `(patrol_id, recorded_at)` — unique. Every route render orders points by this. Critical for performance since this table will grow the fastest.
 
 **Cascade delete (SQL migration)**
 

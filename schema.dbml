@@ -23,8 +23,16 @@ Enum report_category {
   damaged_infrastructure
   bicycle
   motorized_vehicle
-  fauna_observation
-  flora_observation
+  reptile
+  insecte
+  oiseau
+  amphibien
+  mammifere
+  invertebre
+  mollusque
+  poisson
+  plante_vasculaire
+  bryophyte
   unleashed_dog
   campfire
   others
@@ -38,6 +46,8 @@ Table users {
   id uuid [pk]
   auth_user_id uuid [not null, unique, note: 'FK to auth.users.id (Supabase Auth)']
   email text [not null, unique]
+  first_name text [note: 'Nullable. Not collected by the signup form yet.']
+  last_name text [note: 'Nullable. Not collected by the signup form yet.']
   role user_role [not null, default: 'volunteer']
   status user_status [not null, default: 'pending']
   created_at timestamptz [not null, default: `now()`]
@@ -107,7 +117,7 @@ Table patrol_points {
   '''
 
   indexes {
-    (patrol_id, recorded_at) [note: 'Every route render orders points by this.']
+    (patrol_id, recorded_at) [unique, note: 'Every route render orders points by this. Unique so a retried upload cannot duplicate a point.']
   }
 }
 

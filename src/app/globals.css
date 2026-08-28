@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #ffffff;
+  --background: #f6f4df;
   --foreground: #171717;
 }
 
@@ -26,8 +26,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #f6f4df;
+    --foreground: #171717;
   }
 }
 
@@ -36,6 +36,7 @@ html {
 }
 
 @layer base {
+  html,
   body {
     background: var(--background);
     color: var(--foreground);
@@ -69,4 +70,67 @@ html {
 .mapbox-map .mapboxgl-canvas {
   width: 100% !important;
   height: 100% !important;
+}
+
+.scroll-visible {
+  scrollbar-gutter: stable;
+}
+
+.scroll-visible::-webkit-scrollbar {
+  width: 10px;
+  background: rgba(0, 69, 35, 0.08);
+}
+
+.scroll-visible::-webkit-scrollbar-track {
+  background: rgba(0, 69, 35, 0.08);
+  border-radius: 9999px;
+}
+
+.scroll-visible::-webkit-scrollbar-thumb {
+  background: rgba(0, 69, 35, 0.4);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 9999px;
+  min-height: 2.5rem;
+}
+
+.scroll-visible::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 69, 35, 0.6);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .scroll-visible {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 69, 35, 0.4) rgba(0, 69, 35, 0.08);
+  }
+}
+
+.canopee-popup .mapboxgl-popup-content {
+  border-radius: 0.9rem;
+  background: #f6f4df;
+  padding: 0.7rem 0.9rem;
+  box-shadow:
+    0 10px 24px -8px rgba(0, 69, 35, 0.45),
+    0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.canopee-popup .mapboxgl-popup-tip {
+  border-top-color: #f6f4df;
+  border-bottom-color: #f6f4df;
+  border-left-color: #f6f4df;
+  border-right-color: #f6f4df;
+}
+
+.canopee-popup .mapboxgl-popup-close-button {
+  padding: 0 0.35rem;
+  color: rgba(0, 69, 35, 0.55);
+  font-size: 1rem;
+  border-radius: 9999px;
+}
+
+.canopee-popup .mapboxgl-popup-close-button:hover {
+  background: rgba(0, 69, 35, 0.1);
+  color: #004523;
 }

@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
@@ -16,17 +17,50 @@ export const roleEnum = pgEnum('role', ['volunteer', 'pro', 'admin'])
 export const statusEnum = pgEnum('status', ['pending', 'approved', 'rejected'])
 
 export const reportCategoryEnum = pgEnum('report_category', [
+  // Entretien (maintenance)
   'dangerous_tree',
+  'fallen_tree',
+  'littering',
+  'blocked_trail',
+  'damaged_trail',
+  'unofficial_trail',
+  'bridge_repair',
   'damaged_infrastructure',
-  'fauna_observation',
-  'flora_observation',
+  'signage_fix',
+  'site_maintenance',
+  'maintenance_other',
+  // Citoyen (respect du règlement)
+  'bicycles',
+  'motor_vehicle',
+  'foraging',
+  'off_trail',
+  'encroachment',
   'unleashed_dog',
+  'dog_waste',
+  'campfire',
+  'built_shelter',
+  'homeless_camp',
+  'illegal_dumping',
+  'citizen_other',
+  // Faune et flore
+  'reptile',
+  'insecte',
+  'oiseau',
+  'amphibien',
+  'mammifere',
+  'invertebre',
+  'mollusque',
+  'poisson',
+  'plante_vasculaire',
+  'bryophyte',
 ])
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   authUserId: uuid('auth_user_id').notNull().unique(),
   email: text('email').notNull().unique(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
   role: roleEnum('role').notNull().default('volunteer'),
   status: statusEnum('status').notNull().default('pending'),
   rejectionReason: text('rejection_reason'),
@@ -46,6 +80,14 @@ export const reports = pgTable(
     latitude: decimal('latitude', { precision: 9, scale: 6 }).notNull(),
     longitude: decimal('longitude', { precision: 9, scale: 6 }).notNull(),
     category: reportCategoryEnum('category').notNull(),
+    description: text('description'),
+    typology: text('typology'),
+    quantity: integer('quantity'),
+    species: text('species'),
+    unit: text('unit'),
+    habitat: text('habitat'),
+    statut: text('statut'),
+    photoUrl: text('photo_url'),
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),
     userId: uuid('user_id').references(() => users.id),
     reporterEmail: text('reporter_email'),
@@ -101,7 +143,7 @@ export const patrolPoints = pgTable(
     recordedAt: timestamp('recorded_at', { withTimezone: true }).notNull(),
   },
   (table) => [
-    index('patrol_points_patrol_id_recorded_at_idx').on(
+    uniqueIndex('patrol_points_patrol_id_recorded_at_idx').on(
       table.patrolId,
       table.recordedAt,
     ),

@@ -1,11 +1,15 @@
 import Image from 'next/image'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { ViewTransition } from 'react'
 import { REDIRECT_PARAM, safeRedirectPath } from '@/lib/auth/routes'
 import { LoginForm } from './login-form'
 
 export const metadata: Metadata = {
   title: 'Connexion | Canopée',
+}
+
+export const viewport: Viewport = {
+  themeColor: '#004523',
 }
 
 export default async function LoginPage(props: PageProps<'/login'>) {
