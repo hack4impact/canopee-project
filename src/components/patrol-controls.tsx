@@ -288,7 +288,7 @@ function StartPatrolButton({ onStarted }: { onStarted: () => void }) {
   }
 
   return (
-    <div className="fixed bottom-28 left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-2">
+    <div className="fixed bottom-[calc(7rem+env(safe-area-inset-bottom))] left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-2">
       <button
         type="button"
         onClick={handleClick}
@@ -449,7 +449,7 @@ function ActivePatrol({
   )
 
   return (
-    <div className="fixed bottom-28 left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-2">
+    <div className="fixed bottom-[calc(7rem+env(safe-area-inset-bottom))] left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-2">
       {showControls && notice && (
         <p
           role={endError ? 'alert' : 'status'}
