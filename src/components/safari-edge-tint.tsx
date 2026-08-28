@@ -1,4 +1,21 @@
+'use client'
+
+import { useSyncExternalStore } from 'react'
+import { Capacitor } from '@capacitor/core'
+
+const subscribe = () => () => {}
+
 export function SafariEdgeTint() {
+  const native = useSyncExternalStore(
+    subscribe,
+    () => Capacitor.isNativePlatform(),
+    () => false,
+  )
+
+  if (native) {
+    return null
+  }
+
   return (
     <>
       <div
