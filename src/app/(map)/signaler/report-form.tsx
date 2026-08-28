@@ -85,7 +85,7 @@ export function ReportForm({
   const [state, formAction, pending] = useActionState(sendReport, initialState)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
       <button
         type="button"
         onClick={onBack}
@@ -400,9 +400,9 @@ function ReportWizard({
     <form
       action={submit}
       noValidate
-      className="flex min-h-0 flex-1 flex-col gap-4"
+      className="flex min-h-0 flex-1 flex-col gap-2"
     >
-      <div className="flex shrink-0 flex-col gap-3">
+      <div className="flex shrink-0 flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
             Étape {stepIndex + 1} / {steps.length}
@@ -444,7 +444,7 @@ function ReportWizard({
         </>
       )}
 
-      <div className="scroll-visible flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain pr-3">
+      <div className="scroll-visible flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain pr-2">
         {step === 'constate' && (
           <div className="flex flex-col gap-2">
             {REPORT_GROUP_CATEGORIES[group].map((value) => (
@@ -555,10 +555,6 @@ function ReportWizard({
                 ))}
               </div>
             </div>
-            <p className="text-xs text-canopee-forest/60">
-              Ces choix sont indicatifs et n’influencent pas la recherche
-              d’espèce.
-            </p>
             {errors.category && (
               <p id="category-error" className={ERROR}>
                 {errors.category}
@@ -770,14 +766,6 @@ function ReportWizard({
                 </button>
               )}
             </div>
-
-            <p aria-live="polite" className="text-sm text-canopee-forest/70">
-              {!position
-                ? 'Touchez la carte pour placer le repère à l’endroit du problème.'
-                : override
-                  ? 'Repère placé à la main. Touchez la carte ou faites-le glisser pour l’ajuster.'
-                  : 'Position GPS. Touchez la carte ou faites glisser le repère pour la corriger.'}
-            </p>
 
             {gpsFix.status === 'locating' && !override && (
               <p role="status" className="text-sm text-canopee-forest/70">

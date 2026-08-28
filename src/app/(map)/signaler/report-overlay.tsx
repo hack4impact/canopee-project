@@ -52,17 +52,13 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
         role="dialog"
         aria-modal="true"
         aria-label="Signaler"
-        className="relative flex h-[min(36rem,calc(100dvh-5rem))] w-full max-w-md flex-col gap-4 rounded-2xl bg-white px-5 py-5 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10"
+        className="relative flex h-[min(40rem,calc(100dvh-2rem))] w-full max-w-md flex-col gap-2 rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 sm:px-5 sm:py-5"
       >
-        <header className="flex shrink-0 items-start justify-between gap-3">
+        <header className="flex shrink-0 items-start justify-between gap-2">
           <div className="flex flex-col gap-1">
-            <h1 className="font-heading text-xl text-canopee-forest sm:text-2xl">
+            <h1 className="font-heading text-2xl text-canopee-forest sm:text-3xl">
               Signaler
             </h1>
-            <p className="text-sm text-canopee-forest/70">
-              Le signalement est enregistré à l&apos;endroit où vous vous
-              trouvez. Vous pourrez ajuster le repère sur la carte.
-            </p>
           </div>
 
           <button
