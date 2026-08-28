@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
   useTransition,
@@ -14,6 +15,12 @@ import {
   type PatrolSummary,
 } from '@/app/patrouilles/actions'
 import { PatrolPicto } from '@/components/patrol-picto'
+import {
+  endLiveActivity,
+  listenForActivityCommands,
+  startLiveActivity,
+  updateLiveActivity,
+} from '@/lib/patrols/live-activity'
 import { isPublicRoute } from '@/lib/auth/routes'
 import { formatElapsed } from '@/lib/patrols/elapsed'
 import { usePatrolExitWarning } from '@/lib/patrols/use-patrol-exit-warning'
@@ -348,6 +355,11 @@ function PauseResumeButton({
   )
 }
 
+async function runEndPatrol(flushAndStop: () => Promise<void>) {
+  await flushAndStop()
+  return endPatrol()
+}
+
 function EndPatrolButton({
   flushAndStop,
   onError,
@@ -363,8 +375,7 @@ function EndPatrolButton({
     onError('')
 
     startTransition(async () => {
-      await flushAndStop()
-      const result = await endPatrol()
+      const result = await runEndPatrol(flushAndStop)
 
       if (result.message) {
         onError(result.message)
@@ -402,8 +413,13 @@ function ActivePatrol({
   })
   const [endError, setEndError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
-  const { status, flushAndStop } = usePatrolRecorder({ paused: pause.paused })
+  const { status, flushAndStop, getDistanceMetres } = usePatrolRecorder({
+    paused: pause.paused,
+  })
   usePatrolExitWarning()
+
+  const startedAtMs = new Date(startedAt).getTime()
+  const commandRef = useRef<(command: 'toggle' | 'stop') => void>(() => {})
 
   const isHome = usePathname() === HOME_ROUTE
   const recordingNotice = pause.paused ? null : RECORDING_NOTICE[status]
@@ -429,6 +445,58 @@ function ActivePatrol({
       clearStoredPause(startedAt)
     }
   }
+
+  useEffect(() => {
+    commandRef.current = (command) => {
+      if (command === 'toggle') {
+        handleTogglePause()
+        return
+      }
+
+      void runEndPatrol(flushAndStop).then((result) => {
+        if (result.message) {
+          setEndError(result.message)
+          return
+        }
+
+        onEnded(result.summary as PatrolSummary)
+      })
+    }
+  })
+
+  useEffect(() => {
+    void startLiveActivity({
+      startedAt: startedAtMs,
+      distanceMetres: 0,
+      paused: false,
+      elapsedSeconds: 0,
+    })
+
+    return () => void endLiveActivity()
+  }, [startedAtMs])
+
+  useEffect(() => {
+    void updateLiveActivity({
+      distanceMetres: getDistanceMetres(),
+      paused: pause.paused,
+      elapsedSeconds:
+        pause.paused && pause.pausedAtMs !== null
+          ? Math.round((pause.pausedAtMs - startedAtMs) / 1000)
+          : 0,
+    })
+  }, [pause, startedAtMs, getDistanceMetres])
+
+  useEffect(() => {
+    let remove: (() => void) | null = null
+
+    void listenForActivityCommands((command) =>
+      commandRef.current(command),
+    ).then((off) => {
+      remove = off
+    })
+
+    return () => remove?.()
+  }, [])
 
   if (hidden) {
     return null

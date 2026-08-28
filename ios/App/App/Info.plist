@@ -20,6 +20,17 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>org.reseaucanopee.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>canopee</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
@@ -28,6 +39,8 @@
 	<string>Canopée a besoin de votre position en arrière-plan pour continuer à enregistrer votre patrouille lorsque l'écran est verrouillé.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Canopée utilise votre position pour tracer vos patrouilles et localiser vos signalements.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

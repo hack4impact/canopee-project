@@ -17,6 +17,7 @@ import {
   installDebugBridge,
   startDebugFile,
 } from '@/lib/patrols/debug'
+import { updateLiveActivity } from '@/lib/patrols/live-activity'
 import {
   isNativeApp,
   startNativeWatch,
@@ -73,6 +74,8 @@ export type PatrolRecorder = {
   status: RecordingStatus
   /** Stops recording and delivers every queued point; awaited before ending. */
   flushAndStop: () => Promise<void>
+  /** Metres walked so far, for the lock screen card. */
+  getDistanceMetres: () => number
 }
 
 /**
@@ -100,6 +103,12 @@ export function usePatrolRecorder({
   const lastRecordedAtRef = useRef<number | null>(null)
   const lastAcceptedRef = useRef<RecordedPoint | null>(null)
   const lastDrainedAtRef = useRef<number>(0)
+  const distanceMetresRef = useRef<number>(0)
+
+  const getDistanceMetres = useCallback(
+    () => Math.round(distanceMetresRef.current),
+    [],
+  )
 
   useEffect(() => {
     if (!isSupported) {
@@ -324,9 +333,19 @@ export function usePatrolRecorder({
         return
       }
 
+      if (previous !== null) {
+        distanceMetresRef.current += distanceBetweenMetres(previous, point)
+      }
+
       lastRecordedAtRef.current = recordedAtMs
       lastAcceptedRef.current = point
       stored += 1
+
+      void updateLiveActivity({
+        distanceMetres: Math.round(distanceMetresRef.current),
+        paused: false,
+        elapsedSeconds: 0,
+      })
 
       debugLog('point.stored', {
         n: stored,
@@ -488,5 +507,6 @@ export function usePatrolRecorder({
   return {
     status: isSupported ? status : 'unsupported',
     flushAndStop,
+    getDistanceMetres,
   }
 }
