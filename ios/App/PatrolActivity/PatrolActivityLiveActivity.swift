@@ -8,13 +8,57 @@ extension Color {
     static let canopeeGreen = Color(red: 0.090, green: 0.667, blue: 0.333)
     static let canopeeCream = Color(red: 0.965, green: 0.957, blue: 0.874)
     static let canopeeLime = Color(red: 0.780, green: 0.871, blue: 0.208)
+    static let canopeeCoral = Color(red: 0.941, green: 0.376, blue: 0.325)
+    static let canopeeBark = Color(red: 0.0, green: 0.106, blue: 0.051)
 }
 
-struct PatrolElapsed: View {
+struct RouteTrace: View {
+    let route: [Double]
+    var lineWidth: CGFloat = 2
+
+    private var points: [CGPoint] {
+        stride(from: 0, to: max(route.count - 1, 0), by: 2).map { index in
+            CGPoint(x: route[index], y: 1 - route[index + 1])
+        }
+    }
+
+    var body: some View {
+        GeometryReader { proxy in
+            let scaled = points.map {
+                CGPoint(x: $0.x * proxy.size.width, y: $0.y * proxy.size.height)
+            }
+
+            ZStack {
+                Path { path in
+                    guard let first = scaled.first else { return }
+
+                    path.move(to: first)
+
+                    for point in scaled.dropFirst() {
+                        path.addLine(to: point)
+                    }
+                }
+                .stroke(
+                    Color.canopeeCream.opacity(0.85),
+                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
+                )
+
+                if let last = scaled.last {
+                    Circle()
+                        .fill(Color.canopeeCream)
+                        .frame(width: lineWidth * 2.2, height: lineWidth * 2.2)
+                        .position(last)
+                }
+            }
+        }
+    }
+}
+
+struct PatrolTimer: View {
     let startedAt: Date
     let paused: Bool
     let elapsedSeconds: Int
-    var font: Font = .system(size: 30, weight: .semibold, design: .rounded)
+    var size: CGFloat
 
     var body: some View {
         Group {
@@ -24,9 +68,50 @@ struct PatrolElapsed: View {
                 Text(startedAt, style: .timer)
             }
         }
-        .font(font)
+        .font(.system(size: size, weight: .semibold, design: .rounded))
         .monospacedDigit()
-        .foregroundStyle(Color.canopeeCream)
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
+    }
+}
+
+@available(iOS 17.0, *)
+struct PatrolRoundButton<Content: View>: View {
+    let tint: Color
+    var size: CGFloat = 50
+    let content: Content
+
+    init(tint: Color, size: CGFloat = 50, @ViewBuilder content: () -> Content) {
+        self.tint = tint
+        self.size = size
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .font(.system(size: size * 0.36, weight: .bold))
+            .foregroundStyle(Color.canopeeCream)
+            .frame(width: size, height: size)
+            .background(tint, in: Circle())
+    }
+}
+
+@available(iOS 17.0, *)
+struct PatrolReportLink: View {
+    var body: some View {
+        Link(destination: URL(string: "canopee://signaler")!) {
+            HStack(spacing: 5) {
+                Image(systemName: "exclamationmark.bubble.fill")
+                    .font(.system(size: 11, weight: .bold))
+                Text("Signaler")
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(Color.canopeeCream)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+            .background(Color.canopeeCream.opacity(0.14), in: Capsule())
+        }
     }
 }
 
@@ -34,90 +119,70 @@ struct PatrolLockScreenView: View {
     let context: ActivityViewContext<PatrolAttributes>
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .center, spacing: 12) {
-                ZStack {
+        HStack(alignment: .center, spacing: 14) {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(spacing: 7) {
                     Circle()
-                        .fill(Color.canopeeGreen.opacity(context.state.paused ? 0.25 : 1))
-                        .frame(width: 38, height: 38)
-                    Image(systemName: context.state.paused ? "pause.fill" : "figure.walk")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(context.state.paused ? Color.canopeeCream : .white)
-                }
+                        .fill(context.state.paused ? Color.canopeeCream.opacity(0.35) : Color.canopeeGreen)
+                        .frame(width: 7, height: 7)
 
-                VStack(alignment: .leading, spacing: 2) {
                     Text(context.state.paused ? "Patrouille en pause" : "Patrouille en cours")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(Color.canopeeCream.opacity(0.7))
-
-                    PatrolElapsed(
-                        startedAt: context.attributes.startedAt,
-                        paused: context.state.paused,
-                        elapsedSeconds: context.state.elapsedSeconds
-                    )
+                        .lineLimit(1)
                 }
 
-                Spacer(minLength: 8)
+                PatrolTimer(
+                    startedAt: context.attributes.startedAt,
+                    paused: context.state.paused,
+                    elapsedSeconds: context.state.elapsedSeconds,
+                    size: 36
+                )
+                .foregroundStyle(Color.canopeeCream)
 
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("Distance")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color.canopeeCream.opacity(0.55))
+                HStack(spacing: 10) {
                     Text(PatrolActivityBridge.formattedDistance(context.state.distanceMetres))
-                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .monospacedDigit()
-                        .foregroundStyle(Color.canopeeCream)
+                        .lineLimit(1)
+                        .foregroundStyle(Color.canopeeCream.opacity(0.75))
+
+                    if context.state.route.count >= 4 {
+                        RouteTrace(route: context.state.route)
+                            .frame(width: 62, height: 22)
+                    }
+                }
+
+                if #available(iOS 17.0, *) {
+                    PatrolReportLink()
+                        .padding(.top, 2)
                 }
             }
+
+            Spacer(minLength: 0)
 
             if #available(iOS 17.0, *) {
-                PatrolControlsView(paused: context.state.paused)
+                VStack(spacing: 10) {
+                    Button(intent: TogglePatrolIntent()) {
+                        PatrolRoundButton(tint: Color.canopeeCream.opacity(0.16)) {
+                            Image(systemName: context.state.paused ? "play.fill" : "pause.fill")
+                        }
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(intent: StopPatrolIntent()) {
+                        PatrolRoundButton(tint: Color.canopeeCoral) {
+                            Image(systemName: "stop.fill")
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
-        .padding(16)
-        .activityBackgroundTint(Color.canopeeForest)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .activityBackgroundTint(Color.canopeeBark)
         .activitySystemActionForegroundColor(Color.canopeeCream)
-    }
-}
-
-@available(iOS 17.0, *)
-struct PatrolControlsView: View {
-    let paused: Bool
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Button(intent: TogglePatrolIntent()) {
-                Label(
-                    paused ? "Reprendre" : "Pause",
-                    systemImage: paused ? "play.fill" : "pause.fill"
-                )
-                .font(.system(size: 13, weight: .semibold))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 9)
-            }
-            .tint(Color.canopeeCream.opacity(0.15))
-            .foregroundStyle(Color.canopeeCream)
-
-            Link(destination: URL(string: "canopee://signaler")!) {
-                Label("Signaler", systemImage: "exclamationmark.bubble.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
-                    .background(Color.canopeeLime.opacity(0.2), in: Capsule())
-                    .foregroundStyle(Color.canopeeLime)
-            }
-
-            Button(intent: StopPatrolIntent()) {
-                Label("Terminer", systemImage: "stop.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
-            }
-            .tint(Color.canopeeGreen)
-            .foregroundStyle(.white)
-        }
-        .buttonStyle(.borderedProminent)
-        .buttonBorderShape(.capsule)
     }
 }
 
@@ -128,52 +193,80 @@ struct PatrolActivityLiveActivity: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Label {
+                    HStack(spacing: 5) {
+                        Image(systemName: context.state.paused ? "pause.fill" : "figure.walk")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(Color.canopeeGreen)
                         Text(PatrolActivityBridge.formattedDistance(context.state.distanceMetres))
                             .font(.system(size: 15, weight: .semibold, design: .rounded))
                             .monospacedDigit()
-                    } icon: {
-                        Image(systemName: "figure.walk")
-                            .foregroundStyle(Color.canopeeGreen)
+                            .lineLimit(1)
+                            .foregroundStyle(Color.canopeeCream)
                     }
+                    .padding(.leading, 4)
                 }
 
                 DynamicIslandExpandedRegion(.trailing) {
-                    PatrolElapsed(
+                    PatrolTimer(
                         startedAt: context.attributes.startedAt,
                         paused: context.state.paused,
                         elapsedSeconds: context.state.elapsedSeconds,
-                        font: .system(size: 15, weight: .semibold, design: .rounded)
+                        size: 15
                     )
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .foregroundStyle(Color.canopeeCream)
+                    .padding(.trailing, 4)
                 }
 
                 DynamicIslandExpandedRegion(.bottom) {
                     if #available(iOS 17.0, *) {
-                        PatrolControlsView(paused: context.state.paused)
-                            .padding(.top, 4)
-                    } else {
-                        Text(context.state.paused ? "Patrouille en pause" : "Patrouille en cours")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color.canopeeCream.opacity(0.7))
+                        HStack(spacing: 10) {
+                            PatrolReportLink()
+
+                            Spacer(minLength: 0)
+
+                            if context.state.route.count >= 4 {
+                                RouteTrace(route: context.state.route, lineWidth: 1.6)
+                                    .frame(width: 52, height: 26)
+                            }
+
+                            Button(intent: TogglePatrolIntent()) {
+                                PatrolRoundButton(
+                                    tint: Color.canopeeCream.opacity(0.16),
+                                    size: 38
+                                ) {
+                                    Image(systemName: context.state.paused ? "play.fill" : "pause.fill")
+                                }
+                            }
+                            .buttonStyle(.plain)
+
+                            Button(intent: StopPatrolIntent()) {
+                                PatrolRoundButton(tint: Color.canopeeCoral, size: 38) {
+                                    Image(systemName: "stop.fill")
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.top, 6)
                     }
                 }
             } compactLeading: {
                 Image(systemName: context.state.paused ? "pause.fill" : "figure.walk")
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(Color.canopeeGreen)
             } compactTrailing: {
-                PatrolElapsed(
+                PatrolTimer(
                     startedAt: context.attributes.startedAt,
                     paused: context.state.paused,
                     elapsedSeconds: context.state.elapsedSeconds,
-                    font: .system(size: 13, weight: .semibold, design: .rounded)
+                    size: 13
                 )
-                .frame(maxWidth: 52)
+                .foregroundStyle(Color.canopeeCream)
+                .frame(width: 46, alignment: .trailing)
             } minimal: {
                 Image(systemName: context.state.paused ? "pause.fill" : "figure.walk")
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(Color.canopeeGreen)
             }
-            .widgetURL(URL(string: "canopee://"))
             .keylineTint(Color.canopeeGreen)
         }
     }

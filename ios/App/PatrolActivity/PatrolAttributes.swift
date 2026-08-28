@@ -7,11 +7,18 @@ public struct PatrolAttributes: ActivityAttributes {
         public var distanceMetres: Int
         public var paused: Bool
         public var elapsedSeconds: Int
+        public var route: [Double]
 
-        public init(distanceMetres: Int, paused: Bool, elapsedSeconds: Int) {
+        public init(
+            distanceMetres: Int,
+            paused: Bool,
+            elapsedSeconds: Int,
+            route: [Double] = []
+        ) {
             self.distanceMetres = distanceMetres
             self.paused = paused
             self.elapsedSeconds = elapsedSeconds
+            self.route = route
         }
     }
 

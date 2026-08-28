@@ -142,7 +142,7 @@ function clearStoredPause(startedAt: string): void {
 type ActivePatrolState =
   | { status: 'unavailable' }
   | { status: 'idle' }
-  | { status: 'active'; startedAt: string }
+  | { status: 'active'; startedAt: string; id: string | null }
 
 /**
  * The patrol controls live in the root layout and must work on any page. The
@@ -157,7 +157,7 @@ function useActivePatrol(initialStartedAt: string | null): {
   const pathname = usePathname()
   const [state, setState] = useState<ActivePatrolState>(() =>
     initialStartedAt
-      ? { status: 'active', startedAt: initialStartedAt }
+      ? { status: 'active', startedAt: initialStartedAt, id: null }
       : { status: 'idle' },
   )
 
@@ -173,11 +173,14 @@ function useActivePatrol(initialStartedAt: string | null): {
         return
       }
 
-      const payload = (await response.json()) as { startedAt: string | null }
+      const payload = (await response.json()) as {
+        id: string | null
+        startedAt: string | null
+      }
 
       setState(
         payload.startedAt
-          ? { status: 'active', startedAt: payload.startedAt }
+          ? { status: 'active', startedAt: payload.startedAt, id: payload.id }
           : { status: 'idle' },
       )
     } catch {
@@ -243,6 +246,7 @@ export function PatrolControls({
     return (
       <ActivePatrol
         startedAt={state.startedAt}
+        patrolId={state.id}
         hidden={isReportRoute(pathname)}
         onEnded={(summary) => {
           void refresh()
@@ -400,10 +404,12 @@ function EndPatrolButton({
 
 function ActivePatrol({
   startedAt,
+  patrolId,
   hidden,
   onEnded,
 }: {
   startedAt: string
+  patrolId: string | null
   hidden: boolean
   onEnded: (summary: PatrolSummary) => void
 }) {
@@ -413,9 +419,8 @@ function ActivePatrol({
   })
   const [endError, setEndError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
-  const { status, flushAndStop, getDistanceMetres } = usePatrolRecorder({
-    paused: pause.paused,
-  })
+  const { status, flushAndStop, getDistanceMetres, getRoute, seedRoute } =
+    usePatrolRecorder({ paused: pause.paused })
   usePatrolExitWarning()
 
   const startedAtMs = new Date(startedAt).getTime()
@@ -465,15 +470,63 @@ function ActivePatrol({
   })
 
   useEffect(() => {
-    void startLiveActivity({
-      startedAt: startedAtMs,
-      distanceMetres: 0,
-      paused: false,
-      elapsedSeconds: 0,
-    })
+    if (!patrolId) {
+      return
+    }
 
-    return () => void endLiveActivity()
-  }, [startedAtMs])
+    let cancelled = false
+
+    void (async () => {
+      try {
+        const response = await fetch(`/api/patrols/${patrolId}/points`, {
+          redirect: 'manual',
+        })
+
+        if (!response.ok || cancelled) {
+          return
+        }
+
+        const payload = (await response.json()) as {
+          points: { latitude: number; longitude: number }[]
+        }
+
+        seedRoute(payload.points)
+      } catch {
+        return
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [patrolId, seedRoute])
+
+  useEffect(() => {
+    function begin() {
+      void startLiveActivity({
+        startedAt: startedAtMs,
+        distanceMetres: getDistanceMetres(),
+        paused: false,
+        elapsedSeconds: 0,
+        route: getRoute(),
+      })
+    }
+
+    begin()
+
+    function restartWhenVisible() {
+      if (document.visibilityState === 'visible') {
+        begin()
+      }
+    }
+
+    document.addEventListener('visibilitychange', restartWhenVisible)
+
+    return () => {
+      document.removeEventListener('visibilitychange', restartWhenVisible)
+      void endLiveActivity()
+    }
+  }, [startedAtMs, getDistanceMetres, getRoute])
 
   useEffect(() => {
     void updateLiveActivity({
@@ -483,8 +536,9 @@ function ActivePatrol({
         pause.paused && pause.pausedAtMs !== null
           ? Math.round((pause.pausedAtMs - startedAtMs) / 1000)
           : 0,
+      route: getRoute(),
     })
-  }, [pause, startedAtMs, getDistanceMetres])
+  }, [pause, startedAtMs, getDistanceMetres, getRoute])
 
   useEffect(() => {
     let remove: (() => void) | null = null

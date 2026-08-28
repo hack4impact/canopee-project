@@ -13,11 +13,13 @@ type PatrolActivityPlugin = {
     distanceMetres: number
     paused: boolean
     elapsedSeconds: number
+    route: number[]
   }): Promise<{ started: boolean }>
   update(options: {
     distanceMetres: number
     paused: boolean
     elapsedSeconds: number
+    route: number[]
   }): Promise<void>
   end(): Promise<void>
   addListener(
@@ -33,6 +35,7 @@ export async function startLiveActivity(options: {
   distanceMetres: number
   paused: boolean
   elapsedSeconds: number
+  route: number[]
 }): Promise<void> {
   if (!isNativeApp()) {
     return
@@ -50,6 +53,7 @@ export async function updateLiveActivity(options: {
   distanceMetres: number
   paused: boolean
   elapsedSeconds: number
+  route: number[]
 }): Promise<void> {
   if (!isNativeApp()) {
     return

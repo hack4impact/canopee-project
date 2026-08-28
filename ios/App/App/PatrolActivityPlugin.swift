@@ -69,7 +69,8 @@ public class PatrolActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         let state = PatrolAttributes.ContentState(
             distanceMetres: call.getInt("distanceMetres") ?? 0,
             paused: call.getBool("paused") ?? false,
-            elapsedSeconds: call.getInt("elapsedSeconds") ?? 0
+            elapsedSeconds: call.getInt("elapsedSeconds") ?? 0,
+            route: PatrolActivityPlugin.route(from: call)
         )
 
         do {
@@ -91,7 +92,8 @@ public class PatrolActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         let state = PatrolAttributes.ContentState(
             distanceMetres: call.getInt("distanceMetres") ?? 0,
             paused: call.getBool("paused") ?? false,
-            elapsedSeconds: call.getInt("elapsedSeconds") ?? 0
+            elapsedSeconds: call.getInt("elapsedSeconds") ?? 0,
+            route: PatrolActivityPlugin.route(from: call)
         )
 
         Task {
@@ -111,6 +113,14 @@ public class PatrolActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             await endAllAsync()
             call.resolve()
         }
+    }
+
+    private static func route(from call: CAPPluginCall) -> [Double] {
+        guard let values = call.getArray("route", NSNumber.self) else {
+            return []
+        }
+
+        return values.map { $0.doubleValue }
     }
 
     private func endAll() {
