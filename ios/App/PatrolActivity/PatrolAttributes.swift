@@ -8,17 +8,23 @@ public struct PatrolAttributes: ActivityAttributes {
         public var paused: Bool
         public var elapsedSeconds: Int
         public var route: [Double]
+        /// Stamped every time the app pushes new numbers. The lock screen
+        /// sweeps a bar from here so the card visibly moves on its own
+        /// between updates.
+        public var refreshedAt: Date
 
         public init(
             distanceMetres: Int,
             paused: Bool,
             elapsedSeconds: Int,
-            route: [Double] = []
+            route: [Double] = [],
+            refreshedAt: Date = Date()
         ) {
             self.distanceMetres = distanceMetres
             self.paused = paused
             self.elapsedSeconds = elapsedSeconds
             self.route = route
+            self.refreshedAt = refreshedAt
         }
     }
 
