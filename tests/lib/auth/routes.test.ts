@@ -22,6 +22,11 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/signup/confirm')).toBe(true)
   })
 
+  it('allows the app link verification files', () => {
+    expect(isPublicRoute('/.well-known/assetlinks.json')).toBe(true)
+    expect(isPublicRoute('/.well-known/apple-app-site-association')).toBe(true)
+  })
+
   it('gates everything else, including the home page', () => {
     expect(isPublicRoute('/')).toBe(false)
     expect(isPublicRoute('/admin/volunteers')).toBe(false)

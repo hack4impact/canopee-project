@@ -4,7 +4,12 @@ export const REDIRECT_PARAM = 'next'
 
 export const DEFAULT_REDIRECT = '/'
 
-const PUBLIC_ROUTES = [LOGIN_ROUTE, '/signup', '/api/cron'] as const
+const PUBLIC_ROUTES = [
+  LOGIN_ROUTE,
+  '/signup',
+  '/api/cron',
+  '/.well-known',
+] as const
 
 export function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTES.some(
