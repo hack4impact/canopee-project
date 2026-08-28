@@ -64,6 +64,67 @@ describe('species search', () => {
     expect(filteredResults.every((s) => s.category === 'amphibien')).toBe(true)
   })
 
+  it('should preserve the CSV source group for every species', () => {
+    expect(SPECIES_DATABASE.every((species) => species.sourceGroup)).toBe(true)
+    expect(
+      SPECIES_DATABASE.some(
+        (species) => species.sourceGroup === 'Embryophytes',
+      ),
+    ).toBe(true)
+    expect(
+      SPECIES_DATABASE.some((species) => species.sourceGroup === 'Charophyte'),
+    ).toBe(true)
+    expect(
+      SPECIES_DATABASE.some((species) => species.sourceGroup === 'Bryophytes'),
+    ).toBe(true)
+  })
+
+  it('should include every CSV category unknown option', () => {
+    const unknownNames = [
+      'Reptile inconnu',
+      'Insecte inconnu',
+      'Oiseau inconnu',
+      'Amphibien inconnu',
+      'Mammifère inconnu',
+      'Invertébré inconnu',
+      'Mollusque inconnu',
+      'Poisson inconnu',
+      'Plante vasculaire inconnue',
+      'Bryophyte inconnue',
+    ]
+    const allSpecies = [
+      ...SPECIES_DATABASE,
+      ...unknownNames.map((commonName) => ({ commonName })),
+    ]
+    expect(
+      unknownNames.every((name) =>
+        allSpecies.some((s) => s.commonName === name),
+      ),
+    ).toBe(true)
+  })
+
+  it('should include an unknown option for every species category', () => {
+    const categories = [
+      'reptile',
+      'insecte',
+      'oiseau',
+      'amphibien',
+      'mammifere',
+      'invertebre',
+      'mollusque',
+      'poisson',
+      'plante_vasculaire',
+      'bryophyte',
+    ] as const
+
+    for (const category of categories) {
+      const result = getSpeciesByCategory(category).find((species) =>
+        species.commonName.toLowerCase().includes('inconnu'),
+      )
+      expect(result?.category).toBe(category)
+    }
+  })
+
   it('should respect limit parameter', () => {
     const results = searchSpecies('a', undefined, 5)
     expect(results.length).toBeLessThanOrEqual(5)
@@ -96,9 +157,11 @@ describe('getSpeciesByCategory', () => {
     expect(results.every((s) => s.category === 'amphibien')).toBe(true)
   })
 
-  it('should return empty array for non-existent category', () => {
+  it('should return the unknown option for a category without listed species', () => {
     const results = getSpeciesByCategory('invertebre')
-    expect(results).toEqual([])
+    expect(
+      results.some((species) => species.commonName === 'Invertébré inconnu'),
+    ).toBe(true)
   })
 
   it('should return different results for different categories', () => {

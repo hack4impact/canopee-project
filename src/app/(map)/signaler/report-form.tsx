@@ -13,7 +13,6 @@ import { SpeciesPicto } from '@/components/species-picto'
 import { SpeciesCombobox } from '@/components/species-combobox'
 import { Spinner } from '@/components/spinner'
 import { isGeolocationAvailable } from '@/lib/mapbox'
-import type { ReportCategory as SpeciesReportCategory } from '@/lib/reports/species'
 import {
   REPORT_CATEGORY_LABELS,
   REPORT_GROUP_CATEGORIES,
@@ -21,6 +20,8 @@ import {
   REPORT_TYPOLOGIES,
   REPORT_TYPOLOGY_LABELS,
   REPORT_UNITS,
+  FAUNE_SUBCATEGORIES,
+  FLORE_SUBCATEGORIES,
   type ReportGroup,
 } from '@/lib/reports/categories'
 import { downscalePhoto } from '@/lib/reports/downscale'
@@ -205,6 +206,7 @@ function ReportWizard({
 }: ReportWizardProps) {
   const [stepIndex, setStepIndex] = useState(0)
   const [category, setCategory] = useState('')
+  const [fauneFloreChoice, setFauneFloreChoice] = useState('')
   const [typology, setTypology] = useState('')
   const [description, setDescription] = useState('')
   const [quantity, setQuantity] = useState('')
@@ -237,6 +239,7 @@ function ReportWizard({
 
   const steps = GROUP_STEPS[group]
   const step = steps[stepIndex]
+  const isFauneFlore = group === 'faune_flore'
 
   useEffect(() => {
     if (!isSupported) {
@@ -492,31 +495,70 @@ function ReportWizard({
           </div>
         )}
 
-        {step === 'categorie' && group === 'faune_flore' && (
-          <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-3 gap-2">
-              {REPORT_GROUP_CATEGORIES.faune_flore.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setCategory(value)}
-                  aria-pressed={category === value}
-                  className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-3 text-center transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                    category === value
-                      ? 'border-canopee-green bg-canopee-green/10'
-                      : 'border-canopee-green/25 bg-white hover:border-canopee-green/60'
-                  }`}
-                >
-                  <SpeciesPicto
-                    name={value === 'plante_vasculaire' ? 'vasculaire' : value}
-                    className="h-6 w-6 text-canopee-green"
-                  />
-                  <span className="text-xs font-medium text-canopee-forest">
-                    {REPORT_CATEGORY_LABELS[value]}
-                  </span>
-                </button>
-              ))}
+        {step === 'categorie' && isFauneFlore && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="mb-2 text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
+                Faune
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {FAUNE_SUBCATEGORIES.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      setFauneFloreChoice(value)
+                      setCategory('reptile')
+                    }}
+                    aria-pressed={fauneFloreChoice === value}
+                    className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
+                      fauneFloreChoice === value
+                        ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
+                        : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
+                    }`}
+                  >
+                    <SpeciesPicto
+                      name={value}
+                      className="mx-auto mb-1 h-6 w-6 text-canopee-green"
+                    />
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
+            <div>
+              <p className="mb-2 text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
+                Flore
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {FLORE_SUBCATEGORIES.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      setFauneFloreChoice(value)
+                      setCategory('plante_vasculaire')
+                    }}
+                    aria-pressed={fauneFloreChoice === value}
+                    className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
+                      fauneFloreChoice === value
+                        ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
+                        : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
+                    }`}
+                  >
+                    <SpeciesPicto
+                      name={value}
+                      className="mx-auto mb-1 h-6 w-6 text-canopee-green"
+                    />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="text-xs text-canopee-forest/60">
+              Ces choix sont indicatifs et n’influencent pas la recherche
+              d’espèce.
+            </p>
             {errors.category && (
               <p id="category-error" className={ERROR}>
                 {errors.category}
@@ -533,7 +575,7 @@ function ReportWizard({
             <SpeciesCombobox
               value={species}
               onChange={setSpecies}
-              category={category as SpeciesReportCategory}
+              category={undefined}
             />
             {errors.species && (
               <p id="species-error" className={ERROR}>

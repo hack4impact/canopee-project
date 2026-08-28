@@ -18,8 +18,21 @@ type WizardCategory =
   | 'poisson'
   | 'reptile'
 
+type SourceGroup =
+  | 'Amphibiens'
+  | 'Bryophytes'
+  | 'Charophyte'
+  | 'Embryophytes'
+  | 'Insectes'
+  | 'Invertébrés'
+  | 'Mammifères'
+  | 'Mollusques'
+  | 'Oiseaux'
+  | 'Poissons'
+  | 'Reptiles'
+
 interface RawSpecies {
-  group: string
+  group: SourceGroup
   scientificName: string
   commonName: string
   status: string
@@ -27,6 +40,7 @@ interface RawSpecies {
 
 interface ParsedSpecies {
   category: WizardCategory
+  sourceGroup: SourceGroup
   scientificName: string
   commonName: string
   status: string
@@ -41,6 +55,8 @@ const CATEGORY_MAPPING: Record<string, WizardCategory> = {
   Mollusques: 'mollusque',
   Oiseaux: 'oiseau',
   'Plantes vasculaires': 'plante_vasculaire',
+  Embryophytes: 'plante_vasculaire',
+  Charophyte: 'plante_vasculaire',
   Poissons: 'poisson',
   Reptiles: 'reptile',
 }
@@ -91,10 +107,11 @@ async function readCSV(filePath: string): Promise<RawSpecies[]> {
     }
 
     const parts = parseCSVLine(line)
-    if (parts.length < 5 || !parts[0]) continue
+    if (parts.length < 5 || !parts[0] || !(parts[0] in CATEGORY_MAPPING))
+      continue
 
     species.push({
-      group: parts[0],
+      group: parts[0] as SourceGroup,
       scientificName: parts[2],
       commonName: parts[3],
       status: parts[4],
@@ -120,6 +137,7 @@ function convertSpecies(raw: RawSpecies[]): ParsedSpecies[] {
 
     parsed.push({
       category,
+      sourceGroup: item.group,
       scientificName: item.scientificName,
       commonName: capitalizedCommonName,
       status: item.status,
@@ -139,6 +157,7 @@ function generateTypeScript(species: ParsedSpecies[]): string {
       (s) =>
         `  {
     category: '${s.category}',
+    sourceGroup: '${s.sourceGroup}',
     scientificName: '${s.scientificName.replace(/'/g, "\\'")}',
     commonName: '${s.commonName.replace(/'/g, "\\'")}',
     status: '${s.status}',
@@ -158,8 +177,22 @@ function generateTypeScript(species: ParsedSpecies[]): string {
   | 'poisson'
   | 'reptile'
 
+export type SpeciesSourceGroup =
+  | 'Amphibiens'
+  | 'Bryophytes'
+  | 'Charophyte'
+  | 'Embryophytes'
+  | 'Insectes'
+  | 'Invertébrés'
+  | 'Mammifères'
+  | 'Mollusques'
+  | 'Oiseaux'
+  | 'Poissons'
+  | 'Reptiles'
+
 export interface Species {
   category: ReportCategory
+  sourceGroup: SpeciesSourceGroup
   scientificName: string
   commonName: string
   status: string
