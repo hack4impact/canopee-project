@@ -1,5 +1,4 @@
 import {
-  FAUNE_FLORE_STATUTS,
   isReportCategory,
   isReportTypology,
   reportGroupOfCategory,
@@ -32,7 +31,6 @@ export type ReportInput = {
   species?: string
   unit?: string
   habitat?: string
-  statut?: string
 }
 
 export type ReportPhotoInput = {
@@ -75,7 +73,6 @@ export function validateReport(input: ReportInput): ReportErrors {
     }
 
     if (group === 'faune_flore') {
-      validateStatut(input.statut, errors)
       validateSpecies(input.species, errors)
     }
 
@@ -97,18 +94,6 @@ function validateTypology(value: string | undefined, errors: ReportErrors) {
     errors.typology = 'Choisissez la typologie.'
   } else if (!isReportTypology(value)) {
     errors.typology = 'Cette typologie n’existe pas.'
-  }
-}
-
-function validateStatut(value: string | undefined, errors: ReportErrors) {
-  if (!value) {
-    errors.statut = "Indiquez le statut de l'espèce."
-  } else if (
-    !(FAUNE_FLORE_STATUTS as readonly { value: string }[])
-      .map((s) => s.value)
-      .includes(value)
-  ) {
-    errors.statut = "Ce statut n'existe pas."
   }
 }
 
