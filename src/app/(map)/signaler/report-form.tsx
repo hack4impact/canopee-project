@@ -10,16 +10,19 @@ import {
 import Image from 'next/image'
 import { ReportLocationPicker } from '@/components/report-location-picker'
 import { SpeciesPicto } from '@/components/species-picto'
+import { SpeciesCombobox } from '@/components/species-combobox'
 import { Spinner } from '@/components/spinner'
 import { isGeolocationAvailable } from '@/lib/mapbox'
 import {
-  FAUNE_FLORE_STATUTS,
   REPORT_CATEGORY_LABELS,
   REPORT_GROUP_CATEGORIES,
   REPORT_GROUP_LABELS,
   REPORT_TYPOLOGIES,
   REPORT_TYPOLOGY_LABELS,
   REPORT_UNITS,
+  REPORT_FAUNE_CATEGORIES,
+  REPORT_FLORE_CATEGORIES,
+  isReportCategory,
   type ReportGroup,
 } from '@/lib/reports/categories'
 import { downscalePhoto } from '@/lib/reports/downscale'
@@ -83,7 +86,7 @@ export function ReportForm({
   const [state, formAction, pending] = useActionState(sendReport, initialState)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
       <button
         type="button"
         onClick={onBack}
@@ -150,7 +153,6 @@ type StepKey =
   | 'constate'
   | 'typologie'
   | 'categorie'
-  | 'statut'
   | 'photo'
   | 'nombre'
   | 'espece'
@@ -162,7 +164,6 @@ const STEP_TITLES: Record<StepKey, string> = {
   constate: 'Qu’avez-vous constaté ?',
   typologie: 'Typologie',
   categorie: 'Sélectionnez la catégorie observée',
-  statut: "Quel est le statut de l'espèce ?",
   photo: 'Photo',
   nombre: 'Combien ?',
   espece: 'Quelle espèce avez-vous observé ?',
@@ -175,14 +176,7 @@ const STEP_TITLES: Record<StepKey, string> = {
 const GROUP_STEPS: Record<ReportGroup, readonly StepKey[]> = {
   entretien: ['constate', 'typologie', 'photo', 'commentaire', 'position'],
   citoyen: ['constate', 'photo', 'nombre', 'commentaire', 'position'],
-  faune_flore: [
-    'categorie',
-    'statut',
-    'photo',
-    'espece',
-    'details',
-    'position',
-  ],
+  faune_flore: ['categorie', 'photo', 'espece', 'details', 'position'],
 }
 
 function UploadIcon({ className }: { className?: string }) {
@@ -213,7 +207,6 @@ function ReportWizard({
 }: ReportWizardProps) {
   const [stepIndex, setStepIndex] = useState(0)
   const [category, setCategory] = useState('')
-  const [statut, setStatut] = useState('')
   const [typology, setTypology] = useState('')
   const [description, setDescription] = useState('')
   const [quantity, setQuantity] = useState('')
@@ -246,6 +239,7 @@ function ReportWizard({
 
   const steps = GROUP_STEPS[group]
   const step = steps[stepIndex]
+  const isFauneFlore = group === 'faune_flore'
 
   useEffect(() => {
     if (!isSupported) {
@@ -332,8 +326,6 @@ function ReportWizard({
         return typology !== ''
       case 'categorie':
         return category !== ''
-      case 'statut':
-        return statut !== ''
       case 'photo':
         return photo !== null || !photoRequired
       case 'nombre':
@@ -353,7 +345,6 @@ function ReportWizard({
     setClientErrors((current) => {
       const cleared = { ...current }
       delete cleared.category
-      delete cleared.statut
       delete cleared.typology
       delete cleared.species
       delete cleared.photo
@@ -385,7 +376,6 @@ function ReportWizard({
       species,
       unit,
       habitat,
-      statut,
     })
 
     setClientErrors(found)
@@ -410,9 +400,9 @@ function ReportWizard({
     <form
       action={submit}
       noValidate
-      className="flex min-h-0 flex-1 flex-col gap-4"
+      className="flex min-h-0 flex-1 flex-col gap-2"
     >
-      <div className="flex shrink-0 flex-col gap-3">
+      <div className="flex shrink-0 flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
             Étape {stepIndex + 1} / {steps.length}
@@ -446,7 +436,6 @@ function ReportWizard({
       <input type="hidden" name="species" value={species} />
       <input type="hidden" name="unit" value={unit} />
       <input type="hidden" name="habitat" value={habitat} />
-      <input type="hidden" name="statut" value={statut} />
 
       {position && (
         <>
@@ -455,7 +444,7 @@ function ReportWizard({
         </>
       )}
 
-      <div className="scroll-visible flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain pr-3">
+      <div className="scroll-visible flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain pr-2">
         {step === 'constate' && (
           <div className="flex flex-col gap-2">
             {REPORT_GROUP_CATEGORIES[group].map((value) => (
@@ -506,65 +495,65 @@ function ReportWizard({
           </div>
         )}
 
-        {step === 'categorie' && group === 'faune_flore' && (
-          <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-3 gap-2">
-              {REPORT_GROUP_CATEGORIES.faune_flore.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setCategory(value)}
-                  aria-pressed={category === value}
-                  className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-3 text-center transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                    category === value
-                      ? 'border-canopee-green bg-canopee-green/10'
-                      : 'border-canopee-green/25 bg-white hover:border-canopee-green/60'
-                  }`}
-                >
-                  <SpeciesPicto
-                    name={value === 'plante_vasculaire' ? 'vasculaire' : value}
-                    className="h-6 w-6 text-canopee-green"
-                  />
-                  <span className="text-xs font-medium text-canopee-forest">
+        {step === 'categorie' && isFauneFlore && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="mb-2 text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
+                Faune
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {REPORT_FAUNE_CATEGORIES.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setCategory(value)}
+                    aria-pressed={category === value}
+                    className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
+                      category === value
+                        ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
+                        : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
+                    }`}
+                  >
+                    <SpeciesPicto
+                      name={value}
+                      className="mx-auto mb-1 h-6 w-6 text-canopee-green"
+                    />
                     {REPORT_CATEGORY_LABELS[value]}
-                  </span>
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
+                Flore
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {REPORT_FLORE_CATEGORIES.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setCategory(value)}
+                    aria-pressed={category === value}
+                    className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
+                      category === value
+                        ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
+                        : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
+                    }`}
+                  >
+                    <SpeciesPicto
+                      name={
+                        value === 'plante_vasculaire' ? 'vasculaire' : value
+                      }
+                      className="mx-auto mb-1 h-6 w-6 text-canopee-green"
+                    />
+                    {REPORT_CATEGORY_LABELS[value]}
+                  </button>
+                ))}
+              </div>
             </div>
             {errors.category && (
               <p id="category-error" className={ERROR}>
                 {errors.category}
-              </p>
-            )}
-          </div>
-        )}
-
-        {step === 'statut' && group === 'faune_flore' && (
-          <div className="flex flex-col gap-2">
-            <p className="text-xs text-canopee-forest/60">Échelle de menace</p>
-            <div className="flex flex-col gap-1">
-              {FAUNE_FLORE_STATUTS.map(({ value, label }, index) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setStatut(value)}
-                  aria-pressed={statut === value}
-                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                    statut === value
-                      ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
-                      : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
-                  }`}
-                >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-canopee-green/15 text-xs font-bold text-canopee-green">
-                    {index + 1}
-                  </span>
-                  <span className="text-sm font-medium">{label}</span>
-                </button>
-              ))}
-            </div>
-            {errors.statut && (
-              <p id="statut-error" className={ERROR}>
-                {errors.statut}
               </p>
             )}
           </div>
@@ -575,15 +564,12 @@ function ReportWizard({
             <label htmlFor="species" className={LABEL}>
               Espèce observée
             </label>
-            <input
+            <SpeciesCombobox
               id="species"
-              name="species"
-              type="text"
               value={species}
-              onChange={(event) => setSpecies(event.target.value)}
-              placeholder="Nom commun ou scientifique, si vous le connaissez."
-              aria-describedby={errors.species ? 'species-error' : undefined}
-              className={FIELD}
+              onChange={setSpecies}
+              category={isReportCategory(category) ? category : undefined}
+              describedBy={errors.species ? 'species-error' : undefined}
             />
             {errors.species && (
               <p id="species-error" className={ERROR}>
@@ -778,14 +764,6 @@ function ReportWizard({
                 </button>
               )}
             </div>
-
-            <p aria-live="polite" className="text-sm text-canopee-forest/70">
-              {!position
-                ? 'Touchez la carte pour placer le repère à l’endroit du problème.'
-                : override
-                  ? 'Repère placé à la main. Touchez la carte ou faites-le glisser pour l’ajuster.'
-                  : 'Position GPS. Touchez la carte ou faites glisser le repère pour la corriger.'}
-            </p>
 
             {gpsFix.status === 'locating' && !override && (
               <p role="status" className="text-sm text-canopee-forest/70">

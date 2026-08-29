@@ -45,7 +45,6 @@ describe('validateReport', () => {
           input({
             category: 'reptile',
             typology: undefined,
-            statut: 'menace',
             species: 'Salamandre sombre du Nord',
           }),
         ),
@@ -76,7 +75,6 @@ describe('validateReport', () => {
         input({
           category: 'plante_vasculaire',
           typology: undefined,
-          statut: 'vulnerable',
         }),
       ).species,
     ).toBeDefined()
@@ -87,7 +85,6 @@ describe('validateReport', () => {
       input({
         category: 'reptile',
         typology: undefined,
-        statut: 'menace',
         species: 'a'.repeat(201),
       }),
     )
@@ -150,7 +147,6 @@ describe('validateReport', () => {
         input({
           category: 'oiseau',
           typology: undefined,
-          statut: 'non_menacee',
           species: 'Oiseau',
           unit: 'tonnes',
         }),
