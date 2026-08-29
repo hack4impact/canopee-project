@@ -102,6 +102,22 @@ export const REPORT_GROUP_CATEGORIES: Record<
   ],
 }
 
+export const REPORT_FAUNE_CATEGORIES = [
+  'oiseau',
+  'mammifere',
+  'reptile',
+  'amphibien',
+  'poisson',
+  'insecte',
+  'invertebre',
+  'mollusque',
+] as const satisfies readonly ReportCategory[]
+
+export const REPORT_FLORE_CATEGORIES = [
+  'plante_vasculaire',
+  'bryophyte',
+] as const satisfies readonly ReportCategory[]
+
 export function isReportCategory(value: unknown): value is ReportCategory {
   return (
     typeof value === 'string' && Object.hasOwn(REPORT_CATEGORY_LABELS, value)

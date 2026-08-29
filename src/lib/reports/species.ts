@@ -1,14 +1,4 @@
-export type ReportCategory =
-  | 'amphibien'
-  | 'bryophyte'
-  | 'insecte'
-  | 'invertebre'
-  | 'mammifere'
-  | 'mollusque'
-  | 'oiseau'
-  | 'plante_vasculaire'
-  | 'poisson'
-  | 'reptile'
+import type { ReportCategory } from '@/lib/reports/categories'
 
 export type SpeciesSourceGroup =
   | 'Amphibiens'
@@ -23,7 +13,7 @@ export type SpeciesSourceGroup =
   | 'Poissons'
   | 'Reptiles'
 
-export interface Species {
+export type Species = {
   category: ReportCategory
   sourceGroup: SpeciesSourceGroup
   scientificName: string

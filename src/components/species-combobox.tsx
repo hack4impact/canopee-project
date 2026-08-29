@@ -1,14 +1,16 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { searchSpecies, type Species } from '@/lib/reports/species'
-import type { ReportCategory } from '@/lib/reports/species'
+import type { ReportCategory } from '@/lib/reports/categories'
 
-interface SpeciesComboboxProps {
+type SpeciesComboboxProps = {
+  id: string
   value: string
   onChange: (value: string) => void
   category?: ReportCategory
   placeholder?: string
+  describedBy?: string
 }
 
 const FIELD =
@@ -24,29 +26,24 @@ const SUGGESTION_ITEM_ACTIVE =
   'bg-canopee-green/20 border-l-4 border-canopee-green'
 
 export function SpeciesCombobox({
+  id,
   value,
   onChange,
   category,
   placeholder = 'Nom commun ou scientifique',
+  describedBy,
 }: SpeciesComboboxProps) {
-  const [suggestions, setSuggestions] = useState<Species[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    if (value.trim()) {
-      const results = searchSpecies(value, category, 20)
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSuggestions(results)
-      setIsOpen(results.length > 0)
-      setSelectedIndex(-1)
-    } else {
-      setSuggestions([])
-      setIsOpen(false)
-    }
-  }, [value, category])
+  const suggestions = useMemo<Species[]>(
+    () => (value.trim() ? searchSpecies(value, category, 20) : []),
+    [value, category],
+  )
+
+  const expanded = isOpen && suggestions.length > 0
+  const listboxId = `${id}-listbox`
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -63,7 +60,7 @@ export function SpeciesCombobox({
   }, [])
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (!isOpen || suggestions.length === 0) {
+    if (!expanded) {
       if (e.key === 'Enter') {
         e.preventDefault()
       }
@@ -106,25 +103,36 @@ export function SpeciesCombobox({
   return (
     <div ref={containerRef} className="relative">
       <input
-        ref={inputRef}
+        id={id}
         type="text"
+        role="combobox"
+        aria-expanded={expanded}
+        aria-controls={listboxId}
+        aria-autocomplete="list"
+        aria-activedescendant={
+          selectedIndex >= 0 ? `${id}-option-${selectedIndex}` : undefined
+        }
+        aria-describedby={describedBy}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onFocus={() => {
-          if (value.trim() && suggestions.length > 0) {
-            setIsOpen(true)
-          }
+        onChange={(e) => {
+          onChange(e.target.value)
+          setSelectedIndex(-1)
+          setIsOpen(true)
         }}
+        onKeyDown={handleKeyDown}
+        onFocus={() => setIsOpen(true)}
         placeholder={placeholder}
         className={FIELD}
       />
 
-      {isOpen && suggestions.length > 0 && (
-        <div className={SUGGESTIONS_CLASS}>
+      {expanded && (
+        <div id={listboxId} role="listbox" className={SUGGESTIONS_CLASS}>
           {suggestions.map((species, index) => (
             <div
-              key={`${index}-${species.category}-${species.scientificName}-${species.commonName}`}
+              key={`${species.category}-${species.scientificName}-${species.commonName}`}
+              id={`${id}-option-${index}`}
+              role="option"
+              aria-selected={index === selectedIndex}
               onClick={() => handleSuggestionClick(species)}
               className={`${SUGGESTION_ITEM} ${
                 index === selectedIndex ? SUGGESTION_ITEM_ACTIVE : ''

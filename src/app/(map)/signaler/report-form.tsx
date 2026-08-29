@@ -20,8 +20,9 @@ import {
   REPORT_TYPOLOGIES,
   REPORT_TYPOLOGY_LABELS,
   REPORT_UNITS,
-  FAUNE_SUBCATEGORIES,
-  FLORE_SUBCATEGORIES,
+  REPORT_FAUNE_CATEGORIES,
+  REPORT_FLORE_CATEGORIES,
+  isReportCategory,
   type ReportGroup,
 } from '@/lib/reports/categories'
 import { downscalePhoto } from '@/lib/reports/downscale'
@@ -160,7 +161,7 @@ type StepKey =
   | 'position'
 
 const STEP_TITLES: Record<StepKey, string> = {
-  constate: "Qu'avez-vous constaté ?",
+  constate: 'Qu’avez-vous constaté ?',
   typologie: 'Typologie',
   categorie: 'Sélectionnez la catégorie observée',
   photo: 'Photo',
@@ -206,7 +207,6 @@ function ReportWizard({
 }: ReportWizardProps) {
   const [stepIndex, setStepIndex] = useState(0)
   const [category, setCategory] = useState('')
-  const [fauneFloreChoice, setFauneFloreChoice] = useState('')
   const [typology, setTypology] = useState('')
   const [description, setDescription] = useState('')
   const [quantity, setQuantity] = useState('')
@@ -502,17 +502,14 @@ function ReportWizard({
                 Faune
               </p>
               <div className="grid grid-cols-3 gap-2">
-                {FAUNE_SUBCATEGORIES.map(({ value, label }) => (
+                {REPORT_FAUNE_CATEGORIES.map((value) => (
                   <button
                     key={value}
                     type="button"
-                    onClick={() => {
-                      setFauneFloreChoice(value)
-                      setCategory('reptile')
-                    }}
-                    aria-pressed={fauneFloreChoice === value}
+                    onClick={() => setCategory(value)}
+                    aria-pressed={category === value}
                     className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                      fauneFloreChoice === value
+                      category === value
                         ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
                         : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
                     }`}
@@ -521,7 +518,7 @@ function ReportWizard({
                       name={value}
                       className="mx-auto mb-1 h-6 w-6 text-canopee-green"
                     />
-                    {label}
+                    {REPORT_CATEGORY_LABELS[value]}
                   </button>
                 ))}
               </div>
@@ -531,26 +528,25 @@ function ReportWizard({
                 Flore
               </p>
               <div className="grid grid-cols-2 gap-2">
-                {FLORE_SUBCATEGORIES.map(({ value, label }) => (
+                {REPORT_FLORE_CATEGORIES.map((value) => (
                   <button
                     key={value}
                     type="button"
-                    onClick={() => {
-                      setFauneFloreChoice(value)
-                      setCategory('plante_vasculaire')
-                    }}
-                    aria-pressed={fauneFloreChoice === value}
+                    onClick={() => setCategory(value)}
+                    aria-pressed={category === value}
                     className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                      fauneFloreChoice === value
+                      category === value
                         ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
                         : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
                     }`}
                   >
                     <SpeciesPicto
-                      name={value}
+                      name={
+                        value === 'plante_vasculaire' ? 'vasculaire' : value
+                      }
                       className="mx-auto mb-1 h-6 w-6 text-canopee-green"
                     />
-                    {label}
+                    {REPORT_CATEGORY_LABELS[value]}
                   </button>
                 ))}
               </div>
@@ -569,9 +565,11 @@ function ReportWizard({
               Espèce observée
             </label>
             <SpeciesCombobox
+              id="species"
               value={species}
               onChange={setSpecies}
-              category={undefined}
+              category={isReportCategory(category) ? category : undefined}
+              describedBy={errors.species ? 'species-error' : undefined}
             />
             {errors.species && (
               <p id="species-error" className={ERROR}>
