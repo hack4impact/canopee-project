@@ -33,7 +33,7 @@ export async function startPatrol(): Promise<StartPatrolState> {
   const active = await getActivePatrol(profile.id)
 
   if (active) {
-    revalidatePath('/')
+    revalidatePath('/carte')
     return {}
   }
 
@@ -45,7 +45,7 @@ export async function startPatrol(): Promise<StartPatrolState> {
     return { message: 'Impossible de démarrer la patrouille. Réessayez.' }
   }
 
-  revalidatePath('/')
+  revalidatePath('/carte')
 
   return {}
 }
@@ -57,7 +57,7 @@ export async function endPatrol(): Promise<EndPatrolState> {
   const active = await getActivePatrol(profile.id)
 
   if (!active) {
-    revalidatePath('/')
+    revalidatePath('/carte')
     return {}
   }
 
@@ -104,7 +104,7 @@ export async function endPatrol(): Promise<EndPatrolState> {
     return { message: 'Impossible de terminer la patrouille. Réessayez.' }
   }
 
-  revalidatePath('/')
+  revalidatePath('/carte')
 
   return { summary }
 }

@@ -30,7 +30,7 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        router.push('/')
+        router.push('/carte')
       }
     }
 
@@ -44,7 +44,7 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
       <button
         type="button"
         aria-label="Fermer le signalement"
-        onClick={() => router.push('/')}
+        onClick={() => router.push('/carte')}
         className="fixed inset-0 cursor-default"
       />
 
@@ -63,7 +63,7 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
 
           <button
             type="button"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/carte')}
             aria-label="Fermer"
             className="inline-flex touch-manipulation shrink-0 items-center justify-center rounded-lg p-1.5 text-canopee-forest/60 transition-colors hover:bg-canopee-green/10 hover:text-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none"
           >

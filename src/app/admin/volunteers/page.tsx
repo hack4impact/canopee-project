@@ -16,10 +16,10 @@ export default async function AdminVolunteersPage() {
               File d&apos;approbation des bénévoles
             </h1>
             <Link
-              href="/"
+              href="/carte"
               className="text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
             >
-              Accueil
+              Carte
             </Link>
           </div>
           <p className="text-zinc-600 dark:text-zinc-400">
