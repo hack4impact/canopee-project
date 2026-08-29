@@ -1,4 +1,15 @@
-import { and, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm'
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+  sql,
+} from 'drizzle-orm'
 import { db, patrolPoints, patrols, users } from '@/db'
 import { totalDistanceMetres, type Coordinate } from './distance'
 
@@ -151,6 +162,54 @@ export async function listPatrolsForUser(
     })),
     hasNextPage,
   }
+}
+
+export type PatrolTotals = {
+  count: number
+  distanceMetres: number
+  durationSeconds: number
+}
+
+/** Totals for the profile tiles, over finished patrols only. */
+export async function getPatrolTotalsForUser(
+  userId: string,
+): Promise<PatrolTotals> {
+  const [row] = await db
+    .select({
+      count: sql<number>`count(*)::int`,
+      distanceMetres: sql<number>`coalesce(sum(${patrols.distanceMeters}), 0)::int`,
+      durationSeconds: sql<number>`coalesce(sum(extract(epoch from (${patrols.endedAt} - ${patrols.startedAt}))), 0)::int`,
+    })
+    .from(patrols)
+    .where(and(eq(patrols.userId, userId), isNotNull(patrols.endedAt)))
+
+  return row ?? { count: 0, distanceMetres: 0, durationSeconds: 0 }
+}
+
+export type LastPatrol = {
+  id: string
+  startedAt: Date
+  durationSeconds: number
+  distanceMetres: number
+}
+
+/** The most recent finished patrol, for the profile preview. */
+export async function getLastPatrolForUser(
+  userId: string,
+): Promise<LastPatrol | null> {
+  const [row] = await db
+    .select({
+      id: patrols.id,
+      startedAt: patrols.startedAt,
+      durationSeconds: sql<number>`extract(epoch from (${patrols.endedAt} - ${patrols.startedAt}))::int`,
+      distanceMetres: sql<number>`coalesce(${patrols.distanceMeters}, 0)::int`,
+    })
+    .from(patrols)
+    .where(and(eq(patrols.userId, userId), isNotNull(patrols.endedAt)))
+    .orderBy(desc(patrols.startedAt))
+    .limit(1)
+
+  return row ?? null
 }
 
 export async function getPatrolById(patrolId: string): Promise<Patrol | null> {

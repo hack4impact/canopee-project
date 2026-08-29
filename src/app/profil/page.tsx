@@ -1,13 +1,23 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { logout } from '@/app/login/actions'
+import { getPendingUsers } from '@/app/admin/volunteers/actions'
+import { AccountSection } from '@/components/account-section'
 import { BottomNav } from '@/components/bottom-nav'
+import { PatrolRoutePreview } from '@/components/patrol-route-preview'
+import { PendingReportsNotice } from '@/components/pending-reports-notice'
 import { requireApprovedUser } from '@/lib/auth/current-user'
 import { isAdmin, type Role } from '@/lib/auth/roles'
+import { formatDistance, formatDuration } from '@/lib/patrols/format'
+import {
+  getLastPatrolForUser,
+  getPatrolTotalsForUser,
+  listPatrolRoute,
+} from '@/lib/patrols/queries'
+import { getReportTotalsForUser } from '@/lib/reports/queries'
 
 export const metadata: Metadata = {
   title: 'Profil | Canopée',
-  description: 'Votre compte et votre historique de patrouilles.',
+  description: 'Votre compte, vos patrouilles et vos signalements.',
 }
 
 export const dynamic = 'force-dynamic'
@@ -18,62 +28,157 @@ const ROLE_LABELS: Record<Role, string> = {
   admin: 'Administrateur',
 }
 
-const CARD =
-  'rounded-2xl border border-canopee-forest/10 bg-white/70 px-5 py-4 shadow-sm'
+const dateFormatter = new Intl.DateTimeFormat('fr-CA', {
+  dateStyle: 'long',
+  timeZone: 'America/Toronto',
+})
+
+const TILE =
+  'flex items-center gap-3 rounded-2xl px-3.5 py-4 text-canopee-cream transition-colors'
+
+const TILE_NUMBER = 'font-heading text-3xl leading-none font-bold tabular-nums'
 
 export default async function ProfilPage() {
   const profile = await requireApprovedUser()
+  const admin = isAdmin(profile)
+
+  const [patrols, reports, lastPatrol, pendingUsers] = await Promise.all([
+    getPatrolTotalsForUser(profile.id),
+    getReportTotalsForUser(profile.id),
+    getLastPatrolForUser(profile.id),
+    admin ? getPendingUsers() : Promise.resolve([]),
+  ])
+
+  const lastRoute = lastPatrol ? await listPatrolRoute(lastPatrol.id) : []
+
+  const pendingReports = reports.count - reports.resolved
+
+  const fullName = [profile.firstName, profile.lastName]
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <div className="flex min-h-dvh w-full flex-col bg-canopee-cream">
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-32 sm:px-6">
-        <h1 className="font-heading text-2xl text-canopee-forest sm:text-3xl">
-          Profil
-        </h1>
-
-        <div className={`flex flex-col gap-1 ${CARD}`}>
-          <span className="font-heading text-base text-canopee-forest">
-            {profile.email}
-          </span>
-          <span className="text-sm text-canopee-forest/70">
-            {ROLE_LABELS[profile.role]}
-          </span>
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-36 sm:px-6">
+        <div className="flex flex-col gap-0.5">
+          <h1 className="font-heading text-3xl text-canopee-forest">Profil</h1>
+          <p className="text-sm font-bold text-canopee-forest">
+            {fullName || profile.email}
+            <span className="font-semibold text-canopee-forest/55">
+              {' '}
+              · {ROLE_LABELS[profile.role]}
+            </span>
+          </p>
         </div>
 
-        <nav className="flex flex-col gap-3">
+        <PendingReportsNotice />
+
+        {lastPatrol && (
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[10px] font-extrabold tracking-[0.1em] text-canopee-forest/50 uppercase">
+              Dernière patrouille
+            </p>
+
+            <Link
+              href={`/patrouilles/${lastPatrol.id}?from=profil`}
+              className="block overflow-hidden rounded-2xl ring-1 ring-canopee-forest/10 transition-colors hover:ring-canopee-green/40 focus-visible:ring-2 focus-visible:ring-canopee-green focus-visible:outline-none"
+            >
+              <PatrolRoutePreview
+                points={lastRoute}
+                seed={lastPatrol.id}
+                className="block h-32 w-full"
+              />
+
+              <span className="flex items-center gap-3 bg-white px-3 py-2.5">
+                <span className="flex-1 text-xs font-bold text-canopee-forest">
+                  {dateFormatter.format(lastPatrol.startedAt)}
+                </span>
+                <span className="flex items-baseline gap-1.5 text-[11px] tabular-nums">
+                  <span className="font-bold text-canopee-forest">
+                    {formatDuration(lastPatrol.durationSeconds)}
+                  </span>
+                  <span className="text-canopee-forest/30">·</span>
+                  <span className="font-bold text-canopee-forest">
+                    {formatDistance(lastPatrol.distanceMetres)}
+                  </span>
+                </span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-3.5 w-3.5 text-canopee-forest/40"
+                  aria-hidden="true"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </span>
+            </Link>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-3">
           <Link
             href="/patrouilles/historique?from=profil"
-            className={`flex items-center justify-between gap-4 text-canopee-forest transition-colors hover:border-canopee-green/40 ${CARD}`}
+            className={`${TILE} bg-canopee-forest transition-colors hover:bg-[#00351a] focus-visible:ring-2 focus-visible:ring-canopee-green focus-visible:outline-none`}
           >
-            <span className="font-heading text-base">Mes patrouilles</span>
-            <span className="text-sm text-canopee-forest/70">
-              Historique et trajets
+            <span className={TILE_NUMBER}>{patrols.count}</span>
+            <span className="flex min-w-0 flex-col">
+              <span className="text-xs font-extrabold">Patrouilles</span>
+              <span className="text-[10px] leading-tight text-canopee-cream/80">
+                {formatDistance(patrols.distanceMetres)}
+                <br />
+                {formatDuration(patrols.durationSeconds)}
+              </span>
             </span>
           </Link>
 
-          {isAdmin(profile) && (
-            <Link
-              href="/admin/volunteers"
-              className={`flex items-center justify-between gap-4 text-canopee-forest transition-colors hover:border-canopee-green/40 ${CARD}`}
-            >
-              <span className="font-heading text-base">
-                Examiner les demandes
+          <div className={`${TILE} bg-canopee-coral-dark`}>
+            <span className={TILE_NUMBER}>{reports.count}</span>
+            <span className="flex min-w-0 flex-col">
+              <span className="text-xs font-extrabold">Signalements</span>
+              <span className="text-[10px] leading-tight text-canopee-cream/80">
+                {reports.resolved} résolu{reports.resolved === 1 ? '' : 's'}
+                {pendingReports > 0 && (
+                  <>
+                    <br />
+                    <span className="font-extrabold text-canopee-cream">
+                      {pendingReports} en attente
+                    </span>
+                  </>
+                )}
               </span>
-              <span className="text-sm text-canopee-forest/70">
-                Comptes en attente
-              </span>
-            </Link>
-          )}
-        </nav>
+            </span>
+          </div>
+        </div>
 
-        <form action={logout}>
-          <button
-            type="submit"
-            className="text-sm text-canopee-forest/70 underline underline-offset-4 hover:text-canopee-coral-dark"
+        {admin && (
+          <Link
+            href="/admin/volunteers"
+            className="flex items-center gap-3 rounded-xl border border-canopee-forest/20 bg-white px-3 py-2.5 text-sm font-bold text-canopee-forest transition-colors hover:border-canopee-green/50 focus-visible:ring-2 focus-visible:ring-canopee-green focus-visible:outline-none"
           >
-            Se déconnecter
-          </button>
-        </form>
+            <span className="flex-1">Comptes en attente</span>
+            <span className="font-heading text-base text-canopee-green tabular-nums">
+              {pendingUsers.length}
+            </span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-3.5 w-3.5 opacity-45"
+              aria-hidden="true"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </Link>
+        )}
+
+        <AccountSection />
       </main>
 
       <BottomNav />
