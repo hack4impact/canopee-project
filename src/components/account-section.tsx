@@ -13,16 +13,16 @@ import { MIN_PASSWORD_LENGTH } from '@/lib/auth/validation'
 const BOX = 'overflow-hidden rounded-xl border bg-white'
 
 const ROW =
-  'flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-bold transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none'
+  'flex w-full items-center gap-3 px-3 py-2.5 text-left text-[15px] font-bold transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none'
 
 const PANEL = 'flex flex-col gap-2 border-t p-3'
 
 const FIELD =
-  'w-full rounded-lg border border-canopee-forest/20 bg-canopee-cream/40 px-3 py-2 text-sm text-canopee-forest focus-visible:border-canopee-green focus-visible:ring-2 focus-visible:ring-canopee-green/30 focus-visible:outline-none'
+  'w-full rounded-lg border border-canopee-forest/20 bg-canopee-cream/40 px-3 py-2 text-base text-canopee-forest focus-visible:border-canopee-green focus-visible:ring-2 focus-visible:ring-canopee-green/30 focus-visible:outline-none'
 
-const LABEL = 'text-[11px] font-bold text-canopee-forest/70'
+const LABEL = 'text-xs font-bold text-canopee-forest/70'
 
-const ERROR = 'text-[11px] font-semibold text-canopee-coral-dark'
+const ERROR = 'text-xs font-semibold text-canopee-coral-dark'
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -65,7 +65,7 @@ export function AccountSection() {
 
   return (
     <section className="flex flex-col gap-1.5">
-      <h2 className="text-[10px] font-extrabold tracking-[0.1em] text-canopee-forest/50 uppercase">
+      <h2 className="text-sm font-extrabold tracking-[0.08em] text-canopee-forest/50 uppercase">
         Compte
       </h2>
 
@@ -141,7 +141,7 @@ export function AccountSection() {
             {passwordState.done && (
               <p
                 role="status"
-                className="text-[11px] font-semibold text-canopee-green"
+                className="text-xs font-semibold text-canopee-green"
               >
                 Mot de passe modifié.
               </p>
@@ -150,7 +150,7 @@ export function AccountSection() {
             <button
               type="submit"
               disabled={passwordPending}
-              className="mt-1 rounded-lg bg-canopee-green px-3 py-2 text-xs font-extrabold text-white transition-colors hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none disabled:opacity-60"
+              className="mt-1 rounded-lg bg-canopee-green px-3 py-2 text-sm font-extrabold text-white transition-colors hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none disabled:opacity-60"
             >
               {passwordPending ? 'Enregistrement…' : 'Enregistrer'}
             </button>
@@ -174,7 +174,7 @@ export function AccountSection() {
             action={submitDelete}
             className={`${PANEL} border-canopee-coral/25`}
           >
-            <p className="text-[11px] leading-snug text-canopee-forest">
+            <p className="text-xs leading-snug text-canopee-forest">
               Vos patrouilles et leurs trajets seront supprimés définitivement.
               Vos signalements sont conservés pour Canopée, mais ne seront plus
               liés à votre compte. Cette action est irréversible.
@@ -200,7 +200,7 @@ export function AccountSection() {
             <button
               type="submit"
               disabled={deletePending}
-              className="mt-1 rounded-lg bg-canopee-coral px-3 py-2 text-xs font-extrabold text-white transition-colors hover:bg-canopee-coral-dark focus-visible:ring-2 focus-visible:ring-canopee-coral focus-visible:outline-none disabled:opacity-60"
+              className="mt-1 rounded-lg bg-canopee-coral px-3 py-2 text-sm font-extrabold text-white transition-colors hover:bg-canopee-coral-dark focus-visible:ring-2 focus-visible:ring-canopee-coral focus-visible:outline-none disabled:opacity-60"
             >
               {deletePending ? 'Suppression…' : 'Supprimer définitivement'}
             </button>

@@ -11,7 +11,7 @@ const PADDING_X = 24
 const PADDING_TOP = 16
 const PADDING_BOTTOM = 20
 const MIN_SPAN = 1e-6
-const GROUND = '#eef0e0'
+const GROUND = '#f1f0e4'
 
 type Trace = {
   path: string
@@ -19,7 +19,7 @@ type Trace = {
   end: [number, number]
 }
 
-/** Only used to keep the hatch pattern id unique if two ever render together. */
+/** Only used to keep the dot pattern id unique if two ever render together. */
 function keyOf(value: string): string {
   let hash = 2166136261
 
@@ -76,9 +76,9 @@ function project(points: readonly RoutePoint[]): Trace | null {
 }
 
 /**
- * The patrol's real recorded path over a hatch texture. The hatch is
- * decorative, not terrain — this is deliberately not a map, so nothing here
- * bills a Mapbox load and it renders with no network at all.
+ * The patrol's real recorded path over a dot grid. The grid is decorative, not
+ * terrain — this is deliberately not a map, so nothing here bills a Mapbox load
+ * and it renders with no network at all.
  */
 export function PatrolRoutePreview({
   points,
@@ -90,7 +90,7 @@ export function PatrolRoutePreview({
   className?: string
 }) {
   const trace = project(points)
-  const pattern = `hatch-${keyOf(seed)}`
+  const pattern = `dots-${keyOf(seed)}`
 
   return (
     <span className={className} style={{ backgroundColor: GROUND }}>
@@ -104,24 +104,21 @@ export function PatrolRoutePreview({
         <defs>
           <pattern
             id={pattern}
-            width={9}
-            height={9}
+            width={13}
+            height={13}
             patternUnits="userSpaceOnUse"
-            patternTransform="rotate(45)"
           >
-            <line
-              x1={0}
-              y1={0}
-              x2={0}
-              y2={9}
-              stroke="var(--color-canopee-forest)"
-              strokeWidth={1.3}
-              opacity={0.09}
+            <circle
+              cx={2}
+              cy={2}
+              r={1.1}
+              fill="var(--color-canopee-forest)"
+              opacity={0.16}
             />
           </pattern>
         </defs>
 
-        {/* Oversized so the hatch still fills the card when the viewBox letterboxes. */}
+        {/* Oversized so the grid still fills the card when the viewBox letterboxes. */}
         <rect
           x={-120}
           y={-60}
@@ -143,7 +140,7 @@ export function PatrolRoutePreview({
               d={trace.path}
               fill="none"
               stroke={GROUND}
-              strokeWidth={8}
+              strokeWidth={7.5}
               strokeLinecap="round"
               strokeLinejoin="round"
             />

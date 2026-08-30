@@ -31,7 +31,7 @@ export function PendingReportsNotice() {
   return (
     <p
       role="status"
-      className="flex items-center gap-2 rounded-xl bg-canopee-coral px-3 py-2 text-xs font-bold text-white"
+      className="flex items-center gap-2 rounded-xl bg-canopee-coral px-3 py-2 text-sm font-bold text-white"
     >
       <svg
         viewBox="0 0 24 24"
