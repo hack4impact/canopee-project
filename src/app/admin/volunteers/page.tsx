@@ -1,6 +1,13 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
+import { BottomNav } from '@/components/bottom-nav'
 import { getPendingUsers } from './actions'
 import { VolunteerQueue } from './volunteer-queue'
+
+export const metadata: Metadata = {
+  title: 'Comptes en attente | Canopée',
+  description: 'Demandes de comptes à examiner.',
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -8,28 +15,31 @@ export default async function AdminVolunteersPage() {
   const pendingUsers = await getPendingUsers()
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex w-full max-w-2xl flex-col gap-8 px-6 py-24">
-        <header className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-4">
-            <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-              File d&apos;approbation des bénévoles
+    <div className="flex min-h-dvh w-full flex-col bg-canopee-cream">
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-36 sm:px-6">
+        <header className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-0.5">
+            <h1 className="font-heading text-3xl text-canopee-forest">
+              Comptes en attente
             </h1>
-            <Link
-              href="/carte"
-              className="text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
-            >
-              Carte
-            </Link>
+            <p className="text-base font-semibold text-canopee-forest/55">
+              {pendingUsers.length} demande
+              {pendingUsers.length === 1 ? '' : 's'} à examiner
+            </p>
           </div>
-          <p className="text-zinc-600 dark:text-zinc-400">
-            {pendingUsers.length} bénévole
-            {pendingUsers.length === 1 ? '' : 's'} en attente d&apos;examen.
-          </p>
+
+          <Link
+            href="/profil"
+            className="inline-flex shrink-0 items-center rounded-xl bg-canopee-forest px-3 py-2 text-sm font-extrabold text-canopee-cream transition-colors hover:bg-canopee-green focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none"
+          >
+            Profil
+          </Link>
         </header>
 
         <VolunteerQueue volunteers={pendingUsers} />
       </main>
+
+      <BottomNav />
     </div>
   )
 }

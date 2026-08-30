@@ -43,7 +43,7 @@ const LINKS: NavLink[] = [
   {
     href: '/profil',
     label: 'Profil',
-    related: ['/patrouilles/historique'],
+    related: ['/patrouilles/historique', '/admin'],
     icon: (
       <svg {...ICON_PROPS}>
         <circle cx="12" cy="8" r="5" />
