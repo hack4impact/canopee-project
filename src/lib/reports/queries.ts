@@ -158,6 +158,8 @@ export async function getReportTotalsForUser(
     .where(eq(reports.userId, userId))
 
   return row ?? { count: 0, resolved: 0 }
+
+  }
 export async function listReportsForExport(): Promise<ReportExportRow[]> {
   const rows = await db
     .select({
