@@ -19,8 +19,8 @@ export const dynamic = 'force-dynamic'
 const CARD = 'rounded-2xl border border-canopee-forest/10 bg-white/70 shadow-sm'
 
 const ORIGINS = {
-  // Patrols now start from the home page: send the patroller back there.
-  patrouille: { href: '/', label: 'Accueil' },
+  // Patrols now start from the map: send the patroller back there.
+  patrouille: { href: '/carte', label: 'Carte' },
   profil: { href: '/profil', label: 'Profil' },
 }
 

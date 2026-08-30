@@ -116,7 +116,7 @@ describe('startPatrol opening a patrol', () => {
   it('refreshes the map so the badge replaces the button', async () => {
     await startPatrol()
 
-    expect(revalidatePath).toHaveBeenCalledWith('/')
+    expect(revalidatePath).toHaveBeenCalledWith('/carte')
   })
 
   it('reports no error on success', async () => {
@@ -144,7 +144,7 @@ describe('startPatrol when one is already running', () => {
   it('still refreshes the map, so a double tap lands on the badge', async () => {
     await expect(startPatrol()).resolves.toEqual({})
 
-    expect(revalidatePath).toHaveBeenCalledWith('/')
+    expect(revalidatePath).toHaveBeenCalledWith('/carte')
   })
 })
 
@@ -195,7 +195,7 @@ describe('endPatrol with no running patrol', () => {
     await expect(endPatrol()).resolves.toEqual({})
 
     expect(update).not.toHaveBeenCalled()
-    expect(revalidatePath).toHaveBeenCalledWith('/')
+    expect(revalidatePath).toHaveBeenCalledWith('/carte')
   })
 })
 
@@ -237,7 +237,7 @@ describe('endPatrol closing a patrol', () => {
   it('refreshes the map so the button replaces the badge', async () => {
     await endPatrol()
 
-    expect(revalidatePath).toHaveBeenCalledWith('/')
+    expect(revalidatePath).toHaveBeenCalledWith('/carte')
   })
 
   it('reports no error on success', async () => {

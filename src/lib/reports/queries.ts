@@ -8,6 +8,7 @@ import {
   isNotNull,
   isNull,
   lte,
+  sql,
 } from 'drizzle-orm'
 import { db, reports, users } from '@/db'
 import type { ReportExportRow } from '@/lib/reports/csv'
@@ -140,6 +141,25 @@ export async function listReportPins(
   }))
 }
 
+export type ReportTotals = {
+  count: number
+  resolved: number
+}
+
+export async function getReportTotalsForUser(
+  userId: string,
+): Promise<ReportTotals> {
+  const [row] = await db
+    .select({
+      count: sql<number>`count(*)::int`,
+      resolved: sql<number>`count(${reports.resolvedAt})::int`,
+    })
+    .from(reports)
+    .where(eq(reports.userId, userId))
+
+  return row ?? { count: 0, resolved: 0 }
+
+  }
 export async function listReportsForExport(): Promise<ReportExportRow[]> {
   const rows = await db
     .select({

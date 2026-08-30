@@ -1,20 +1,16 @@
 'use client'
 
 import {
-  useCallback,
   useEffect,
   useRef,
   useState,
   useSyncExternalStore,
   useTransition,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { usePathname, useRouter } from 'next/navigation'
-import {
-  endPatrol,
-  startPatrol,
-  type PatrolSummary,
-} from '@/app/patrouilles/actions'
-import { PatrolPicto } from '@/components/patrol-picto'
+import { endPatrol, type PatrolSummary } from '@/app/patrouilles/actions'
+import { usePatrol } from '@/components/patrol-provider'
 import {
   endLiveActivity,
   listenForActivityCommands,
@@ -29,17 +25,13 @@ import {
   type RecordingStatus,
 } from '@/lib/patrols/use-patrol-recorder'
 
-const ACTIVE_PATROL_ENDPOINT = '/api/patrols/active'
-
-const UNAVAILABLE_RETRY_DELAY_MS = 2000
-
 const REPORT_ROUTE = '/signaler'
 
 function isReportRoute(pathname: string): boolean {
   return pathname === REPORT_ROUTE || pathname.startsWith(`${REPORT_ROUTE}/`)
 }
 
-const HOME_ROUTE = '/'
+const HOME_ROUTE = '/carte'
 
 const TICK_MS = 1000
 const NO_READING_YET = '--:--:--'
@@ -139,189 +131,36 @@ function clearStoredPause(startedAt: string): void {
   } catch {}
 }
 
-type ActivePatrolState =
-  | { status: 'unavailable' }
-  | { status: 'idle' }
-  | { status: 'active'; startedAt: string; id: string | null }
-
-/**
- * The patrol controls live in the root layout and must work on any page. The
- * root layout renders the initial patrol state server-side (so the button is
- * there on first paint, with no fetch delay); this hook keeps it in step with
- * the session afterwards.
- */
-function useActivePatrol(initialStartedAt: string | null): {
-  state: ActivePatrolState
-  refresh: () => Promise<void>
-} {
-  const pathname = usePathname()
-  const [state, setState] = useState<ActivePatrolState>(() =>
-    initialStartedAt
-      ? { status: 'active', startedAt: initialStartedAt, id: null }
-      : { status: 'idle' },
-  )
-
-  const refresh = useCallback(async () => {
-    try {
-      const response = await fetch(ACTIVE_PATROL_ENDPOINT, {
-        redirect: 'manual',
-      })
-
-      if (!response.ok) {
-        // Not signed in, not approved, or the request failed: no controls.
-        setState({ status: 'unavailable' })
-        return
-      }
-
-      const payload = (await response.json()) as {
-        id: string | null
-        startedAt: string | null
-      }
-
-      setState(
-        payload.startedAt
-          ? { status: 'active', startedAt: payload.startedAt, id: payload.id }
-          : { status: 'idle' },
-      )
-    } catch {
-      setState({ status: 'unavailable' })
-    }
-  }, [])
-
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => void refresh())
-
-    return () => cancelAnimationFrame(frame)
-  }, [refresh, pathname])
-
-  useEffect(() => {
-    if (state.status !== 'unavailable' || isPublicRoute(pathname)) {
-      return
-    }
-
-    const timer = setInterval(() => void refresh(), UNAVAILABLE_RETRY_DELAY_MS)
-
-    return () => clearInterval(timer)
-  }, [state.status, pathname, refresh])
-
-  // The auth state can also change in another tab or when the page is restored
-  // from the back/forward cache.
-  useEffect(() => {
-    function refreshOnVisible() {
-      void refresh()
-    }
-
-    window.addEventListener('focus', refreshOnVisible)
-    window.addEventListener('pageshow', refreshOnVisible)
-
-    return () => {
-      window.removeEventListener('focus', refreshOnVisible)
-      window.removeEventListener('pageshow', refreshOnVisible)
-    }
-  }, [refresh])
-
-  return { state, refresh }
-}
-
-export function PatrolControls({
-  initialStartedAt,
-}: {
-  /** ISO string of the running patrol, or null; rendered server-side. */
-  initialStartedAt: string | null
-}) {
+export function PatrolControls() {
   const router = useRouter()
   const pathname = usePathname()
-  const { state, refresh } = useActivePatrol(initialStartedAt)
+  const { state, refresh, dock } = usePatrol()
 
   // Auth pages must never show the controls, even when a session is active.
   if (isPublicRoute(pathname)) {
     return null
   }
 
-  if (state.status === 'unavailable') {
+  if (state.status !== 'active') {
     return null
   }
 
-  if (state.status === 'active') {
-    return (
-      <ActivePatrol
-        startedAt={state.startedAt}
-        patrolId={state.id}
-        hidden={isReportRoute(pathname)}
-        onEnded={(summary) => {
-          void refresh()
-          router.push(`/patrouilles/${summary.id}?from=patrouille`)
-        }}
-      />
-    )
-  }
-
-  if (isReportRoute(pathname)) {
-    return null
-  }
-
-  return <StartPatrolButton onStarted={() => void refresh()} />
-}
-
-function PictoCircle({
-  className,
-  circleClassName = 'bg-white/20',
-  children,
-}: {
-  className?: string
-  circleClassName?: string
-  children: React.ReactNode
-}) {
-  return (
-    <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full ${circleClassName} ${className ?? ''}`}
-    >
-      {children}
-    </span>
+  const shell = (
+    <ActivePatrol
+      docked={dock !== null}
+      startedAt={state.startedAt}
+      patrolId={state.id}
+      hidden={isReportRoute(pathname)}
+      onEnded={(summary) => {
+        void refresh()
+        router.push(`/patrouilles/${summary.id}?from=patrouille`)
+      }}
+    />
   )
-}
 
-function StartPatrolButton({ onStarted }: { onStarted: () => void }) {
-  const [pending, startTransition] = useTransition()
-  const [message, setMessage] = useState<string | null>(null)
-
-  function handleClick() {
-    setMessage(null)
-
-    startTransition(async () => {
-      const result = await startPatrol()
-      setMessage(result.message ?? null)
-
-      if (!result.message) {
-        onStarted()
-      }
-    })
-  }
-
-  return (
-    <div className="fixed bottom-[calc(7rem+env(safe-area-inset-bottom))] left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-2">
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={pending}
-        className="inline-flex touch-manipulation items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#2fc46c] to-canopee-green px-7 py-3.5 text-base font-bold tracking-wide text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_2px_4px_rgba(0,0,0,0.2),0_12px_28px_-8px_rgba(0,69,35,0.65)] ring-1 ring-white/25 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:from-[#3ad179] hover:to-[#139a4c] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_4px_8px_rgba(0,0,0,0.22),0_18px_36px_-10px_rgba(0,69,35,0.7)] focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:translate-y-0 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-      >
-        <PictoCircle className="h-7 w-7">
-          <PatrolPicto name="hiker" className="h-5 w-5" />
-        </PictoCircle>
-        {pending ? 'Démarrage…' : 'Démarrer'}
-      </button>
-
-      {message && (
-        <p
-          role="alert"
-          className="rounded-full bg-canopee-cream/95 px-3 py-1 text-sm font-medium text-canopee-coral-dark shadow-md"
-        >
-          {message}
-        </p>
-      )}
-    </div>
-  )
+  // The bottom nav owns the slot wherever it is mounted. Pages without a nav
+  // (the admin screens) keep the floating shell so recording is never lost.
+  return dock ? createPortal(shell, dock) : shell
 }
 
 const SHELL_BASE =
@@ -403,11 +242,13 @@ function EndPatrolButton({
 }
 
 function ActivePatrol({
+  docked,
   startedAt,
   patrolId,
   hidden,
   onEnded,
 }: {
+  docked: boolean
   startedAt: string
   patrolId: string | null
   hidden: boolean
@@ -557,10 +398,12 @@ function ActivePatrol({
   }
 
   const shellTint = pause.paused
-    ? 'bg-canopee-sky/30 text-canopee-forest'
-    : 'bg-canopee-forest/35 text-canopee-cream'
+    ? 'bg-canopee-cream/90 text-canopee-forest'
+    : 'bg-canopee-forest/90 text-canopee-cream'
 
-  const showControls = isHome || expanded
+  // Docked in the nav the shell always starts collapsed, so the bar is not
+  // permanently 120px tall on the map.
+  const showControls = (!docked && isHome) || expanded
 
   const timestamp = (
     <ActivePatrolStatus
@@ -571,7 +414,13 @@ function ActivePatrol({
   )
 
   return (
-    <div className="fixed bottom-[calc(7rem+env(safe-area-inset-bottom))] left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-2">
+    <div
+      className={
+        docked
+          ? 'flex animate-dock-in flex-col items-center gap-2'
+          : 'fixed bottom-[calc(7rem+env(safe-area-inset-bottom))] left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-2'
+      }
+    >
       {showControls && notice && (
         <p
           role={endError ? 'alert' : 'status'}
@@ -586,7 +435,7 @@ function ActivePatrol({
           showControls ? 'rounded-3xl px-4 pt-2.5 pb-3' : 'rounded-2xl p-1.5'
         }`}
       >
-        {isHome ? (
+        {!docked && isHome ? (
           timestamp
         ) : (
           <button
@@ -664,9 +513,7 @@ function ActivePatrolStatus({
   return (
     <span
       className={`flex items-center justify-center rounded-xl px-3.5 py-1.5 ring-1 ring-inset transition-colors duration-200 ${
-        paused
-          ? 'bg-white/40 ring-white/40'
-          : 'bg-canopee-forest/45 ring-white/10'
+        paused ? 'bg-black/10 ring-black/10' : 'bg-black/20 ring-white/10'
       }`}
     >
       <time

@@ -1,8 +1,11 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { Fragment, useState, useTransition, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { startPatrol } from '@/app/patrouilles/actions'
+import { PatrolPicto } from '@/components/patrol-picto'
+import { usePatrol } from '@/components/patrol-provider'
 
 type NavLink = {
   href: string
@@ -22,17 +25,10 @@ const ICON_PROPS = {
   'aria-hidden': true,
 } as const
 
+const ITEM_BASE =
+  'group flex min-w-16 flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-semibold tracking-wide whitespace-nowrap transition-colors duration-150 focus-visible:outline-none'
+
 const LINKS: NavLink[] = [
-  {
-    href: '/',
-    label: 'Accueil',
-    icon: (
-      <svg {...ICON_PROPS}>
-        <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
-        <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      </svg>
-    ),
-  },
   {
     href: '/carte',
     label: 'Carte',
@@ -45,20 +41,9 @@ const LINKS: NavLink[] = [
     ),
   },
   {
-    href: '/signaler',
-    label: 'Signaler',
-    icon: (
-      <svg {...ICON_PROPS}>
-        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-        <path d="M12 9v4" />
-        <path d="M12 17h.01" />
-      </svg>
-    ),
-  },
-  {
     href: '/profil',
     label: 'Profil',
-    related: ['/patrouilles/historique'],
+    related: ['/patrouilles/historique', '/admin'],
     icon: (
       <svg {...ICON_PROPS}>
         <circle cx="12" cy="8" r="5" />
@@ -104,7 +89,7 @@ function originMatch(
     return from === 'profil'
   }
 
-  if (link.href === '/') {
+  if (link.href === '/carte') {
     return from === 'patrouille'
   }
 
@@ -126,34 +111,109 @@ export function BottomNav() {
   const bestScore = Math.max(...scores)
 
   return (
-    <nav className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-full bg-canopee-forest/80 p-1.5 shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm">
+    <nav className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 flex -translate-x-1/2 items-stretch gap-1 px-2 py-1.5">
+      {/* The bar's own backdrop-blur would establish a backdrop root and cancel
+          the docked patrol shell's blur, so it lives on this layer instead. */}
+      <span
+        aria-hidden
+        className="absolute inset-0 -z-10 rounded-2xl bg-canopee-forest/80 shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm"
+      />
+
       {LINKS.map((link, index) => {
         const isActive = bestScore >= 0 && scores[index] === bestScore
 
         return (
-          <Link
-            key={link.href}
-            href={link.href}
-            aria-current={isActive ? 'page' : undefined}
-            className={`group flex min-w-16 flex-col items-center gap-1 rounded-2xl px-2 py-1.5 text-[10px] font-semibold tracking-wide whitespace-nowrap transition-colors duration-150 focus-visible:outline-none ${
-              isActive
-                ? 'text-canopee-cream'
-                : 'text-canopee-cream/60 hover:text-canopee-cream focus-visible:text-canopee-cream'
-            }`}
-          >
-            <span
-              className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 ${
+          <Fragment key={link.href}>
+            <Link
+              href={link.href}
+              aria-current={isActive ? 'page' : undefined}
+              className={`${ITEM_BASE} ${
                 isActive
-                  ? 'bg-canopee-cream text-canopee-forest'
-                  : 'group-hover:bg-white/10 group-focus-visible:bg-white/10'
+                  ? 'text-canopee-cream'
+                  : 'text-canopee-cream/60 hover:text-canopee-cream focus-visible:text-canopee-cream'
               }`}
             >
-              {link.icon}
-            </span>
-            {link.label}
-          </Link>
+              <span className="flex flex-col items-center gap-1">
+                {link.icon}
+                <span
+                  className={`h-0.5 w-[18px] bg-canopee-cream transition-opacity duration-150 ${
+                    isActive ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+              </span>
+              {link.label}
+            </Link>
+
+            {link.href === '/carte' && <PatrolNavItem />}
+          </Fragment>
         )
       })}
     </nav>
+  )
+}
+
+/**
+ * The middle slot. Idle it is the raised start button; while a patrol runs it is
+ * the anchor the patrol shell renders into, so the nav and the running patrol
+ * read as one object instead of two floating ones.
+ */
+function PatrolNavItem() {
+  const { state, refresh, setDock } = usePatrol()
+  const [pending, startTransition] = useTransition()
+  const [message, setMessage] = useState<string | null>(null)
+
+  function handleClick() {
+    setMessage(null)
+
+    startTransition(async () => {
+      const result = await startPatrol()
+      setMessage(result.message ?? null)
+
+      if (!result.message) {
+        void refresh()
+      }
+    })
+  }
+
+  if (state.status === 'unavailable') {
+    return null
+  }
+
+  const running = state.status === 'active'
+
+  return (
+    <span
+      className={`relative flex shrink-0 flex-col items-center justify-end px-2 py-1.5 text-[10px] font-semibold tracking-wide whitespace-nowrap text-canopee-cream/85 transition-[width] duration-300 ease-out motion-reduce:transition-none ${
+        running ? 'w-40' : 'w-20'
+      }`}
+    >
+      {!running && (
+        <button
+          type="button"
+          onClick={handleClick}
+          disabled={pending}
+          aria-label="Démarrer une patrouille"
+          className="absolute bottom-8 left-1/2 flex h-14 w-14 -translate-x-1/2 animate-pop-in touch-manipulation items-center justify-center rounded-2xl bg-gradient-to-b from-[#2fc46c] to-canopee-green text-white shadow-[0_0_0_5px_rgba(0,69,35,0.92),inset_0_1px_0_rgba(255,255,255,0.35),0_10px_20px_-8px_rgba(0,69,35,0.9)] transition-[filter,transform] duration-150 ease-out hover:brightness-110 focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:scale-[0.97] disabled:opacity-60 motion-reduce:transition-none"
+        >
+          <PatrolPicto name="hiker" className="h-6 w-6" />
+        </button>
+      )}
+
+      <span
+        ref={setDock}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+      />
+
+      {running ? 'En cours' : pending ? 'Départ…' : 'Patrouiller'}
+
+      {message && (
+        <p
+          role="alert"
+          className="absolute bottom-full left-1/2 mb-3 w-max max-w-56 -translate-x-1/2 rounded-lg bg-canopee-cream/95 px-3 py-1 text-center text-xs font-medium text-canopee-coral-dark shadow-md"
+        >
+          {message}
+        </p>
+      )}
+    </span>
   )
 }

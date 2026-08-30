@@ -11,7 +11,7 @@ export default function Forbidden() {
           You do not have permission to view this page.
         </p>
         <Link
-          href="/"
+          href="/carte"
           className="text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
         >
           Back to home
