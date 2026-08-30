@@ -1,5 +1,5 @@
-import { and, desc, gte, inArray, isNull, or } from 'drizzle-orm'
-import { db, reports } from '@/db'
+import { and, asc, desc, eq, gte, inArray, isNull, or } from 'drizzle-orm'
+import { db, reports, users } from '@/db'
 import {
   canViewObservations,
   type ObservationViewer,
@@ -9,6 +9,7 @@ import {
   type Observation,
   type ObservationCategory,
 } from '@/lib/observations/collection'
+import type { ObservationExportRow } from '@/lib/observations/export'
 import {
   resolvedCutoff,
   resolvedDelayHours,
@@ -45,5 +46,43 @@ export async function listObservations(
     category: row.category as ObservationCategory,
     latitude: Number(row.latitude),
     longitude: Number(row.longitude),
+  }))
+}
+
+export async function listObservationsForExport(
+  viewer: ObservationViewer,
+): Promise<ObservationExportRow[]> {
+  if (!canViewObservations(viewer)) {
+    console.debug('[observations] Unauthorized export attempt', { viewer })
+    return []
+  }
+
+  const rows = await db
+    .select({
+      eventNumber: reports.eventNumber,
+      category: reports.category,
+      species: reports.species,
+      latitude: reports.latitude,
+      longitude: reports.longitude,
+      description: reports.description,
+      habitat: reports.habitat,
+      quantity: reports.quantity,
+      unit: reports.unit,
+      statut: reports.statut,
+      photoUrl: reports.photoUrl,
+      createdAt: reports.createdAt,
+      observerFirstName: users.firstName,
+      observerLastName: users.lastName,
+      observerRole: users.role,
+      reporterEmail: reports.reporterEmail,
+    })
+    .from(reports)
+    .leftJoin(users, eq(reports.userId, users.id))
+    .where(inArray(reports.category, [...OBSERVATION_CATEGORIES]))
+    .orderBy(asc(reports.eventNumber))
+
+  return rows.map((row) => ({
+    ...row,
+    category: row.category as ObservationCategory,
   }))
 }
