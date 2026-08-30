@@ -10,7 +10,8 @@ import {
   lte,
   sql,
 } from 'drizzle-orm'
-import { db, reports } from '@/db'
+import { db, reports, users } from '@/db'
+import type { ReportExportRow } from '@/lib/reports/csv'
 import {
   PIN_CATEGORIES,
   type ReportPin,
@@ -145,7 +146,6 @@ export type ReportTotals = {
   resolved: number
 }
 
-/** Totals for the profile tiles. Anonymous citizen reports have no userId. */
 export async function getReportTotalsForUser(
   userId: string,
 ): Promise<ReportTotals> {
@@ -158,4 +158,34 @@ export async function getReportTotalsForUser(
     .where(eq(reports.userId, userId))
 
   return row ?? { count: 0, resolved: 0 }
+export async function listReportsForExport(): Promise<ReportExportRow[]> {
+  const rows = await db
+    .select({
+      eventNumber: reports.eventNumber,
+      category: reports.category,
+      description: reports.description,
+      typology: reports.typology,
+      quantity: reports.quantity,
+      species: reports.species,
+      unit: reports.unit,
+      habitat: reports.habitat,
+      statut: reports.statut,
+      latitude: reports.latitude,
+      longitude: reports.longitude,
+      photoUrl: reports.photoUrl,
+      createdAt: reports.createdAt,
+      resolvedAt: reports.resolvedAt,
+      reporterEmail: reports.reporterEmail,
+      userEmail: users.email,
+    })
+    .from(reports)
+    .leftJoin(users, eq(reports.userId, users.id))
+    .orderBy(asc(reports.eventNumber))
+
+  return rows.map(({ reporterEmail, userEmail, ...row }) => ({
+    ...row,
+    latitude: Number(row.latitude),
+    longitude: Number(row.longitude),
+    reporter: userEmail ?? reporterEmail,
+  }))
 }
