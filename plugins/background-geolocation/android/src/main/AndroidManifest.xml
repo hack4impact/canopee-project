@@ -31,6 +31,10 @@
     <!-- Android SDK 33+ requires the POST_NOTIFICATIONS runtime permission to
     display the foreground service notification. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Android SDK 29+ requires the ACTIVITY_RECOGNITION runtime permission to
+    read the step counter, which tells a real walk apart from GPS drift. Without
+    it the sensor is simply unavailable and the distance filter is used alone. -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <!-- See https://github.com/Cap-go/capacitor-background-geolocation/issues/12 for more details-->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
