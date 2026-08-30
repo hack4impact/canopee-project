@@ -60,7 +60,6 @@ export async function changeMemberRole(
     return { message: 'Rôle invalide.' }
   }
 
-  // Changing your own role is how an administrator locks themselves out.
   if (userId === admin.id) {
     return { message: 'Vous ne pouvez pas changer votre propre rôle.' }
   }
@@ -79,7 +78,7 @@ export async function changeMemberRole(
     return { done: true }
   }
 
-  // And this is how the whole organisation loses its last administrator.
+
   if (target.role === 'admin') {
     const [remaining] = await db
       .select({ count: sql<number>`count(*)::int` })
@@ -107,7 +106,6 @@ export async function changeMemberRole(
   return { done: true }
 }
 
-/** Refuses when this would leave nobody able to administer Canopée. */
 async function isLastAdmin(userId: string): Promise<boolean> {
   const [remaining] = await db
     .select({ count: sql<number>`count(*)::int` })
