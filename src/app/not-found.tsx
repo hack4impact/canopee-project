@@ -1,15 +1,14 @@
 import Link from 'next/link'
 
-export default function Forbidden() {
+export default function NotFound() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center bg-canopee-forest px-6 py-16 font-sans">
       <main className="w-full max-w-sm rounded-3xl bg-canopee-cream p-8 text-center shadow-2xl shadow-black/40 sm:p-10">
         <h1 className="font-heading text-2xl font-bold tracking-tight text-canopee-forest">
-          Accès refusé
+          Page introuvable
         </h1>
         <p className="mt-4 text-sm text-canopee-forest/80">
-          Vous n&apos;avez pas les permissions nécessaires pour consulter cette
-          page.
+          Le lien que vous avez suivi n&apos;existe plus ou a été déplacé.
         </p>
         <Link
           href="/carte"
