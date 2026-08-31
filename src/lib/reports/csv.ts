@@ -45,6 +45,26 @@ export const CSV_HEADERS = [
 
 export type CsvColumn = (typeof CSV_HEADERS)[number]
 
+export const CSV_HEADER_LABELS: Record<CsvColumn, string> = {
+  event_number: 'Numéro de signalement unique',
+  created_at: "Date de l'observation",
+  status: 'Statut observateur',
+  resolved_at: 'Date de résolution',
+  category: 'Catégorie',
+  category_label: 'Libellé de la catégorie',
+  description: 'Commentaires',
+  typology: 'Typologie',
+  quantity: 'Nombre observé',
+  unit: 'Unité associée au nombre',
+  species: 'Nom commun',
+  habitat: 'Habitat',
+  statut: 'Statut provincial',
+  latitude: 'Latitude',
+  longitude: 'Longitude',
+  photo_url: 'Nom du fichier',
+  reporter: 'Observateurs/observatrices',
+}
+
 export type ParsedColumns =
   { ok: true; columns: readonly CsvColumn[] } | { ok: false; value: string }
 
@@ -141,7 +161,7 @@ export function reportsToCsv(
   columns: readonly CsvColumn[] = CSV_HEADERS,
 ): string {
   const rows = [
-    toCsvRow([...columns]),
+    toCsvRow(columns.map((column) => CSV_HEADER_LABELS[column])),
     ...reports.map((report) => {
       const values = reportToCsvValues(report)
 

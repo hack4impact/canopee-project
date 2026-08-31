@@ -1,29 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { CSV_HEADERS, type CsvColumn } from '@/lib/reports/csv'
+import {
+  CSV_HEADER_LABELS,
+  CSV_HEADERS,
+  type CsvColumn,
+} from '@/lib/reports/csv'
 
 const EXPORT_URL = '/api/reports/export'
-
-const COLUMN_LABELS: Record<CsvColumn, string> = {
-  category: 'Catégorie',
-  category_label: 'Libellé de la catégorie',
-  typology: 'Typologie',
-  species: 'Nom commun',
-  latitude: 'Latitude',
-  longitude: 'Longitude',
-  created_at: "Date de l'observation",
-  reporter: 'Observateurs/observatrices',
-  description: 'Commentaires',
-  habitat: 'Habitat',
-  quantity: 'Nombre observé',
-  unit: 'Unité associée au nombre',
-  photo_url: 'Nom du fichier',
-  statut: 'Statut provincial',
-  status: 'Statut observateur',
-  resolved_at: 'Date de résolution',
-  event_number: 'Numéro de signalement unique',
-}
 
 const COLUMN_ORDER: readonly CsvColumn[] = [
   'category',
@@ -120,7 +104,7 @@ export function ReportsCsvExport() {
                 onChange={() => toggleColumn(column)}
                 className="mt-0.5 size-4 shrink-0 accent-canopee-green"
               />
-              {COLUMN_LABELS[column]}
+              {CSV_HEADER_LABELS[column]}
             </label>
           </li>
         ))}
