@@ -127,6 +127,7 @@ public class BackgroundGeolocation: CAPPlugin, CLLocationManagerDelegate, CAPBri
             PatrolPointQueue.shared.configure(url: self.locationBackendUrl, headers: self.locationHeaders)
             self.minIntervalMs = max(0, call.getDouble("minIntervalMs") ?? 0)
             self.lastPostedLocationTime = nil
+            PatrolStepFilter.shared.reset()
             // Create fresh location manager and initialize date
             self.locationManager = CLLocationManager()
             guard let manager = self.locationManager else {
@@ -206,6 +207,7 @@ public class BackgroundGeolocation: CAPPlugin, CLLocationManagerDelegate, CAPBri
             self.minIntervalMs = 0
             self.lastPostedLocationTime = nil
 
+            PatrolStepFilter.shared.reset()
             PatrolPointQueue.shared.drain()
 
             if let callbackId = self.activeCallbackId {
@@ -882,16 +884,23 @@ public class BackgroundGeolocation: CAPPlugin, CLLocationManagerDelegate, CAPBri
             return
         }
 
-        // Native delivery does not depend on the bridge, so it keeps working
-        // even if the WebView is gone.
-        postLocation(location)
+        // The pedometer has the last word on whether the phone actually moved.
+        // Its answer takes a moment to arrive, so everything downstream of a
+        // fix waits behind it, and the drift never reaches the patrol total.
+        PatrolStepFilter.shared.admit(location) { [weak self] walked in
+            guard let self else { return }
 
-        guard let callbackId = activeCallbackId,
-              let call = self.bridge?.savedCall(withID: callbackId) else {
-            return
+            // Native delivery does not depend on the bridge, so it keeps
+            // working even if the WebView is gone.
+            self.postLocation(walked)
+
+            guard let callbackId = self.activeCallbackId,
+                  let call = self.bridge?.savedCall(withID: callbackId) else {
+                return
+            }
+            self.checkRouteDeviation(walked)
+            return call.resolve(formatLocation(walked))
         }
-        checkRouteDeviation(location)
-        return call.resolve(formatLocation(location))
     }
 
     public func locationManager(

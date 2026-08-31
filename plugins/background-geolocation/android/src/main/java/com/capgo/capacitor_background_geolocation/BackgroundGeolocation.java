@@ -50,7 +50,8 @@ import org.json.JSONObject;
     permissions = {
         @Permission(strings = { Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION }, alias = "location"),
         @Permission(strings = { Manifest.permission.ACCESS_BACKGROUND_LOCATION }, alias = "backgroundLocation"),
-        @Permission(strings = { Manifest.permission.POST_NOTIFICATIONS }, alias = "notification")
+        @Permission(strings = { Manifest.permission.POST_NOTIFICATIONS }, alias = "notification"),
+        @Permission(strings = { Manifest.permission.ACTIVITY_RECOGNITION }, alias = "motion")
     }
 )
 public class BackgroundGeolocation extends Plugin {
@@ -110,6 +111,7 @@ public class BackgroundGeolocation extends Plugin {
         // Everything is OK, continuing to adding a watcher
         call.setKeepAlive(true);
         proceedWithStart(call);
+        requestMotionPermission(call);
     }
 
     private void proceedWithStart(PluginCall call) {
@@ -190,6 +192,25 @@ public class BackgroundGeolocation extends Plugin {
     @PermissionCallback
     private void notificationPermissionsCallback(PluginCall call) {
         Logger.debug("notification permission callback");
+        requestMotionPermission(call);
+    }
+
+    /**
+     * Asks for the step counter, which tells a real walk apart from GPS drift.
+     * A patrol records fine without it, so the prompt is fired and then
+     * forgotten about: nothing waits on the answer, and the tracking service
+     * picks the sensor up on its own once the answer is yes.
+     */
+    private void requestMotionPermission(PluginCall call) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || getPermissionState("motion") == PermissionState.GRANTED) {
+            return;
+        }
+        requestPermissionForAlias("motion", call, "motionPermissionsCallback");
+    }
+
+    @PermissionCallback
+    private void motionPermissionsCallback(PluginCall call) {
+        Logger.debug("motion permission callback");
     }
 
     @PluginMethod

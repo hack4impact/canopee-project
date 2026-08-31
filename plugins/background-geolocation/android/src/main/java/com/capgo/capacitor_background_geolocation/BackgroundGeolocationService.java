@@ -53,6 +53,7 @@ public class BackgroundGeolocationService extends Service {
     private Runnable restartRunnable;
     private float currentDistanceFilter;
     private long currentMinIntervalMs;
+    private PatrolStepFilter stepFilter;
     private PowerManager.WakeLock wakeLock;
 
     // When set (via the "url" start option), each location is also POSTed to
@@ -134,6 +135,9 @@ public class BackgroundGeolocationService extends Service {
         releaseMediaPlayer();
         releaseWakeLock();
         stopWatchdog();
+        if (stepFilter != null) {
+            stepFilter.stop();
+        }
         if (postExecutor != null) {
             postExecutor.shutdown();
             postExecutor = null;
@@ -225,7 +229,16 @@ public class BackgroundGeolocationService extends Service {
     }
 
     private void handleLocationChanged(android.location.Location location) {
+        // The watchdog is fed first. A dropped fix is still proof the GPS is
+        // alive, and restarting updates over drift would be pointless churn.
         startWatchdog();
+
+        // The step counter has the last word on whether the phone actually
+        // moved, so the drift never reaches the patrol total.
+        if (stepFilter != null && !stepFilter.admit(location)) {
+            return;
+        }
+
         if (nativePostUrl != null) {
             postLocationNatively(location);
         }
@@ -378,6 +391,11 @@ public class BackgroundGeolocationService extends Service {
             if (locationCallback != null) {
                 client.removeUpdates(locationCallback);
             }
+            if (stepFilter == null) {
+                stepFilter = new PatrolStepFilter(getApplicationContext());
+            }
+            stepFilter.start();
+
             locationCallback = createLocationListener(BackgroundGeolocationService.this);
             requestLocationUpdates();
             promoteToForeground(notificationTitle, notificationMessage);
@@ -391,6 +409,9 @@ public class BackgroundGeolocationService extends Service {
             LocationStore.clear(getApplicationContext());
             nativePostUrl = null;
             stopWatchdog();
+            if (stepFilter != null) {
+                stepFilter.stop();
+            }
             client.removeUpdates(locationCallback);
             stopForeground(true);
             stopSelf();
