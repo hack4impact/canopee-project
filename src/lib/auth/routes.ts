@@ -4,9 +4,13 @@ export const REDIRECT_PARAM = 'next'
 
 export const DEFAULT_REDIRECT = '/carte'
 
+export const CITIZEN_REPORT_ROUTE = '/signaler-citoyen'
+
 const PUBLIC_ROUTES = [
+  '/',
   LOGIN_ROUTE,
   '/signup',
+  CITIZEN_REPORT_ROUTE,
   '/api/cron',
   '/api/public',
   '/.well-known',
