@@ -3,8 +3,6 @@ import { sql } from 'drizzle-orm'
 import { describe, expect, it } from 'vitest'
 import { db } from '@/db'
 
-// Needs a real database. CI has no .env, so DATABASE_URL stays unset there and
-// these skip, the same way the concurrency test does.
 const describeDb = describe.skipIf(!process.env.DATABASE_URL)
 
 describeDb('row level security', () => {
