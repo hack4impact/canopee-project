@@ -67,7 +67,7 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
-})
+}).enableRLS()
 
 export const reports = pgTable(
   'reports',
@@ -103,7 +103,7 @@ export const reports = pgTable(
     index('reports_resolved_at_idx').on(table.resolvedAt),
     index('reports_category_idx').on(table.category),
   ],
-)
+).enableRLS()
 
 export const patrols = pgTable(
   'patrols',
@@ -129,7 +129,7 @@ export const patrols = pgTable(
     index('patrols_started_at_idx').on(table.startedAt),
     index('patrols_ended_at_idx').on(table.endedAt),
   ],
-)
+).enableRLS()
 
 export const patrolPoints = pgTable(
   'patrol_points',
@@ -148,7 +148,7 @@ export const patrolPoints = pgTable(
       table.recordedAt,
     ),
   ],
-)
+).enableRLS()
 
 export const mapLoadCounters = pgTable('map_load_counters', {
   month: text('month').primaryKey(),
@@ -156,4 +156,4 @@ export const mapLoadCounters = pgTable('map_load_counters', {
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
-})
+}).enableRLS()
