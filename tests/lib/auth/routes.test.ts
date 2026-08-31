@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CITIZEN_REPORT_ROUTE,
   DEFAULT_REDIRECT,
   getPostLoginRedirect,
   isPublicRoute,
@@ -27,10 +28,27 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/.well-known/apple-app-site-association')).toBe(true)
   })
 
-  it('gates everything else, including the home page', () => {
-    expect(isPublicRoute('/')).toBe(false)
+  it('allows the landing choice and the citizen report form', () => {
+    expect(isPublicRoute('/')).toBe(true)
+    expect(isPublicRoute(CITIZEN_REPORT_ROUTE)).toBe(true)
+  })
+
+  it('gates everything else', () => {
     expect(isPublicRoute('/admin/volunteers')).toBe(false)
     expect(isPublicRoute('/map')).toBe(false)
+  })
+
+  it('does not let the public landing page open every other route', () => {
+    expect(isPublicRoute('/carte')).toBe(false)
+    expect(isPublicRoute('/profil')).toBe(false)
+    expect(isPublicRoute('/signaler')).toBe(false)
+    expect(isPublicRoute('/patrouilles/historique')).toBe(false)
+  })
+
+  it('opens the citizen endpoint without opening the authenticated ones', () => {
+    expect(isPublicRoute('/api/public/reports')).toBe(true)
+    expect(isPublicRoute('/api/reports')).toBe(false)
+    expect(isPublicRoute('/api/reports/export')).toBe(false)
   })
 
   it('does not treat a route that merely starts with a public name as public', () => {
@@ -55,8 +73,15 @@ describe('getPostLoginRedirect', () => {
 
 describe('safeRedirectPath', () => {
   it('keeps a plain in-app path', () => {
-    expect(safeRedirectPath('/')).toBe('/')
     expect(safeRedirectPath('/admin/volunteers')).toBe('/admin/volunteers')
+    expect(safeRedirectPath('/patrouilles/historique')).toBe(
+      '/patrouilles/historique',
+    )
+  })
+
+  it('sends the landing choice to the map, since a signed-in user never needs it', () => {
+    expect(safeRedirectPath('/')).toBe(DEFAULT_REDIRECT)
+    expect(safeRedirectPath(CITIZEN_REPORT_ROUTE)).toBe(DEFAULT_REDIRECT)
   })
 
   it('keeps the query string and hash of the requested route', () => {

@@ -11,6 +11,8 @@ import type { ReportFormState } from '@/lib/reports/submit'
 
 const ENDPOINT = '/api/reports'
 
+const CITIZEN_ENDPOINT = '/api/public/reports'
+
 async function post(formData: FormData): Promise<Response> {
   return fetch(ENDPOINT, {
     method: 'POST',
@@ -46,6 +48,36 @@ export async function sendReport(
     await appendQueuedReport(fromFormData(formData, id))
 
     return { submittedId: id, queued: true }
+  }
+}
+
+export async function sendCitizenReport(
+  _prevState: ReportFormState,
+  formData: FormData,
+): Promise<ReportFormState> {
+  const id = crypto.randomUUID()
+
+  formData.set('id', id)
+
+  try {
+    const response = await fetch(CITIZEN_ENDPOINT, {
+      method: 'POST',
+      body: formData,
+      redirect: 'manual',
+    })
+
+    const state = (await response.json()) as ReportFormState
+
+    if (!response.ok) {
+      return state
+    }
+
+    return { submittedId: state.submittedId ?? id }
+  } catch {
+    return {
+      message:
+        'Impossible d’envoyer le signalement. Vérifiez votre connexion, puis réessayez.',
+    }
   }
 }
 

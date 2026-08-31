@@ -1,7 +1,12 @@
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { db, reports } from '@/db'
 import type { UserProfile } from '@/lib/auth/current-user'
 import { isReportCategory } from '@/lib/reports/categories'
-import { REPORT_PHOTO_BUCKET, reportPhotoPath } from '@/lib/reports/photo'
+import {
+  CITIZEN_PHOTO_FOLDER,
+  REPORT_PHOTO_BUCKET,
+  reportPhotoPath,
+} from '@/lib/reports/photo'
 import {
   isValidReport,
   validatePhoto,
@@ -62,12 +67,20 @@ function parseQuantity(value: string): number | null {
   return Number.isInteger(parsed) && parsed >= 1 ? parsed : null
 }
 
+export type Reporter =
+  { kind: 'user'; profile: UserProfile } | { kind: 'citizen'; email: string }
+
 async function uploadPhoto(
-  authUserId: string,
+  reporter: Reporter,
   photo: File,
 ): Promise<string | null> {
+  const folder =
+    reporter.kind === 'user'
+      ? reporter.profile.authUserId
+      : CITIZEN_PHOTO_FOLDER
+
   const path = reportPhotoPath(
-    authUserId,
+    folder,
     photo.type,
     new Date(),
     crypto.randomUUID(),
@@ -77,8 +90,23 @@ async function uploadPhoto(
     return null
   }
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (reporter.kind === 'citizen' && (!supabaseUrl || !serviceKey)) {
+    console.error(
+      'SUPABASE_SERVICE_ROLE_KEY is not configured: a citizen photo cannot be stored',
+    )
+    return null
+  }
+
   try {
-    const supabase = await createClient()
+    const supabase =
+      reporter.kind === 'user'
+        ? await createClient()
+        : createAdminClient(supabaseUrl as string, serviceKey as string, {
+            auth: { autoRefreshToken: false, persistSession: false },
+          })
 
     const { error } = await supabase.storage
       .from(REPORT_PHOTO_BUCKET)
@@ -100,6 +128,20 @@ export async function createReport(
   profile: UserProfile,
   formData: FormData,
 ): Promise<ReportFormState> {
+  return submitReport({ kind: 'user', profile }, formData)
+}
+
+export async function createCitizenReport(
+  email: string,
+  formData: FormData,
+): Promise<ReportFormState> {
+  return submitReport({ kind: 'citizen', email }, formData)
+}
+
+async function submitReport(
+  reporter: Reporter,
+  formData: FormData,
+): Promise<ReportFormState> {
   const input = {
     category: String(formData.get('category') ?? ''),
     description: String(formData.get('description') ?? ''),
@@ -119,7 +161,11 @@ export async function createReport(
 
   if (photoError) {
     errors.photo = photoError
-  } else if (!photo && profile.role !== 'admin') {
+  } else if (
+    !photo &&
+    reporter.kind === 'user' &&
+    reporter.profile.role !== 'admin'
+  ) {
     errors.photo =
       'Une photo est requise pour ce type de signalement. Ajoutez-la, puis réessayez.'
   }
@@ -139,7 +185,7 @@ export async function createReport(
   let photoPath: string | null = null
 
   if (photo) {
-    photoPath = await uploadPhoto(profile.authUserId, photo)
+    photoPath = await uploadPhoto(reporter, photo)
 
     if (!photoPath) {
       return {
@@ -156,7 +202,9 @@ export async function createReport(
       .insert(reports)
       .values({
         ...(id ? { id } : {}),
-        userId: profile.id,
+        ...(reporter.kind === 'user'
+          ? { userId: reporter.profile.id }
+          : { reporterEmail: reporter.email }),
         category: input.category,
         description: input.description.trim(),
         typology: input.typology.trim() || null,
