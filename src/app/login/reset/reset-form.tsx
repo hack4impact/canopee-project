@@ -1,5 +1,8 @@
 'use client'
 
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useActionState, useState } from 'react'
 import { Spinner } from '@/components/spinner'
 import {
@@ -17,11 +20,6 @@ const emptyInput: NewPasswordInput = {
   password: '',
   confirmPassword: '',
 }
-
-const FIELD =
-  'rounded-lg border border-canopee-green/30 bg-white px-3 py-2.5 text-canopee-forest placeholder-zinc-500 transition-colors outline-none focus:border-canopee-green focus:ring-2 focus:ring-canopee-green/40'
-
-const LABEL = 'text-sm font-medium text-canopee-forest'
 
 const ERROR = 'text-sm font-medium text-canopee-coral-dark'
 
@@ -53,10 +51,8 @@ export function ResetForm() {
   return (
     <form action={submit} noValidate className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className={LABEL}>
-          Nouveau mot de passe
-        </label>
-        <input
+        <Label htmlFor="password">Nouveau mot de passe</Label>
+        <Input
           id="password"
           name="password"
           type="password"
@@ -65,7 +61,6 @@ export function ResetForm() {
           value={input.password}
           onChange={(event) => update('password', event.target.value)}
           aria-describedby={errors.password ? 'password-error' : undefined}
-          className={FIELD}
         />
         {errors.password && (
           <p id="password-error" className={ERROR}>
@@ -75,10 +70,8 @@ export function ResetForm() {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="confirmPassword" className={LABEL}>
-          Confirmer le mot de passe
-        </label>
-        <input
+        <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+        <Input
           id="confirmPassword"
           name="confirmPassword"
           type="password"
@@ -88,7 +81,6 @@ export function ResetForm() {
           aria-describedby={
             errors.confirmPassword ? 'confirm-password-error' : undefined
           }
-          className={FIELD}
         />
         {errors.confirmPassword && (
           <p id="confirm-password-error" className={ERROR}>
@@ -103,14 +95,10 @@ export function ResetForm() {
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="inline-flex touch-manipulation items-center justify-center gap-2 rounded-lg bg-canopee-green px-4 py-2.5 font-bold text-white shadow-sm transition-[background-color,transform] duration-150 ease-out hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/50 focus-visible:outline-none active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
-      >
+      <Button size="lg" type="submit" disabled={pending}>
         {pending && <Spinner />}
         {pending ? 'Enregistrement...' : 'Changer le mot de passe'}
-      </button>
+      </Button>
     </form>
   )
 }

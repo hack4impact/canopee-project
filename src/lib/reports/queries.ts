@@ -158,8 +158,20 @@ export async function getReportTotalsForUser(
     .where(eq(reports.userId, userId))
 
   return row ?? { count: 0, resolved: 0 }
+}
 
-  }
+export async function countRecentCitizenReports(
+  email: string,
+  since: Date,
+): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(reports)
+    .where(and(eq(reports.reporterEmail, email), gte(reports.createdAt, since)))
+
+  return row?.count ?? 0
+}
+
 export async function listReportsForExport(): Promise<ReportExportRow[]> {
   const rows = await db
     .select({

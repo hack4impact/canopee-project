@@ -22,7 +22,8 @@
     "db:seed-reports": "tsx src/db/seed-reports.ts",
     "db:seed-patrols": "tsx src/db/seed-patrols.ts",
     "db:reseed-reports": "tsx src/db/reseed-reports.ts",
-    "email:campaign": "tsx scripts/send-campaign.ts",
+    "email:test": "tsx scripts/send-test-email.ts",
+    "email:templates": "tsx scripts/build-email-templates.ts",
     "prepare": "husky"
   },
   "lint-staged": {

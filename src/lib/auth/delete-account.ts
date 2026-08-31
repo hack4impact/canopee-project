@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db, patrols, reports, users } from '@/db'
 
 /** Keeps the observation but drops every link to the person who filed it. */
-const ANONYMISED_REPORTER = 'compte-supprime@reseaucanopee.invalid'
+export const ANONYMISED_REPORTER = 'compte-supprime@reseaucanopee.invalid'
 
 /**
  * Without the admin key the Supabase login survives the deletion and the person

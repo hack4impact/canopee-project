@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { BackButton } from '@/components/back-button'
 import { BottomNav } from '@/components/bottom-nav'
 import { requireApprovedUser } from '@/lib/auth/current-user'
 import {
@@ -51,16 +52,11 @@ export default async function PatrouillesHistoryPage({
   return (
     <div className="flex min-h-dvh w-full flex-col bg-canopee-cream">
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-32 sm:px-6">
-        <header className="flex items-center justify-between gap-4">
+        <header className="flex items-center gap-3">
+          <BackButton fallback={ORIGINS[origin].href} />
           <h1 className="font-heading text-2xl text-canopee-forest sm:text-3xl">
             Mes patrouilles
           </h1>
-          <Link
-            href={ORIGINS[origin].href}
-            className="inline-flex shrink-0 items-center rounded-full bg-canopee-forest px-4 py-2 text-sm font-semibold text-canopee-cream shadow-sm transition-colors hover:bg-canopee-green focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none"
-          >
-            {ORIGINS[origin].label}
-          </Link>
         </header>
 
         {items.length === 0 ? (

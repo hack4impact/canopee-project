@@ -1,42 +1,45 @@
 import { eq } from 'drizzle-orm'
 import { forbidden, redirect } from 'next/navigation'
+import { cache } from 'react'
 import { db, users } from '@/db'
 import { canAccess, isAdmin, isApproved, type Role } from '@/lib/auth/roles'
 import { createClient } from '@/lib/supabase/server'
 
 export type UserProfile = typeof users.$inferSelect
 
-export async function getCurrentUserProfile(): Promise<UserProfile | null> {
-  try {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+export const getCurrentUserProfile = cache(
+  async function (): Promise<UserProfile | null> {
+    try {
+      const supabase = await createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
 
-    if (!user) {
+      if (!user) {
+        return null
+      }
+
+      const [profile] = await db
+        .select()
+        .from(users)
+        .where(eq(users.authUserId, user.id))
+        .limit(1)
+
+      return profile ?? null
+    } catch (error) {
+      const cause = (error as { cause?: { code?: string; message?: string } })
+        .cause
+      console.warn(
+        'Unable to resolve the current user profile:',
+        error,
+        '| cause:',
+        cause?.code,
+        cause?.message,
+      )
       return null
     }
-
-    const [profile] = await db
-      .select()
-      .from(users)
-      .where(eq(users.authUserId, user.id))
-      .limit(1)
-
-    return profile ?? null
-  } catch (error) {
-    const cause = (error as { cause?: { code?: string; message?: string } })
-      .cause
-    console.warn(
-      'Unable to resolve the current user profile:',
-      error,
-      '| cause:',
-      cause?.code,
-      cause?.message,
-    )
-    return null
-  }
-}
+  },
+)
 
 export async function requireAdmin(): Promise<UserProfile> {
   const profile = await getCurrentUserProfile()

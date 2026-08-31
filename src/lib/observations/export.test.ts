@@ -146,7 +146,7 @@ describe('toMinistryRow', () => {
   it('maps a report onto the ministry columns', () => {
     expect(toMinistryRow(buildRow())).toEqual([
       'Amphibiens',
-      '',
+      'Hemidactylium scutatum',
       'salamandre à quatre orteils',
       '45.590000',
       '-73.720000',
@@ -166,6 +166,23 @@ describe('toMinistryRow', () => {
       '14:35',
       '42',
     ])
+  })
+
+  it('maps the ministry species table to scientific name, common name, and status', () => {
+    const row = toMinistryRow(
+      buildRow({ species: 'Myoxocephalus quadricornis', statut: null }),
+    )
+
+    expect(row[1]).toBe('Myoxocephalus quadricornis')
+    expect(row[2]).toBe('chaboisseau à quatre cornes')
+    expect(row[15]).toBe('Susceptible')
+  })
+
+  it('falls back to the stored species when no table entry exists', () => {
+    const row = toMinistryRow(buildRow({ species: 'Unknown species' }))
+
+    expect(row[1]).toBe('Unknown species')
+    expect(row[2]).toBe('')
   })
 
   it('produces one cell per column', () => {
