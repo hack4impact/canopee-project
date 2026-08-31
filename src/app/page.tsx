@@ -2,7 +2,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata, Viewport } from 'next'
 import { redirect } from 'next/navigation'
-import { PatrolPicto } from '@/components/patrol-picto'
 import { getCurrentUserProfile } from '@/lib/auth/current-user'
 import { CITIZEN_REPORT_ROUTE } from '@/lib/auth/routes'
 
@@ -20,8 +19,24 @@ export const dynamic = 'force-dynamic'
 const CARD =
   'group flex w-full touch-manipulation items-center gap-4 rounded-2xl border border-transparent px-4 py-5 text-left shadow-sm transition-[border-color,background-color,transform] duration-150 ease-out focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99] motion-reduce:transition-none motion-reduce:active:scale-100'
 
-const CHIP =
-  'flex h-14 w-14 shrink-0 items-center justify-center rounded-xl transition-colors duration-150'
+const TITLE = 'min-w-0 flex-1 font-heading text-xl text-canopee-forest'
+
+function Arrow({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`h-5 w-5 shrink-0 transition-transform duration-150 ease-out group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 ${className ?? ''}`}
+      aria-hidden="true"
+    >
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  )
+}
 
 export default async function RootPage() {
   const profile = await getCurrentUserProfile()
@@ -51,9 +66,6 @@ export default async function RootPage() {
           <h1 className="font-heading text-3xl font-bold tracking-tight text-canopee-forest">
             Bienvenue
           </h1>
-          <p className="text-center text-sm text-canopee-forest/80">
-            Qui êtes-vous ?
-          </p>
         </header>
 
         <div className="mt-8 flex flex-col gap-3">
@@ -61,51 +73,16 @@ export default async function RootPage() {
             href={CITIZEN_REPORT_ROUTE}
             className={`${CARD} bg-canopee-coral/10 hover:border-canopee-coral hover:bg-canopee-coral/20 focus-visible:ring-canopee-coral/40`}
           >
-            <span
-              className={`${CHIP} bg-canopee-coral/10 text-canopee-coral group-hover:bg-canopee-coral group-hover:text-white group-focus-visible:bg-canopee-coral group-focus-visible:text-white`}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.75}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-8 w-8"
-                aria-hidden="true"
-              >
-                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-                <path d="M12 9v4" />
-                <path d="M12 17h.01" />
-              </svg>
-            </span>
-            <span className="min-w-0">
-              <span className="block font-heading text-xl text-canopee-forest">
-                Je suis un citoyen
-              </span>
-              <span className="block text-sm text-canopee-forest/70">
-                Signaler un problème, sans créer de compte
-              </span>
-            </span>
+            <span className={TITLE}>Je suis un citoyen</span>
+            <Arrow className="text-canopee-coral" />
           </Link>
 
           <Link
             href="/login"
             className={`${CARD} bg-canopee-green/10 hover:border-canopee-green hover:bg-canopee-green/20 focus-visible:ring-canopee-green/40`}
           >
-            <span
-              className={`${CHIP} bg-canopee-green/10 text-canopee-green group-hover:bg-canopee-green group-hover:text-white group-focus-visible:bg-canopee-green group-focus-visible:text-white`}
-            >
-              <PatrolPicto name="hiker" className="h-7 w-7" />
-            </span>
-            <span className="min-w-0">
-              <span className="block font-heading text-xl text-canopee-forest">
-                Je suis bénévole ou patrouilleur
-              </span>
-              <span className="block text-sm text-canopee-forest/70">
-                Se connecter pour patrouiller et signaler
-              </span>
-            </span>
+            <span className={TITLE}>Je suis bénévole ou patrouilleur</span>
+            <Arrow className="text-canopee-green" />
           </Link>
         </div>
       </main>
