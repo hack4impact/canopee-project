@@ -1,25 +1,30 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const here = path.dirname(fileURLToPath(import.meta.url));
+const here = path.dirname(fileURLToPath(import.meta.url))
 
 const list = (v) =>
-  (v ?? "")
-    .split(",")
+  (v ?? '')
+    .split(',')
     .map((s) => s.trim())
-    .filter(Boolean);
+    .filter(Boolean)
 
 export const config = {
-  discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL || "",
+  discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL || '',
   discordReviewWebhookUrl:
-    process.env.DISCORD_REVIEW_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL || "",
-  githubToken: process.env.GITHUB_TOKEN || "",
-  blockedLabels: list(process.env.BLOCKED_LABELS || "blocked").map((s) => s.toLowerCase()),
+    process.env.DISCORD_REVIEW_WEBHOOK_URL ||
+    process.env.DISCORD_WEBHOOK_URL ||
+    '',
+  githubToken: process.env.GITHUB_TOKEN || '',
+  blockedLabels: list(process.env.BLOCKED_LABELS || 'blocked').map((s) =>
+    s.toLowerCase(),
+  ),
   // Set ALLOW_EVERYONE=false in a busy server: team-wide messages then name each
   // mapped teammate individually instead of firing a real @everyone.
-  allowEveryone: (process.env.ALLOW_EVERYONE || "true").toLowerCase() !== "false",
-};
+  allowEveryone:
+    (process.env.ALLOW_EVERYONE || 'true').toLowerCase() !== 'false',
+}
 
 /**
  * GitHub login -> Discord user id.
@@ -29,35 +34,38 @@ export const config = {
  * rather edit a file than a secret.
  */
 function loadUserMap() {
-  let raw = null;
+  let raw = null
 
   if (process.env.DISCORD_USER_MAP) {
     try {
-      raw = JSON.parse(process.env.DISCORD_USER_MAP);
+      raw = JSON.parse(process.env.DISCORD_USER_MAP)
     } catch (err) {
-      console.error("::error::DISCORD_USER_MAP secret is not valid JSON:", err.message);
+      console.error(
+        '::error::DISCORD_USER_MAP secret is not valid JSON:',
+        err.message,
+      )
     }
   }
 
   if (!raw) {
-    const file = path.join(here, "usermap.json");
+    const file = path.join(here, 'usermap.json')
     try {
-      raw = JSON.parse(fs.readFileSync(file, "utf8"));
+      raw = JSON.parse(fs.readFileSync(file, 'utf8'))
     } catch {
-      raw = {};
+      raw = {}
     }
   }
 
-  const map = {};
+  const map = {}
   for (const [login, id] of Object.entries(raw)) {
-    if (login.startsWith("_")) continue; // comment keys
-    map[login.toLowerCase()] = String(id);
+    if (login.startsWith('_')) continue // comment keys
+    map[login.toLowerCase()] = String(id)
   }
-  return map;
+  return map
 }
 
-let userMap = null;
-const getUserMap = () => (userMap ??= loadUserMap());
+let userMap = null
+const getUserMap = () => (userMap ??= loadUserMap())
 
 /**
  * A person, named the way Discord should show them: `@TheirName (their-github-login)`.
@@ -74,15 +82,19 @@ const getUserMap = () => (userMap ??= loadUserMap());
  * handle stands alone.
  */
 export function mention(login) {
-  if (!login) return "someone";
-  const id = getUserMap()[String(login).toLowerCase()];
-  return id ? `<@${id}> (${login})` : `**@${login}**`;
+  if (!login) return 'someone'
+  const id = getUserMap()[String(login).toLowerCase()]
+  return id ? `<@${id}> (${login})` : `**@${login}**`
 }
 
 /** Discord ids for allowed_mentions — the allowlist of who this message may ping. */
 export function mentionIds(logins) {
-  const map = getUserMap();
-  return [...new Set(logins.map((l) => map[String(l ?? "").toLowerCase()]).filter(Boolean))];
+  const map = getUserMap()
+  return [
+    ...new Set(
+      logins.map((l) => map[String(l ?? '').toLowerCase()]).filter(Boolean),
+    ),
+  ]
 }
 
 /**
@@ -93,22 +105,24 @@ export function mentionIds(logins) {
  * logins that must be allowlisted so the fallback actually notifies anyone.
  */
 export function everyoneMention() {
-  if (config.allowEveryone) return { text: "@everyone", logins: [] };
-  const logins = Object.keys(getUserMap());
-  return { text: logins.map(mention).join(" ") || "everyone", logins };
+  if (config.allowEveryone) return { text: '@everyone', logins: [] }
+  const logins = Object.keys(getUserMap())
+  return { text: logins.map(mention).join(' ') || 'everyone', logins }
 }
 
 export function assertConfig() {
   if (!config.discordWebhookUrl) {
-    console.error("::error::DISCORD_WEBHOOK_URL is not set. Add it as a repository secret.");
-    process.exit(1);
+    console.error(
+      '::error::DISCORD_WEBHOOK_URL is not set. Add it as a repository secret.',
+    )
+    process.exit(1)
   }
-  const mapped = Object.keys(getUserMap()).length;
-  console.log(`[config] ${mapped} GitHub login(s) mapped to Discord ids`);
+  const mapped = Object.keys(getUserMap()).length
+  console.log(`[config] ${mapped} GitHub login(s) mapped to Discord ids`)
   if (mapped === 0) {
     console.warn(
-      "::warning::No user map found — people will be named in messages but not pinged. " +
-        "Set the DISCORD_USER_MAP secret or commit .github/discord-bot/usermap.json."
-    );
+      '::warning::No user map found — people will be named in messages but not pinged. ' +
+        'Set the DISCORD_USER_MAP secret or commit .github/discord-bot/usermap.json.',
+    )
   }
 }

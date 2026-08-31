@@ -8,20 +8,25 @@ import {
   useSyncExternalStore,
 } from 'react'
 import Image from 'next/image'
+import { ReportLocationPicker } from '@/components/report-location-picker'
 import { SpeciesPicto } from '@/components/species-picto'
+import { SpeciesCombobox } from '@/components/species-combobox'
 import { Spinner } from '@/components/spinner'
 import { isGeolocationAvailable } from '@/lib/mapbox'
 import {
-  FAUNE_FLORE_STATUTS,
   REPORT_CATEGORY_LABELS,
   REPORT_GROUP_CATEGORIES,
   REPORT_GROUP_LABELS,
   REPORT_TYPOLOGIES,
   REPORT_TYPOLOGY_LABELS,
   REPORT_UNITS,
+  REPORT_FAUNE_CATEGORIES,
+  REPORT_FLORE_CATEGORIES,
+  isReportCategory,
   type ReportGroup,
 } from '@/lib/reports/categories'
 import { downscalePhoto } from '@/lib/reports/downscale'
+import { type ReportPosition } from '@/lib/reports/location'
 import {
   isValidReport,
   MAX_DESCRIPTION_LENGTH,
@@ -29,7 +34,8 @@ import {
   validateReport,
   type ReportErrors,
 } from '@/lib/reports/validation'
-import { submitReport, type ReportFormState } from './actions'
+import { sendReport } from '@/lib/reports/send'
+import type { ReportFormState } from '@/lib/reports/submit'
 import { REPORT_THEMES } from './report-theme'
 
 const initialState: ReportFormState = {}
@@ -43,20 +49,21 @@ const LABEL = 'text-sm font-medium text-canopee-forest'
 
 const ERROR = 'text-sm font-medium text-canopee-coral-dark'
 
+const MAP_CONTROL =
+  'absolute top-2 right-2 z-10 inline-flex touch-manipulation items-center rounded-lg border border-canopee-green/40 bg-white/95 px-2.5 py-1.5 text-xs font-semibold text-canopee-forest shadow-sm backdrop-blur-sm transition-colors hover:bg-canopee-green/10 focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none'
+
 const UNSUPPORTED_MESSAGE =
-  'Ce navigateur ne peut pas fournir votre position, nécessaire pour situer le signalement.'
+  'Ce navigateur ne peut pas fournir votre position. Placez le repère sur la carte.'
 
 const LOCATION_FAILURE: Record<number, string> = {
-  1: 'Localisation refusée. Autorisez-la dans les réglages de votre navigateur pour envoyer un signalement.',
-  2: 'Position indisponible. Placez-vous à découvert, puis réessayez.',
-  3: 'La localisation a pris trop de temps. Réessayez.',
+  1: 'Localisation refusée. Autorisez-la dans vos réglages, ou placez le repère sur la carte.',
+  2: 'Position indisponible. Placez-vous à découvert et réessayez, ou placez le repère sur la carte.',
+  3: 'La localisation a pris trop de temps. Réessayez, ou placez le repère sur la carte.',
 }
 
-type Position = { latitude: number; longitude: number }
-
-type LocationState =
+type FixState =
   | { status: 'locating' }
-  | { status: 'ready'; position: Position }
+  | { status: 'ready'; position: ReportPosition }
   | { status: 'failed'; message: string }
 
 function subscribeToSupport(): () => void {
@@ -76,13 +83,10 @@ export function ReportForm({
   onBack: () => void
   photoRequired: boolean
 }) {
-  const [state, formAction, pending] = useActionState(
-    submitReport,
-    initialState,
-  )
+  const [state, formAction, pending] = useActionState(sendReport, initialState)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
       <button
         type="button"
         onClick={onBack}
@@ -119,7 +123,9 @@ export function ReportForm({
           aria-live="polite"
           className="rounded-lg bg-canopee-green/10 px-3 py-2.5 text-sm font-medium text-canopee-forest"
         >
-          Signalement envoyé. Merci!
+          {state.queued
+            ? 'Signalement enregistré. Il partira au retour du réseau.'
+            : 'Signalement envoyé. Merci!'}
         </p>
       )}
 
@@ -147,30 +153,30 @@ type StepKey =
   | 'constate'
   | 'typologie'
   | 'categorie'
-  | 'statut'
   | 'photo'
   | 'nombre'
   | 'espece'
   | 'details'
   | 'commentaire'
+  | 'position'
 
 const STEP_TITLES: Record<StepKey, string> = {
   constate: 'Qu’avez-vous constaté ?',
   typologie: 'Typologie',
   categorie: 'Sélectionnez la catégorie observée',
-  statut: "Quel est le statut de l'espèce ?",
   photo: 'Photo',
   nombre: 'Combien ?',
   espece: 'Quelle espèce avez-vous observé ?',
   details: 'Détails',
   commentaire: 'Commentaire',
+  position: 'Où exactement ?',
 }
 
 /** Step order per group, following the Google Sheets spec. */
 const GROUP_STEPS: Record<ReportGroup, readonly StepKey[]> = {
-  entretien: ['constate', 'typologie', 'photo', 'commentaire'],
-  citoyen: ['constate', 'photo', 'nombre', 'commentaire'],
-  faune_flore: ['categorie', 'statut', 'photo', 'espece', 'details'],
+  entretien: ['constate', 'typologie', 'photo', 'commentaire', 'position'],
+  citoyen: ['constate', 'photo', 'nombre', 'commentaire', 'position'],
+  faune_flore: ['categorie', 'photo', 'espece', 'details', 'position'],
 }
 
 function UploadIcon({ className }: { className?: string }) {
@@ -201,7 +207,6 @@ function ReportWizard({
 }: ReportWizardProps) {
   const [stepIndex, setStepIndex] = useState(0)
   const [category, setCategory] = useState('')
-  const [statut, setStatut] = useState('')
   const [typology, setTypology] = useState('')
   const [description, setDescription] = useState('')
   const [quantity, setQuantity] = useState('')
@@ -212,7 +217,9 @@ function ReportWizard({
   const [preview, setPreview] = useState<string | null>(null)
   const [preparingPhoto, setPreparingPhoto] = useState(false)
   const [clientErrors, setClientErrors] = useState<ReportErrors>({})
-  const [fix, setFix] = useState<LocationState | null>(null)
+  const [fix, setFix] = useState<FixState>({ status: 'locating' })
+  const [override, setOverride] = useState<ReportPosition | null>(null)
+  const [locateAttempt, setLocateAttempt] = useState(0)
   const photoInputRef = useRef<HTMLInputElement>(null)
 
   const isSupported = useSyncExternalStore(
@@ -221,14 +228,18 @@ function ReportWizard({
     isSupportedOnServer,
   )
 
-  const location: LocationState = !isSupported
-    ? { status: 'failed', message: UNSUPPORTED_MESSAGE }
-    : (fix ?? { status: 'locating' })
+  const gpsFix: FixState = isSupported
+    ? fix
+    : { status: 'failed', message: UNSUPPORTED_MESSAGE }
+
+  const position: ReportPosition | null =
+    override ?? (gpsFix.status === 'ready' ? gpsFix.position : null)
 
   const errors = { ...serverErrors, ...clientErrors }
 
   const steps = GROUP_STEPS[group]
   const step = steps[stepIndex]
+  const isFauneFlore = group === 'faune_flore'
 
   useEffect(() => {
     if (!isSupported) {
@@ -265,7 +276,7 @@ function ReportWizard({
     return () => {
       cancelled = true
     }
-  }, [isSupported])
+  }, [isSupported, locateAttempt])
 
   useEffect(() => {
     if (!preview) {
@@ -315,8 +326,6 @@ function ReportWizard({
         return typology !== ''
       case 'categorie':
         return category !== ''
-      case 'statut':
-        return statut !== ''
       case 'photo':
         return photo !== null || !photoRequired
       case 'nombre':
@@ -327,6 +336,8 @@ function ReportWizard({
         return description.trim() !== ''
       case 'commentaire':
         return description.trim() !== ''
+      case 'position':
+        return position !== null
     }
   }
 
@@ -334,7 +345,6 @@ function ReportWizard({
     setClientErrors((current) => {
       const cleared = { ...current }
       delete cleared.category
-      delete cleared.statut
       delete cleared.typology
       delete cleared.species
       delete cleared.photo
@@ -356,8 +366,6 @@ function ReportWizard({
   }
 
   function submit(formData: FormData) {
-    const position = location.status === 'ready' ? location.position : null
-
     const found = validateReport({
       category,
       description,
@@ -368,7 +376,6 @@ function ReportWizard({
       species,
       unit,
       habitat,
-      statut,
     })
 
     setClientErrors(found)
@@ -393,9 +400,9 @@ function ReportWizard({
     <form
       action={submit}
       noValidate
-      className="flex min-h-0 flex-1 flex-col gap-4"
+      className="flex min-h-0 flex-1 flex-col gap-2"
     >
-      <div className="flex shrink-0 flex-col gap-3">
+      <div className="flex shrink-0 flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
             Étape {stepIndex + 1} / {steps.length}
@@ -423,29 +430,21 @@ function ReportWizard({
       </div>
 
       <input type="hidden" name="category" value={category} />
+      <input type="hidden" name="description" value={description} />
       <input type="hidden" name="typology" value={typology} />
       <input type="hidden" name="quantity" value={quantity} />
       <input type="hidden" name="species" value={species} />
       <input type="hidden" name="unit" value={unit} />
       <input type="hidden" name="habitat" value={habitat} />
-      <input type="hidden" name="statut" value={statut} />
 
-      {location.status === 'ready' && (
+      {position && (
         <>
-          <input
-            type="hidden"
-            name="latitude"
-            value={location.position.latitude}
-          />
-          <input
-            type="hidden"
-            name="longitude"
-            value={location.position.longitude}
-          />
+          <input type="hidden" name="latitude" value={position.latitude} />
+          <input type="hidden" name="longitude" value={position.longitude} />
         </>
       )}
 
-      <div className="scroll-visible flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain pr-3">
+      <div className="scroll-visible flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain pr-2">
         {step === 'constate' && (
           <div className="flex flex-col gap-2">
             {REPORT_GROUP_CATEGORIES[group].map((value) => (
@@ -496,65 +495,65 @@ function ReportWizard({
           </div>
         )}
 
-        {step === 'categorie' && group === 'faune_flore' && (
-          <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-3 gap-2">
-              {REPORT_GROUP_CATEGORIES.faune_flore.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setCategory(value)}
-                  aria-pressed={category === value}
-                  className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-3 text-center transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                    category === value
-                      ? 'border-canopee-green bg-canopee-green/10'
-                      : 'border-canopee-green/25 bg-white hover:border-canopee-green/60'
-                  }`}
-                >
-                  <SpeciesPicto
-                    name={value === 'plante_vasculaire' ? 'vasculaire' : value}
-                    className="h-6 w-6 text-canopee-green"
-                  />
-                  <span className="text-xs font-medium text-canopee-forest">
+        {step === 'categorie' && isFauneFlore && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="mb-2 text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
+                Faune
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {REPORT_FAUNE_CATEGORIES.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setCategory(value)}
+                    aria-pressed={category === value}
+                    className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
+                      category === value
+                        ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
+                        : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
+                    }`}
+                  >
+                    <SpeciesPicto
+                      name={value}
+                      className="mx-auto mb-1 h-6 w-6 text-canopee-green"
+                    />
                     {REPORT_CATEGORY_LABELS[value]}
-                  </span>
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
+                Flore
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {REPORT_FLORE_CATEGORIES.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setCategory(value)}
+                    aria-pressed={category === value}
+                    className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
+                      category === value
+                        ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
+                        : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
+                    }`}
+                  >
+                    <SpeciesPicto
+                      name={
+                        value === 'plante_vasculaire' ? 'vasculaire' : value
+                      }
+                      className="mx-auto mb-1 h-6 w-6 text-canopee-green"
+                    />
+                    {REPORT_CATEGORY_LABELS[value]}
+                  </button>
+                ))}
+              </div>
             </div>
             {errors.category && (
               <p id="category-error" className={ERROR}>
                 {errors.category}
-              </p>
-            )}
-          </div>
-        )}
-
-        {step === 'statut' && group === 'faune_flore' && (
-          <div className="flex flex-col gap-2">
-            <p className="text-xs text-canopee-forest/60">Échelle de menace</p>
-            <div className="flex flex-col gap-1">
-              {FAUNE_FLORE_STATUTS.map(({ value, label }, index) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setStatut(value)}
-                  aria-pressed={statut === value}
-                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                    statut === value
-                      ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
-                      : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
-                  }`}
-                >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-canopee-green/15 text-xs font-bold text-canopee-green">
-                    {index + 1}
-                  </span>
-                  <span className="text-sm font-medium">{label}</span>
-                </button>
-              ))}
-            </div>
-            {errors.statut && (
-              <p id="statut-error" className={ERROR}>
-                {errors.statut}
               </p>
             )}
           </div>
@@ -565,15 +564,12 @@ function ReportWizard({
             <label htmlFor="species" className={LABEL}>
               Espèce observée
             </label>
-            <input
+            <SpeciesCombobox
               id="species"
-              name="species"
-              type="text"
               value={species}
-              onChange={(event) => setSpecies(event.target.value)}
-              placeholder="Nom commun ou scientifique, si vous le connaissez."
-              aria-describedby={errors.species ? 'species-error' : undefined}
-              className={FIELD}
+              onChange={setSpecies}
+              category={isReportCategory(category) ? category : undefined}
+              describedBy={errors.species ? 'species-error' : undefined}
             />
             {errors.species && (
               <p id="species-error" className={ERROR}>
@@ -732,21 +728,68 @@ function ReportWizard({
             remaining={remaining}
           />
         )}
+
+        {step === 'position' && (
+          <div className="flex flex-col gap-1.5">
+            <div className="relative">
+              <ReportLocationPicker
+                group={group}
+                position={position}
+                onPositionChange={setOverride}
+                disabled={pending}
+              />
+
+              {override && gpsFix.status === 'ready' && (
+                <button
+                  type="button"
+                  onClick={() => setOverride(null)}
+                  aria-label="Revenir à ma position GPS"
+                  className={MAP_CONTROL}
+                >
+                  Ma position GPS
+                </button>
+              )}
+
+              {isSupported && gpsFix.status === 'failed' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFix({ status: 'locating' })
+                    setLocateAttempt((attempt) => attempt + 1)
+                  }}
+                  aria-label="Réessayer la localisation"
+                  className={MAP_CONTROL}
+                >
+                  Réessayer
+                </button>
+              )}
+            </div>
+
+            {gpsFix.status === 'locating' && !override && (
+              <p role="status" className="text-sm text-canopee-forest/70">
+                Recherche de votre position…
+              </p>
+            )}
+
+            {gpsFix.status === 'failed' && (
+              <p
+                role="alert"
+                className={`text-sm ${position ? 'text-canopee-forest/70' : 'font-medium text-canopee-coral-dark'}`}
+              >
+                {gpsFix.message}
+              </p>
+            )}
+
+            {errors.latitude && (
+              <p id="latitude-error" className={ERROR}>
+                {errors.latitude}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex shrink-0 flex-col gap-2">
-        {location.status === 'locating' && (
-          <p role="status" className="text-sm text-canopee-forest/70">
-            Recherche de votre position…
-          </p>
-        )}
-
-        {location.status === 'failed' && (
-          <p role="alert" className={ERROR}>
-            {location.message}
-          </p>
-        )}
-
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
@@ -759,13 +802,9 @@ function ReportWizard({
 
           {isLastStep ? (
             <button
+              key="send"
               type="submit"
-              disabled={
-                pending ||
-                location.status !== 'ready' ||
-                preparingPhoto ||
-                !stepIsComplete(step)
-              }
+              disabled={pending || preparingPhoto || !stepIsComplete(step)}
               className="inline-flex touch-manipulation items-center justify-center gap-2 rounded-lg bg-canopee-green px-4 py-2.5 font-bold text-white shadow-sm transition-[background-color,transform] duration-150 ease-out hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/50 focus-visible:outline-none active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
             >
               {pending && <Spinner />}
@@ -773,6 +812,7 @@ function ReportWizard({
             </button>
           ) : (
             <button
+              key="next"
               type="button"
               onClick={next}
               disabled={!stepIsComplete(step) || preparingPhoto}

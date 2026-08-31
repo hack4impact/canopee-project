@@ -8,8 +8,10 @@ import {
   isNotNull,
   isNull,
   lte,
+  sql,
 } from 'drizzle-orm'
-import { db, reports } from '@/db'
+import { db, reports, users } from '@/db'
+import type { ReportExportRow } from '@/lib/reports/csv'
 import {
   PIN_CATEGORIES,
   type ReportPin,
@@ -68,7 +70,27 @@ export type ReportListItem = {
   resolvedAt: Date | null
 }
 
-export async function listAllReports(): Promise<ReportListItem[]> {
+export type ReportSortBy = 'date' | 'status'
+export type ReportStatusFilter = 'open' | 'resolved' | 'all'
+
+export async function listAllReports(
+  options: {
+    sortBy?: ReportSortBy
+    statusFilter?: ReportStatusFilter
+  } = {},
+): Promise<ReportListItem[]> {
+  const { sortBy = 'date', statusFilter = 'all' } = options
+
+  const whereClause =
+    statusFilter === 'open'
+      ? isNull(reports.resolvedAt)
+      : statusFilter === 'resolved'
+        ? isNotNull(reports.resolvedAt)
+        : undefined
+
+  const orderByClause =
+    sortBy === 'status' ? asc(reports.resolvedAt) : desc(reports.createdAt)
+
   return db
     .select({
       id: reports.id,
@@ -79,7 +101,8 @@ export async function listAllReports(): Promise<ReportListItem[]> {
       resolvedAt: reports.resolvedAt,
     })
     .from(reports)
-    .orderBy(desc(reports.createdAt))
+    .where(whereClause)
+    .orderBy(orderByClause)
 }
 
 export async function listReportPins(
@@ -115,5 +138,56 @@ export async function listReportPins(
     latitude: Number(row.latitude),
     longitude: Number(row.longitude),
     category: row.category,
+  }))
+}
+
+export type ReportTotals = {
+  count: number
+  resolved: number
+}
+
+export async function getReportTotalsForUser(
+  userId: string,
+): Promise<ReportTotals> {
+  const [row] = await db
+    .select({
+      count: sql<number>`count(*)::int`,
+      resolved: sql<number>`count(${reports.resolvedAt})::int`,
+    })
+    .from(reports)
+    .where(eq(reports.userId, userId))
+
+  return row ?? { count: 0, resolved: 0 }
+
+  }
+export async function listReportsForExport(): Promise<ReportExportRow[]> {
+  const rows = await db
+    .select({
+      eventNumber: reports.eventNumber,
+      category: reports.category,
+      description: reports.description,
+      typology: reports.typology,
+      quantity: reports.quantity,
+      species: reports.species,
+      unit: reports.unit,
+      habitat: reports.habitat,
+      statut: reports.statut,
+      latitude: reports.latitude,
+      longitude: reports.longitude,
+      photoUrl: reports.photoUrl,
+      createdAt: reports.createdAt,
+      resolvedAt: reports.resolvedAt,
+      reporterEmail: reports.reporterEmail,
+      userEmail: users.email,
+    })
+    .from(reports)
+    .leftJoin(users, eq(reports.userId, users.id))
+    .orderBy(asc(reports.eventNumber))
+
+  return rows.map(({ reporterEmail, userEmail, ...row }) => ({
+    ...row,
+    latitude: Number(row.latitude),
+    longitude: Number(row.longitude),
+    reporter: userEmail ?? reporterEmail,
   }))
 }

@@ -2,6 +2,10 @@ import type { Metadata, Viewport } from 'next'
 import { Averia_Serif_Libre, Geist_Mono } from 'next/font/google'
 import localFont from 'next/font/local'
 import { PatrolControls } from '@/components/patrol-controls'
+import { PatrolProvider } from '@/components/patrol-provider'
+import { PatrolSync } from '@/components/patrol-sync'
+import { ReportSync } from '@/components/report-sync'
+import { DeepLink } from '@/components/deep-link'
 import { getCurrentUserProfile } from '@/lib/auth/current-user'
 import { getActivePatrol } from '@/lib/patrols/queries'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -94,8 +98,13 @@ export default async function RootLayout({
       className={`${averiaSerifLibre.variable} ${museoSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        {children}
-        <PatrolControls initialStartedAt={initialStartedAt} />
+        <PatrolProvider initialStartedAt={initialStartedAt}>
+          {children}
+          <PatrolControls />
+        </PatrolProvider>
+        <PatrolSync />
+        <ReportSync />
+        <DeepLink />
       </body>
     </html>
   )

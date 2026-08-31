@@ -13,8 +13,30 @@ export type LoginInput = {
   password: string
 }
 
+export type PasswordChangeInput = {
+  currentPassword: string
+  password: string
+  confirmPassword: string
+}
+
+export type PasswordResetInput = {
+  email: string
+}
+
+export type NewPasswordInput = {
+  password: string
+  confirmPassword: string
+}
+
 export type SignupErrors = Partial<Record<keyof SignupInput, string>>
 export type LoginErrors = Partial<Record<keyof LoginInput, string>>
+export type PasswordChangeErrors = Partial<
+  Record<keyof PasswordChangeInput, string>
+>
+export type PasswordResetErrors = Partial<
+  Record<keyof PasswordResetInput, string>
+>
+export type NewPasswordErrors = Partial<Record<keyof NewPasswordInput, string>>
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -67,6 +89,74 @@ export function validateLogin(input: LoginInput): LoginErrors {
   return errors
 }
 
-export function isValid(errors: SignupErrors | LoginErrors): boolean {
+export function validatePasswordChange(
+  input: PasswordChangeInput,
+): PasswordChangeErrors {
+  const errors: PasswordChangeErrors = {}
+
+  if (!input.currentPassword) {
+    errors.currentPassword = 'Saisissez votre mot de passe actuel.'
+  }
+
+  if (!input.password) {
+    errors.password = 'Choisissez un nouveau mot de passe.'
+  } else if (input.password.length < MIN_PASSWORD_LENGTH) {
+    errors.password = `Utilisez au moins ${MIN_PASSWORD_LENGTH} caractères.`
+  } else if (input.password === input.currentPassword) {
+    errors.password = 'Choisissez un mot de passe différent de l’actuel.'
+  }
+
+  if (!input.confirmPassword) {
+    errors.confirmPassword = 'Confirmez le nouveau mot de passe.'
+  } else if (input.password !== input.confirmPassword) {
+    errors.confirmPassword = 'Les mots de passe ne correspondent pas.'
+  }
+
+  return errors
+}
+
+export function validatePasswordReset(
+  input: PasswordResetInput,
+): PasswordResetErrors {
+  const errors: PasswordResetErrors = {}
+  const email = input.email.trim()
+
+  if (!email) {
+    errors.email = 'Saisissez votre adresse courriel.'
+  } else if (!EMAIL_PATTERN.test(email)) {
+    errors.email = 'Saisissez une adresse courriel valide.'
+  }
+
+  return errors
+}
+
+export function validateNewPassword(
+  input: NewPasswordInput,
+): NewPasswordErrors {
+  const errors: NewPasswordErrors = {}
+
+  if (!input.password) {
+    errors.password = 'Choisissez un nouveau mot de passe.'
+  } else if (input.password.length < MIN_PASSWORD_LENGTH) {
+    errors.password = `Utilisez au moins ${MIN_PASSWORD_LENGTH} caractères.`
+  }
+
+  if (!input.confirmPassword) {
+    errors.confirmPassword = 'Confirmez le nouveau mot de passe.'
+  } else if (input.password !== input.confirmPassword) {
+    errors.confirmPassword = 'Les mots de passe ne correspondent pas.'
+  }
+
+  return errors
+}
+
+export function isValid(
+  errors:
+    | SignupErrors
+    | LoginErrors
+    | PasswordChangeErrors
+    | PasswordResetErrors
+    | NewPasswordErrors,
+): boolean {
   return Object.keys(errors).length === 0
 }

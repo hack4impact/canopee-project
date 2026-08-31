@@ -12,12 +12,22 @@ export const viewport: Viewport = {
   themeColor: '#004523',
 }
 
+const LINK_ERRORS: Record<string, string> = {
+  'lien-invalide': 'Ce lien n’est pas valide. Demandez-en un nouveau.',
+  'lien-expire':
+    'Ce lien a expiré ou a déjà été utilisé. Demandez-en un nouveau.',
+}
+
 export default async function LoginPage(props: PageProps<'/login'>) {
-  const requested = (await props.searchParams)[REDIRECT_PARAM]
+  const searchParams = await props.searchParams
+  const requested = searchParams[REDIRECT_PARAM]
+  const erreur = searchParams.erreur
 
   const redirectTo = safeRedirectPath(
     typeof requested === 'string' ? requested : undefined,
   )
+
+  const linkError = typeof erreur === 'string' ? LINK_ERRORS[erreur] : undefined
 
   return (
     <div className="relative flex min-h-full flex-1 flex-col items-center justify-center overflow-hidden bg-canopee-forest px-6 py-16 font-sans">
@@ -42,6 +52,15 @@ export default async function LoginPage(props: PageProps<'/login'>) {
               Connexion
             </h1>
           </header>
+
+          {linkError && (
+            <p
+              role="alert"
+              className="mt-6 rounded-lg bg-canopee-coral/10 px-3 py-2.5 text-center text-sm font-medium text-canopee-coral-dark"
+            >
+              {linkError}
+            </p>
+          )}
 
           <div className="mt-8">
             <LoginForm redirectTo={redirectTo} />

@@ -365,6 +365,18 @@ export function ReportPinsLayer({
       </p>
     )
   }
-
-  return <ReportFilters />
+  const noReportsMatch = collection !== null && collection.features.length === 0
+  return (
+    <>
+      <ReportFilters />
+      {noReportsMatch && (
+        <p
+          role="status"
+          className="absolute bottom-52 left-1/2 z-10 -translate-x-1/2 rounded-full bg-canopee-cream/95 px-3 py-1.5 text-sm font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
+        >
+          Aucun signalement trouvé.
+        </p>
+      )}
+    </>
+  )
 }

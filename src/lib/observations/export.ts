@@ -148,7 +148,7 @@ export function toMinistryRow(row: ObservationExportRow): string[] {
   const { year, month, day, time } = dateParts(row.createdAt)
   const bois = woodedAreaName(row.latitude, row.longitude)
   const metadata = speciesMetadata(row.species)
-
+ 
   return [
     REPORT_CATEGORY_LABELS[row.category],
     metadata?.scientificName ?? row.species ?? '',

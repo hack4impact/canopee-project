@@ -32,7 +32,7 @@ export function ReportFilters() {
         aria-expanded={open}
         aria-controls="report-filters-panel"
         aria-label="Filtrer les signalements par catégorie"
-        className="absolute top-4 right-4 z-20 touch-manipulation rounded-full bg-canopee-forest/80 p-3 shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:scale-95 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+        className="absolute top-[calc(7rem+env(safe-area-inset-top))] right-4 z-20 touch-manipulation rounded-full bg-canopee-forest/80 p-3 shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:scale-95 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       >
         <Image
           src="/pictos/filter.svg"
@@ -47,7 +47,7 @@ export function ReportFilters() {
       {open && (
         <section
           id="report-filters-panel"
-          className="absolute top-20 right-4 z-10 w-64 space-y-1 rounded-2xl bg-canopee-forest/80 p-3 text-canopee-cream shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm"
+          className="absolute top-[calc(11rem+env(safe-area-inset-top))] right-4 z-10 w-64 space-y-1 rounded-2xl bg-canopee-forest/80 p-3 text-canopee-cream shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm"
         >
           {groups.map((group) => {
             const categories = categoriesOfGroup(group)

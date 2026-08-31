@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { getCurrentUserProfile } from '@/lib/auth/current-user'
 import { canAccess } from '@/lib/auth/roles'
 import { listReportPins } from '@/lib/reports/queries'
+import { createReport } from '@/lib/reports/submit'
 import {
   parseCategoriesParam,
   parseStatusParam,
@@ -48,4 +49,28 @@ export async function GET(request: NextRequest) {
     categories: selected.categories,
     reports,
   })
+}
+
+export async function POST(request: NextRequest) {
+  const profile = await getCurrentUserProfile()
+
+  if (!profile || !canAccess(profile, 'volunteer')) {
+    return Response.json({ error: 'Unauthorized.' }, { status: 401 })
+  }
+
+  let formData: FormData
+
+  try {
+    formData = await request.formData()
+  } catch {
+    return Response.json({ error: 'Expected a form body.' }, { status: 400 })
+  }
+
+  const result = await createReport(profile, formData)
+
+  if (result.errors || result.message) {
+    return Response.json(result, { status: 422 })
+  }
+
+  return Response.json(result)
 }

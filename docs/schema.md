@@ -206,12 +206,13 @@ An ordered stream of GPS coordinates belonging to a patrol. Rendered as a polyli
 
 - Points are recorded by the mobile app at a fixed interval (interval TBD with product).
 - Ordering within a patrol is by `recorded_at`, not `id`.
+- A patrol cannot hold two points with the same `recorded_at`. Uploads are idempotent, so a client that resends a batch after a lost response does not duplicate the route.
 - Points are deleted on cascade if the parent patrol is deleted.
 - No `created_at` — for high-volume rows the row's timestamp is `recorded_at`.
 
 **Indexes**
 
-- `(patrol_id, recorded_at)` — every route render orders points by this. Critical for performance since this table will grow the fastest.
+- `(patrol_id, recorded_at)` — unique. Every route render orders points by this. Critical for performance since this table will grow the fastest.
 
 **Cascade delete (SQL migration)**
 

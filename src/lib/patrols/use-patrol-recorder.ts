@@ -8,18 +8,46 @@ import {
   useSyncExternalStore,
 } from 'react'
 import { isGeolocationAvailable } from '@/lib/mapbox'
+import { distanceBetweenMetres } from '@/lib/patrols/distance'
 import {
-  capBuffer,
+  debugLog,
+  describeError,
+  dumpDebugEvents,
+  flushDebugFile,
+  installDebugBridge,
+  startDebugFile,
+} from '@/lib/patrols/debug'
+import { updateLiveActivity } from '@/lib/patrols/live-activity'
+import { normalizeRoute } from '@/lib/patrols/route-trace'
+import {
+  isNativeApp,
+  startNativeWatch,
+  stopNativeWatch,
+} from '@/lib/patrols/native'
+import {
+  appendPoint,
+  clearPoints,
+  countPoints,
+  deletePoints,
+  isPointQueueAvailable,
+  readBatch,
+} from '@/lib/patrols/point-queue'
+import {
+  classifySyncResponse,
   describeSignalGap,
+  isAccurateEnough,
   isPermissionDenied,
+  isPlausibleStep,
+  MAX_BATCH_POINTS,
   shouldRecordPoint,
   SYNC_INTERVAL_MS,
-  takeBatch,
   toRecordedPoint,
   type RecordedPoint,
 } from '@/lib/patrols/points'
 
 const ENDPOINT = '/api/patrol-points'
+
+const HEARTBEAT_MS = 30_000
 
 const WATCH_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
@@ -36,13 +64,25 @@ function isSupportedOnServer(): boolean {
   return true
 }
 
+function isRecordingSupported(): boolean {
+  return isGeolocationAvailable() && isPointQueueAvailable()
+}
+
 export type RecordingStatus =
   'unsupported' | 'waiting' | 'recording' | 'signal-lost' | 'denied' | 'stopped'
 
+const MAX_ROUTE_POINTS = 500
+
 export type PatrolRecorder = {
   status: RecordingStatus
-  /** Stops recording and delivers every buffered point; awaited before ending. */
+  /** Stops recording and delivers every queued point; awaited before ending. */
   flushAndStop: () => Promise<void>
+  /** Metres walked so far, for the lock screen card. */
+  getDistanceMetres: () => number
+  /** The walk so far, normalised for the lock screen trace. */
+  getRoute: () => number[]
+  /** Fills the trace from points already on the server, once. */
+  seedRoute: (points: { latitude: number; longitude: number }[]) => void
 }
 
 /**
@@ -61,27 +101,83 @@ export function usePatrolRecorder({
   // from the effect would cost a second render on every patrol.
   const isSupported = useSyncExternalStore(
     subscribeToSupport,
-    isGeolocationAvailable,
+    isRecordingSupported,
     isSupportedOnServer,
   )
 
   // Refs, not state: a new point every twelve seconds must not re-render the
-  // page, and the callbacks below must always see the current buffer.
-  const bufferRef = useRef<RecordedPoint[]>([])
+  // page, and the callbacks below must always see the current values.
   const lastRecordedAtRef = useRef<number | null>(null)
+  const lastAcceptedRef = useRef<RecordedPoint | null>(null)
+  const lastDrainedAtRef = useRef<number>(0)
+  const distanceMetresRef = useRef<number>(0)
+  const routeRef = useRef<{ latitude: number; longitude: number }[]>([])
+
+  const getRoute = useCallback(() => normalizeRoute(routeRef.current), [])
+
+  const seedRoute = useCallback(
+    (points: { latitude: number; longitude: number }[]) => {
+      if (routeRef.current.length > 0 || points.length === 0) {
+        return
+      }
+
+      routeRef.current = points.slice(-MAX_ROUTE_POINTS)
+    },
+    [],
+  )
+
+  const getDistanceMetres = useCallback(
+    () => Math.round(distanceMetresRef.current),
+    [],
+  )
 
   useEffect(() => {
     if (!isSupported) {
+      debugLog('recorder.unsupported', {
+        geolocation: isGeolocationAvailable(),
+        queue: isPointQueueAvailable(),
+      })
+
       return
     }
 
     let syncing = false
     let stopped = false
+    let native = false
+    let stored = 0
     let watchId: number | null = null
     let syncTimer: ReturnType<typeof setInterval> | null = null
+    let heartbeatTimer: ReturnType<typeof setInterval> | null = null
 
-    function stop(reason: RecordingStatus) {
-      stopped = true
+    installDebugBridge()
+
+    void startDebugFile()
+
+    debugLog('recorder.mounted', {
+      paused,
+      nativePlatform: isNativeApp(),
+      userAgent:
+        typeof navigator === 'undefined'
+          ? null
+          : navigator.userAgent.slice(0, 120),
+    })
+
+    void dumpDebugEvents().catch(() => {})
+
+    function onVisibilityChange() {
+      debugLog('page.visibility', {
+        state: document.visibilityState,
+        stored,
+      })
+
+      void flushDebugFile()
+    }
+
+    function releaseWatch() {
+      if (native) {
+        native = false
+        void stopNativeWatch()
+      }
 
       if (watchId !== null) {
         navigator.geolocation.clearWatch(watchId)
@@ -93,117 +189,236 @@ export function usePatrolRecorder({
         syncTimer = null
       }
 
+      if (heartbeatTimer !== null) {
+        clearInterval(heartbeatTimer)
+        heartbeatTimer = null
+      }
+    }
+
+    function stop(reason: RecordingStatus) {
+      debugLog('recorder.stop', { reason, stored })
+
+      stopped = true
+      releaseWatch()
       setStatus(reason)
     }
 
-    async function flush() {
-      if (stopped || syncing || bufferRef.current.length === 0) {
+    async function drain() {
+      if (stopped || syncing) {
+        debugLog('drain.skipped', { stopped, syncing })
         return
       }
 
-      const batch = takeBatch(bufferRef.current)
       syncing = true
 
+      const startedAt = Date.now()
+
       try {
-        const response = await fetch(ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(batch),
-          redirect: 'manual',
-        })
+        while (!stopped) {
+          const queued = await readBatch(MAX_BATCH_POINTS)
 
-        if (response.ok) {
-          bufferRef.current = bufferRef.current.slice(batch.length)
-          return
-        }
+          if (queued.length === 0) {
+            debugLog('drain.empty')
+            return
+          }
 
-        if (response.status < 500) {
-          bufferRef.current = []
+          debugLog('drain.posting', { batch: queued.length })
+
+          const response = await fetch(ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(queued.map((entry) => entry.point)),
+            redirect: 'manual',
+          })
+
+          const outcome = classifySyncResponse(response.status)
+
+          debugLog('drain.response', {
+            status: response.status,
+            outcome,
+            batch: queued.length,
+            elapsedMs: Date.now() - startedAt,
+          })
+
+          if (outcome === 'accepted') {
+            await deletePoints(queued.map((entry) => entry.key))
+            lastDrainedAtRef.current = Date.now()
+
+            debugLog('drain.accepted', {
+              delivered: queued.length,
+              remaining: await countPoints(),
+            })
+
+            continue
+          }
+
+          if (outcome === 'fatal') {
+            await clearPoints()
+
+            console.warn(
+              response.status === 0
+                ? 'Patrol point sync rejected: the session is no longer valid'
+                : `Patrol point sync refused (${response.status})`,
+            )
+
+            stop('stopped')
+            return
+          }
 
           console.warn(
-            response.status === 0
-              ? 'Patrol point sync rejected: the session is no longer valid'
-              : `Patrol point sync refused (${response.status})`,
+            `Patrol point sync failed (${response.status}), keeping the queue`,
           )
 
-          stop('stopped')
           return
         }
-
-        console.warn(`Patrol point sync failed (${response.status}), retrying`)
       } catch (cause) {
-        console.warn('Patrol point sync failed, keeping the buffer', cause)
+        debugLog('drain.threw', {
+          ...describeError(cause),
+          elapsedMs: Date.now() - startedAt,
+        })
+
+        console.warn('Patrol point sync failed, keeping the queue', cause)
       } finally {
         syncing = false
       }
     }
 
-    function flushBeforeUnload() {
-      if (stopped || syncing || bufferRef.current.length === 0) {
-        return
+    async function storePoint(point: RecordedPoint): Promise<number | null> {
+      try {
+        return await appendPoint(point)
+      } catch (cause) {
+        debugLog('point.store.failed', {
+          ...describeError(cause),
+          recordedAt: point.recordedAt,
+        })
       }
 
-      const batch = takeBatch(bufferRef.current)
-      const body = new Blob([JSON.stringify(batch)], {
-        type: 'application/json',
-      })
+      try {
+        const depth = await appendPoint(point)
 
-      if (navigator.sendBeacon(ENDPOINT, body)) {
-        bufferRef.current = bufferRef.current.slice(batch.length)
-      }
-    }
+        debugLog('point.store.retried', { depth })
 
-    async function flushAndStop() {
-      stopped = true
+        return depth
+      } catch (cause) {
+        debugLog('point.store.lost', {
+          ...describeError(cause),
+          recordedAt: point.recordedAt,
+        })
 
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId)
-        watchId = null
-      }
-
-      if (syncTimer !== null) {
-        clearInterval(syncTimer)
-        syncTimer = null
-      }
-
-      while (bufferRef.current.length > 0) {
-        const batch = takeBatch(bufferRef.current)
-
-        try {
-          const response = await fetch(ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(batch),
-            redirect: 'manual',
-          })
-
-          if (!response.ok) {
-            break
-          }
-        } catch {
-          break
-        }
-
-        bufferRef.current = bufferRef.current.slice(batch.length)
+        return null
       }
     }
 
-    function handleFix(position: GeolocationPosition) {
+    async function record(point: RecordedPoint, accuracy: number | null) {
       if (stopped) {
+        debugLog('record.ignored.stopped')
         return
       }
 
       setStatus('recording')
 
-      if (!shouldRecordPoint(lastRecordedAtRef.current, position.timestamp)) {
+      const recordedAtMs = Date.parse(point.recordedAt)
+
+      if (!shouldRecordPoint(lastRecordedAtRef.current, recordedAtMs)) {
+        debugLog('record.throttled', {
+          sinceLastMs:
+            lastRecordedAtRef.current === null
+              ? null
+              : recordedAtMs - lastRecordedAtRef.current,
+        })
+
         return
       }
 
-      lastRecordedAtRef.current = position.timestamp
-      bufferRef.current = capBuffer([
-        ...bufferRef.current,
-        toRecordedPoint(position),
-      ])
+      if (!isAccurateEnough(accuracy)) {
+        debugLog('record.inaccurate', { accuracy })
+        return
+      }
+
+      const previous = lastAcceptedRef.current
+
+      if (!isPlausibleStep(previous, point)) {
+        debugLog('record.implausible', {
+          accuracy,
+          metres:
+            previous === null
+              ? null
+              : Math.round(distanceBetweenMetres(previous, point)),
+        })
+        return
+      }
+
+      const depth = await storePoint(point)
+
+      if (depth === null) {
+        return
+      }
+
+      if (previous !== null) {
+        distanceMetresRef.current += distanceBetweenMetres(previous, point)
+      }
+
+      lastRecordedAtRef.current = recordedAtMs
+      lastAcceptedRef.current = point
+      stored += 1
+
+      routeRef.current.push({
+        latitude: point.latitude,
+        longitude: point.longitude,
+      })
+
+      if (routeRef.current.length > MAX_ROUTE_POINTS) {
+        routeRef.current.shift()
+      }
+
+      void updateLiveActivity({
+        distanceMetres: Math.round(distanceMetresRef.current),
+        paused: false,
+        elapsedSeconds: 0,
+        route: normalizeRoute(routeRef.current),
+      })
+
+      debugLog('point.stored', {
+        n: stored,
+        depth,
+        recordedAt: point.recordedAt,
+      })
+
+      if (Date.now() - lastDrainedAtRef.current >= SYNC_INTERVAL_MS) {
+        await drain()
+      }
+    }
+
+    function submit(point: RecordedPoint, accuracy: number | null) {
+      void record(point, accuracy).catch((cause) => {
+        debugLog('record.threw', {
+          ...describeError(cause),
+          recordedAt: point.recordedAt,
+        })
+      })
+    }
+
+    function handleFix(position: GeolocationPosition) {
+      debugLog('web.position', {
+        accuracy: position.coords.accuracy,
+        timestamp: position.timestamp,
+      })
+
+      submit(toRecordedPoint(position), position.coords.accuracy)
+    }
+
+    function handleSignalLoss(reason: string) {
+      debugLog('signal.lost', {
+        reason,
+        gap: describeSignalGap(lastRecordedAtRef.current, Date.now()),
+        stored,
+      })
+
+      console.warn(
+        `${reason}, ${describeSignalGap(lastRecordedAtRef.current, Date.now())}`,
+      )
+
+      setStatus('signal-lost')
     }
 
     function handleError(error: GeolocationPositionError) {
@@ -212,45 +427,109 @@ export function usePatrolRecorder({
         return
       }
 
-      console.warn(
-        `GPS signal lost (code ${error.code}), ${describeSignalGap(
-          lastRecordedAtRef.current,
-          Date.now(),
-        )}`,
-      )
+      handleSignalLoss(`GPS signal lost (code ${error.code})`)
+    }
 
-      setStatus('signal-lost')
+    async function flushAndStop() {
+      debugLog('flushAndStop.begin', { stored })
+
+      stopped = true
+      releaseWatch()
+
+      while (true) {
+        const queued = await readBatch(MAX_BATCH_POINTS)
+
+        if (queued.length === 0) {
+          debugLog('flushAndStop.done')
+          await flushDebugFile()
+          return
+        }
+
+        try {
+          const response = await fetch(ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(queued.map((entry) => entry.point)),
+            redirect: 'manual',
+          })
+
+          debugLog('flushAndStop.response', {
+            status: response.status,
+            batch: queued.length,
+          })
+
+          if (classifySyncResponse(response.status) !== 'accepted') {
+            return
+          }
+        } catch (cause) {
+          debugLog('flushAndStop.threw', describeError(cause))
+          return
+        }
+
+        await deletePoints(queued.map((entry) => entry.key))
+      }
     }
 
     if (!paused) {
-      watchId = navigator.geolocation.watchPosition(
-        handleFix,
-        handleError,
-        WATCH_OPTIONS,
-      )
+      if (isNativeApp()) {
+        native = true
 
-      syncTimer = setInterval(() => void flush(), SYNC_INTERVAL_MS)
+        startNativeWatch(submit, (error) =>
+          handleSignalLoss(`GPS signal lost (${error.message})`),
+        ).catch((cause) => {
+          debugLog('native.start.failed', describeError(cause))
+          stop('denied')
+        })
+      } else {
+        watchId = navigator.geolocation.watchPosition(
+          handleFix,
+          handleError,
+          WATCH_OPTIONS,
+        )
+
+        debugLog('web.watch.started', { watchId })
+      }
+
+      syncTimer = setInterval(() => void drain(), SYNC_INTERVAL_MS)
+
+      let lastBeatAt = Date.now()
+
+      heartbeatTimer = setInterval(() => {
+        const now = Date.now()
+
+        debugLog('heartbeat', {
+          driftMs: now - lastBeatAt - HEARTBEAT_MS,
+          visibility:
+            typeof document === 'undefined' ? null : document.visibilityState,
+          online: typeof navigator === 'undefined' ? null : navigator.onLine,
+          stored,
+        })
+
+        lastBeatAt = now
+
+        void flushDebugFile()
+      }, HEARTBEAT_MS)
     }
 
     flushAndStopRef.current = flushAndStop
 
-    window.addEventListener('pagehide', flushBeforeUnload)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    void drain()
 
     return () => {
-      window.removeEventListener('pagehide', flushBeforeUnload)
+      debugLog('recorder.unmounted', { stored })
+
+      void flushDebugFile()
+
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       flushAndStopRef.current = () => Promise.resolve()
 
-      flushBeforeUnload()
-
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId)
-      }
-
-      if (syncTimer !== null) {
-        clearInterval(syncTimer)
-      }
+      stopped = true
+      releaseWatch()
 
       lastRecordedAtRef.current = null
+      lastAcceptedRef.current = null
     }
   }, [isSupported, paused])
 
@@ -259,5 +538,8 @@ export function usePatrolRecorder({
   return {
     status: isSupported ? status : 'unsupported',
     flushAndStop,
+    getDistanceMetres,
+    getRoute,
+    seedRoute,
   }
 }

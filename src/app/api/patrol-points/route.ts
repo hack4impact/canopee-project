@@ -46,6 +46,7 @@ export async function POST(request: Request) {
     await db
       .insert(patrolPoints)
       .values(batch.points.map((point) => ({ ...point, patrolId: patrol.id })))
+      .onConflictDoNothing()
   }
 
   return Response.json({
