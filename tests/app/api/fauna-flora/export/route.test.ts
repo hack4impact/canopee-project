@@ -9,7 +9,7 @@ const { getCurrentUserProfile, listObservationsForExport } = vi.hoisted(() => ({
 vi.mock('@/lib/auth/current-user', () => ({ getCurrentUserProfile }))
 vi.mock('@/lib/observations/queries', () => ({ listObservationsForExport }))
 
-const { GET } = await import('./route')
+const { GET } = await import('@/app/api/fauna-flora/export/route')
 
 function requestFor(url = 'http://localhost/api/fauna-flora/export') {
   return { nextUrl: new URL(url) } as Parameters<typeof GET>[0]
@@ -39,25 +39,43 @@ afterEach(() => {
 })
 
 describe('GET /api/fauna-flora/export', () => {
-  it('turns away a visitor who is not signed in', async () => {
+  it('turns away a citizen who is not signed in', async () => {
     getCurrentUserProfile.mockResolvedValue(null)
-
-    const response = await GET(requestFor())
-
-    expect(response.status).toBe(401)
-    expect(listObservationsForExport).not.toHaveBeenCalled()
-  })
-
-  it('turns away a volunteer', async () => {
-    getCurrentUserProfile.mockResolvedValue({
-      role: 'volunteer',
-      status: 'approved',
-    })
 
     const response = await GET(requestFor())
 
     expect(response.status).toBe(403)
     expect(listObservationsForExport).not.toHaveBeenCalled()
+  })
+
+  it('refuses a citizen and a volunteer in the same terms', async () => {
+    getCurrentUserProfile.mockResolvedValue(null)
+    const citizen = await GET(requestFor())
+
+    getCurrentUserProfile.mockResolvedValue({
+      role: 'volunteer',
+      status: 'approved',
+    })
+    const volunteer = await GET(requestFor())
+
+    expect(citizen.status).toBe(volunteer.status)
+    expect(await citizen.json()).toEqual(await volunteer.json())
+  })
+
+  it('turns away a volunteer without naming a single species', async () => {
+    getCurrentUserProfile.mockResolvedValue({
+      role: 'volunteer',
+      status: 'approved',
+    })
+    listObservationsForExport.mockResolvedValue([OBSERVATION])
+
+    const response = await GET(requestFor())
+    const body = await response.text()
+
+    expect(response.status).toBe(403)
+    expect(listObservationsForExport).not.toHaveBeenCalled()
+    expect(body).not.toContain(OBSERVATION.species)
+    expect(body).not.toContain('Nom scientifique')
   })
 
   it('turns away a pro whose account is still pending', async () => {
