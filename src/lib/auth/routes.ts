@@ -8,6 +8,7 @@ const PUBLIC_ROUTES = [
   LOGIN_ROUTE,
   '/signup',
   '/api/cron',
+  '/api/public',
   '/.well-known',
 ] as const
 
