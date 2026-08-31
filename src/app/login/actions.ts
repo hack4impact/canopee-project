@@ -1,5 +1,6 @@
 'use server'
 
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { ensureUserProfile, type UserProfile } from '@/lib/auth/ensure-profile'
 import { isApproved } from '@/lib/auth/roles'
@@ -8,7 +9,13 @@ import {
   REDIRECT_PARAM,
   safeRedirectPath,
 } from '@/lib/auth/routes'
-import { isValid, validateLogin, type LoginErrors } from '@/lib/auth/validation'
+import {
+  isValid,
+  validateLogin,
+  validatePasswordReset,
+  type LoginErrors,
+  type PasswordResetErrors,
+} from '@/lib/auth/validation'
 import { createClient } from '@/lib/supabase/server'
 
 export type LoginState = {
@@ -72,6 +79,45 @@ export async function login(
   }
 
   redirect(getPostLoginRedirect(redirectTo, isApproved(profile)))
+}
+
+export type PasswordResetState = {
+  message?: string
+  errors?: PasswordResetErrors
+  sent?: boolean
+}
+
+export async function requestPasswordReset(
+  prevState: PasswordResetState,
+  formData: FormData,
+): Promise<PasswordResetState> {
+  const input = { email: String(formData.get('email') ?? '') }
+
+  const errors = validatePasswordReset(input)
+  if (!isValid(errors)) {
+    return { errors }
+  }
+
+  const email = input.email.trim().toLowerCase()
+  const origin = (await headers()).get('origin')
+  const supabase = await createClient()
+
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    email,
+    origin
+      ? { redirectTo: `${origin}/auth/confirm?next=%2Flogin%2Freset` }
+      : undefined,
+  )
+
+  if (error?.status === 429) {
+    return { message: 'Trop de demandes. Réessayez dans quelques minutes.' }
+  }
+
+  if (error) {
+    console.error('Password reset request failed', error)
+  }
+
+  return { sent: true }
 }
 
 export async function logout() {

@@ -1,33 +1,26 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import type { Metadata, Viewport } from 'next'
 import { ViewTransition } from 'react'
-import { REDIRECT_PARAM, safeRedirectPath } from '@/lib/auth/routes'
-import { LoginForm } from './login-form'
+import { createClient } from '@/lib/supabase/server'
+import { ResetForm } from './reset-form'
 
 export const metadata: Metadata = {
-  title: 'Connexion | Canopée',
+  title: 'Nouveau mot de passe | Canopée',
 }
 
 export const viewport: Viewport = {
   themeColor: '#004523',
 }
 
-const LINK_ERRORS: Record<string, string> = {
-  'lien-invalide': 'Ce lien n’est pas valide. Demandez-en un nouveau.',
-  'lien-expire':
-    'Ce lien a expiré ou a déjà été utilisé. Demandez-en un nouveau.',
-}
+export const dynamic = 'force-dynamic'
 
-export default async function LoginPage(props: PageProps<'/login'>) {
-  const searchParams = await props.searchParams
-  const requested = searchParams[REDIRECT_PARAM]
-  const erreur = searchParams.erreur
+export default async function ResetPasswordPage() {
+  const supabase = await createClient()
 
-  const redirectTo = safeRedirectPath(
-    typeof requested === 'string' ? requested : undefined,
-  )
-
-  const linkError = typeof erreur === 'string' ? LINK_ERRORS[erreur] : undefined
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   return (
     <div className="relative flex min-h-full flex-1 flex-col items-center justify-center overflow-hidden bg-canopee-forest px-6 py-16 font-sans">
@@ -49,22 +42,29 @@ export default async function LoginPage(props: PageProps<'/login'>) {
               className="h-auto w-40"
             />
             <h1 className="font-heading text-3xl font-bold tracking-tight text-canopee-forest">
-              Connexion
+              {user ? 'Nouveau mot de passe' : 'Lien expiré'}
             </h1>
           </header>
 
-          {linkError && (
-            <p
-              role="alert"
-              className="mt-6 rounded-lg bg-canopee-coral/10 px-3 py-2.5 text-center text-sm font-medium text-canopee-coral-dark"
-            >
-              {linkError}
-            </p>
-          )}
+          {user ? (
+            <div className="mt-8">
+              <ResetForm />
+            </div>
+          ) : (
+            <div className="mt-6 flex flex-col gap-4">
+              <p className="text-center text-sm text-canopee-forest/80">
+                Ce lien de réinitialisation n’est plus valide. Chaque lien ne
+                sert qu’une fois.
+              </p>
 
-          <div className="mt-8">
-            <LoginForm redirectTo={redirectTo} />
-          </div>
+              <Link
+                href="/login/forgot"
+                className="inline-flex touch-manipulation items-center justify-center rounded-lg bg-canopee-green px-4 py-2.5 font-bold text-white shadow-sm transition-[background-color] duration-150 ease-out hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/50 focus-visible:outline-none"
+              >
+                Demander un nouveau lien
+              </Link>
+            </div>
+          )}
         </main>
       </ViewTransition>
     </div>
