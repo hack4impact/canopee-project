@@ -8,7 +8,9 @@ import {
   useSyncExternalStore,
 } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { ReportLocationPicker } from '@/components/report-location-picker'
+import { CITIZEN_REPORT_ROUTE } from '@/lib/auth/routes'
 import { SpeciesPicto } from '@/components/species-picto'
 import { SpeciesCombobox } from '@/components/species-combobox'
 import { Spinner } from '@/components/spinner'
@@ -25,6 +27,7 @@ import {
   isReportCategory,
   type ReportGroup,
 } from '@/lib/reports/categories'
+import { validateReporterEmail } from '@/lib/reports/citizen'
 import { downscalePhoto } from '@/lib/reports/downscale'
 import { type ReportPosition } from '@/lib/reports/location'
 import {
@@ -34,7 +37,7 @@ import {
   validateReport,
   type ReportErrors,
 } from '@/lib/reports/validation'
-import { sendReport } from '@/lib/reports/send'
+import { sendCitizenReport, sendReport } from '@/lib/reports/send'
 import type { ReportFormState } from '@/lib/reports/submit'
 import { REPORT_THEMES } from './report-theme'
 
@@ -78,12 +81,21 @@ export function ReportForm({
   group,
   onBack,
   photoRequired,
+  citizen = false,
 }: {
   group: ReportGroup
   onBack: () => void
   photoRequired: boolean
+  citizen?: boolean
 }) {
-  const [state, formAction, pending] = useActionState(sendReport, initialState)
+  const [state, formAction, pending] = useActionState(
+    citizen ? sendCitizenReport : sendReport,
+    initialState,
+  )
+
+  if (citizen && state.submittedId) {
+    return <CitizenConfirmation />
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -133,6 +145,7 @@ export function ReportForm({
         key={state.submittedId ?? 'new'}
         group={group}
         photoRequired={photoRequired}
+        citizen={citizen}
         formAction={formAction}
         pending={pending}
         serverErrors={state.errors}
@@ -141,15 +154,65 @@ export function ReportForm({
   )
 }
 
+function CitizenConfirmation() {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 text-center">
+      <span
+        aria-hidden
+        className="flex h-16 w-16 items-center justify-center rounded-full bg-canopee-green/15 text-canopee-green"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-8 w-8"
+        >
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </span>
+
+      <div className="flex flex-col gap-1.5">
+        <h2 className="font-heading text-2xl text-canopee-forest">
+          Signalement envoyé
+        </h2>
+        <p className="text-sm text-canopee-forest/70">
+          Merci. Vous recevrez un courriel à l’adresse indiquée lorsque votre
+          signalement aura été traité.
+        </p>
+      </div>
+
+      <div className="flex w-full flex-col gap-2">
+        <a
+          href={CITIZEN_REPORT_ROUTE}
+          className="inline-flex touch-manipulation items-center justify-center rounded-lg bg-canopee-green px-4 py-2.5 font-bold text-white shadow-sm transition-colors duration-150 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/50 focus-visible:outline-none"
+        >
+          Faire un autre signalement
+        </a>
+        <Link
+          href="/"
+          className="inline-flex touch-manipulation items-center justify-center rounded-lg border border-canopee-green/30 bg-white px-4 py-2.5 text-sm font-semibold text-canopee-forest transition-colors hover:bg-canopee-green/10 focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none"
+        >
+          Retour à l’accueil
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 type ReportWizardProps = {
   group: ReportGroup
   photoRequired: boolean
+  citizen: boolean
   formAction: (formData: FormData) => void
   pending: boolean
   serverErrors?: ReportErrors
 }
 
 type StepKey =
+  | 'courriel'
   | 'constate'
   | 'typologie'
   | 'categorie'
@@ -161,6 +224,7 @@ type StepKey =
   | 'position'
 
 const STEP_TITLES: Record<StepKey, string> = {
+  courriel: 'Comment vous joindre ?',
   constate: 'Qu’avez-vous constaté ?',
   typologie: 'Typologie',
   categorie: 'Sélectionnez la catégorie observée',
@@ -201,11 +265,13 @@ function UploadIcon({ className }: { className?: string }) {
 function ReportWizard({
   group,
   photoRequired,
+  citizen,
   formAction,
   pending,
   serverErrors,
 }: ReportWizardProps) {
   const [stepIndex, setStepIndex] = useState(0)
+  const [reporterEmail, setReporterEmail] = useState('')
   const [category, setCategory] = useState('')
   const [typology, setTypology] = useState('')
   const [description, setDescription] = useState('')
@@ -237,7 +303,9 @@ function ReportWizard({
 
   const errors = { ...serverErrors, ...clientErrors }
 
-  const steps = GROUP_STEPS[group]
+  const steps = citizen
+    ? (['courriel', ...GROUP_STEPS[group]] as readonly StepKey[])
+    : GROUP_STEPS[group]
   const step = steps[stepIndex]
   const isFauneFlore = group === 'faune_flore'
 
@@ -320,6 +388,8 @@ function ReportWizard({
 
   function stepIsComplete(key: StepKey): boolean {
     switch (key) {
+      case 'courriel':
+        return validateReporterEmail(reporterEmail) === null
       case 'constate':
         return category !== ''
       case 'typologie':
@@ -344,6 +414,7 @@ function ReportWizard({
   function next() {
     setClientErrors((current) => {
       const cleared = { ...current }
+      delete cleared.reporterEmail
       delete cleared.category
       delete cleared.typology
       delete cleared.species
@@ -377,6 +448,12 @@ function ReportWizard({
       unit,
       habitat,
     })
+
+    const emailError = citizen ? validateReporterEmail(reporterEmail) : null
+
+    if (emailError) {
+      found.reporterEmail = emailError
+    }
 
     setClientErrors(found)
 
@@ -429,6 +506,9 @@ function ReportWizard({
         </p>
       </div>
 
+      {citizen && (
+        <input type="hidden" name="reporterEmail" value={reporterEmail} />
+      )}
       <input type="hidden" name="category" value={category} />
       <input type="hidden" name="description" value={description} />
       <input type="hidden" name="typology" value={typology} />
@@ -445,6 +525,41 @@ function ReportWizard({
       )}
 
       <div className="scroll-visible flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain pr-2">
+        {step === 'courriel' && (
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="reporterEmail" className={LABEL}>
+              Adresse courriel
+            </label>
+            <input
+              id="reporterEmail"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={reporterEmail}
+              onChange={(event) => setReporterEmail(event.target.value)}
+              placeholder="vous@exemple.com"
+              aria-describedby={
+                errors.reporterEmail
+                  ? 'reporter-email-error'
+                  : 'reporter-email-hint'
+              }
+              className={FIELD}
+            />
+            <p
+              id="reporter-email-hint"
+              className="text-xs text-canopee-forest/60"
+            >
+              Elle sert uniquement à vous prévenir quand votre signalement est
+              traité. Aucun compte n’est créé.
+            </p>
+            {errors.reporterEmail && (
+              <p id="reporter-email-error" className={ERROR}>
+                {errors.reporterEmail}
+              </p>
+            )}
+          </div>
+        )}
+
         {step === 'constate' && (
           <div className="flex flex-col gap-2">
             {REPORT_GROUP_CATEGORIES[group].map((value) => (

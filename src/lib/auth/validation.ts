@@ -38,7 +38,7 @@ export type PasswordResetErrors = Partial<
 >
 export type NewPasswordErrors = Partial<Record<keyof NewPasswordInput, string>>
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export function validateSignup(input: SignupInput): SignupErrors {
   const errors: SignupErrors = {}

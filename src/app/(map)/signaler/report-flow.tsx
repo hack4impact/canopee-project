@@ -64,7 +64,13 @@ const GROUPS: GroupOption[] = [
   },
 ]
 
-export function ReportFlow({ photoRequired }: { photoRequired: boolean }) {
+export function ReportFlow({
+  photoRequired,
+  citizen = false,
+}: {
+  photoRequired: boolean
+  citizen?: boolean
+}) {
   const [group, setGroup] = useState<ReportGroup | null>(null)
 
   if (group === null) {
@@ -109,6 +115,7 @@ export function ReportFlow({ photoRequired }: { photoRequired: boolean }) {
       group={group}
       onBack={() => setGroup(null)}
       photoRequired={photoRequired}
+      citizen={citizen}
     />
   )
 }
