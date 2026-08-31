@@ -43,6 +43,45 @@ export const CSV_HEADERS = [
   'reporter',
 ] as const
 
+export type CsvColumn = (typeof CSV_HEADERS)[number]
+
+export type ParsedColumns =
+  { ok: true; columns: readonly CsvColumn[] } | { ok: false; value: string }
+
+export function isCsvColumn(value: string): value is CsvColumn {
+  return (CSV_HEADERS as readonly string[]).includes(value)
+}
+
+export function parseColumnsParam(
+  value: string | null | undefined,
+): ParsedColumns {
+  if (value === null || value === undefined || value.trim() === '') {
+    return { ok: true, columns: CSV_HEADERS }
+  }
+
+  const requested = value
+    .split(',')
+    .map((part) => part.trim().toLowerCase())
+    .filter((part) => part !== '')
+
+  if (requested.length === 0) {
+    return { ok: true, columns: CSV_HEADERS }
+  }
+
+  const unknown = requested.find((part) => !isCsvColumn(part))
+
+  if (unknown !== undefined) {
+    return { ok: false, value: unknown }
+  }
+
+  const chosen = new Set(requested as CsvColumn[])
+
+  return {
+    ok: true,
+    columns: CSV_HEADERS.filter((column) => chosen.has(column)),
+  }
+}
+
 /** Excel and LibreOffice need it to read the French labels as UTF-8. */
 export const CSV_BOM = '\uFEFF'
 
@@ -97,10 +136,19 @@ export function reportToCsvValues(report: ReportExportRow): CsvValue[] {
   ]
 }
 
-export function reportsToCsv(reports: readonly ReportExportRow[]): string {
+export function reportsToCsv(
+  reports: readonly ReportExportRow[],
+  columns: readonly CsvColumn[] = CSV_HEADERS,
+): string {
   const rows = [
-    toCsvRow([...CSV_HEADERS]),
-    ...reports.map((report) => toCsvRow(reportToCsvValues(report))),
+    toCsvRow([...columns]),
+    ...reports.map((report) => {
+      const values = reportToCsvValues(report)
+
+      return toCsvRow(
+        columns.map((column) => values[CSV_HEADERS.indexOf(column)]),
+      )
+    }),
   ]
 
   return CSV_BOM + rows.join(ROW_SEPARATOR) + ROW_SEPARATOR
