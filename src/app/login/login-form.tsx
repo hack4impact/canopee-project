@@ -77,12 +77,20 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="password"
-          className="text-sm font-medium text-canopee-forest"
-        >
-          Mot de passe
-        </label>
+        <div className="flex items-baseline justify-between gap-3">
+          <label
+            htmlFor="password"
+            className="text-sm font-medium text-canopee-forest"
+          >
+            Mot de passe
+          </label>
+          <Link
+            href="/login/forgot"
+            className="text-sm font-medium text-canopee-forest/70 underline underline-offset-4 transition-colors hover:text-canopee-green"
+          >
+            Mot de passe oublié?
+          </Link>
+        </div>
         <input
           id="password"
           name="password"

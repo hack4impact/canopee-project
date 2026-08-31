@@ -1,34 +1,17 @@
 import Image from 'next/image'
 import type { Metadata, Viewport } from 'next'
 import { ViewTransition } from 'react'
-import { REDIRECT_PARAM, safeRedirectPath } from '@/lib/auth/routes'
-import { LoginForm } from './login-form'
+import { ForgotForm } from './forgot-form'
 
 export const metadata: Metadata = {
-  title: 'Connexion | Canopée',
+  title: 'Mot de passe oublié | Canopée',
 }
 
 export const viewport: Viewport = {
   themeColor: '#004523',
 }
 
-const LINK_ERRORS: Record<string, string> = {
-  'lien-invalide': 'Ce lien n’est pas valide. Demandez-en un nouveau.',
-  'lien-expire':
-    'Ce lien a expiré ou a déjà été utilisé. Demandez-en un nouveau.',
-}
-
-export default async function LoginPage(props: PageProps<'/login'>) {
-  const searchParams = await props.searchParams
-  const requested = searchParams[REDIRECT_PARAM]
-  const erreur = searchParams.erreur
-
-  const redirectTo = safeRedirectPath(
-    typeof requested === 'string' ? requested : undefined,
-  )
-
-  const linkError = typeof erreur === 'string' ? LINK_ERRORS[erreur] : undefined
-
+export default function ForgotPasswordPage() {
   return (
     <div className="relative flex min-h-full flex-1 flex-col items-center justify-center overflow-hidden bg-canopee-forest px-6 py-16 font-sans">
       <div aria-hidden className="pointer-events-none absolute inset-0">
@@ -49,21 +32,16 @@ export default async function LoginPage(props: PageProps<'/login'>) {
               className="h-auto w-40"
             />
             <h1 className="font-heading text-3xl font-bold tracking-tight text-canopee-forest">
-              Connexion
+              Mot de passe oublié
             </h1>
+            <p className="text-center text-sm text-canopee-forest/80">
+              Saisissez votre adresse courriel. Si un compte y est associé, vous
+              recevrez un lien pour choisir un nouveau mot de passe.
+            </p>
           </header>
 
-          {linkError && (
-            <p
-              role="alert"
-              className="mt-6 rounded-lg bg-canopee-coral/10 px-3 py-2.5 text-center text-sm font-medium text-canopee-coral-dark"
-            >
-              {linkError}
-            </p>
-          )}
-
           <div className="mt-8">
-            <LoginForm redirectTo={redirectTo} />
+            <ForgotForm />
           </div>
         </main>
       </ViewTransition>
