@@ -5,6 +5,7 @@ import {
 } from '@/lib/reports/categories'
 import type { ObservationCategory } from '@/lib/observations/collection'
 import { findWoodedArea } from '@/lib/patrols/woods'
+import { speciesMetadata } from '@/lib/observations/species'
 
 export const MINISTRY_TIME_ZONE = 'America/Toronto'
 
@@ -70,7 +71,12 @@ const STATUT_LABELS = new Map<string, string>(
   FAUNE_FLORE_STATUTS.map((statut) => [statut.value, statut.label]),
 )
 
-export function provincialStatusLabel(statut: string | null): string {
+export function provincialStatusLabel(
+  statut: string | null,
+  species: string | null = null,
+): string {
+  const metadata = speciesMetadata(species)
+  if (metadata) return metadata.provincialStatus
   if (!statut) return ''
   return STATUT_LABELS.get(statut) ?? statut
 }
@@ -141,11 +147,12 @@ export function woodedAreaName(latitude: string, longitude: string): string {
 export function toMinistryRow(row: ObservationExportRow): string[] {
   const { year, month, day, time } = dateParts(row.createdAt)
   const bois = woodedAreaName(row.latitude, row.longitude)
+  const metadata = speciesMetadata(row.species)
 
   return [
     REPORT_CATEGORY_LABELS[row.category],
-    '',
-    row.species ?? '',
+    metadata?.scientificName ?? row.species ?? '',
+    metadata?.commonName ?? '',
     row.latitude,
     row.longitude,
     bois,
@@ -158,7 +165,7 @@ export function toMinistryRow(row: ObservationExportRow): string[] {
     row.quantity === null ? '' : String(row.quantity),
     row.unit ?? '',
     photoFileName(row.photoUrl),
-    provincialStatusLabel(row.statut),
+    provincialStatusLabel(row.statut, row.species),
     observerStatusLabel(row.observerRole),
     bois,
     time,
