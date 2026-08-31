@@ -1,5 +1,8 @@
 'use client'
 
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useActionState, useState } from 'react'
 import { Spinner } from '@/components/spinner'
@@ -57,13 +60,8 @@ export function ForgotForm() {
   return (
     <form action={submit} noValidate className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="email"
-          className="text-sm font-medium text-canopee-forest"
-        >
-          Adresse courriel
-        </label>
-        <input
+        <Label htmlFor="email">Adresse courriel</Label>
+        <Input
           id="email"
           name="email"
           type="email"
@@ -71,7 +69,6 @@ export function ForgotForm() {
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           aria-describedby={errors.email ? 'email-error' : undefined}
-          className="rounded-lg border border-canopee-green/30 bg-white px-3 py-2.5 text-canopee-forest placeholder-zinc-500 transition-colors outline-none focus:border-canopee-green focus:ring-2 focus:ring-canopee-green/40"
         />
         {errors.email && (
           <p
@@ -92,14 +89,10 @@ export function ForgotForm() {
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="inline-flex touch-manipulation items-center justify-center gap-2 rounded-lg bg-canopee-green px-4 py-2.5 font-bold text-white shadow-sm transition-[background-color,transform] duration-150 ease-out hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/50 focus-visible:outline-none active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
-      >
+      <Button size="lg" type="submit" disabled={pending}>
         {pending && <Spinner />}
         {pending ? 'Envoi...' : 'Envoyer le lien'}
-      </button>
+      </Button>
 
       <p className="text-center text-sm text-canopee-forest/80">
         <Link

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import { BackButton } from '@/components/back-button'
 import { notFound } from 'next/navigation'
 import { BottomNav } from '@/components/bottom-nav'
 import { PatrolRouteMap } from '@/components/patrol-route-map'
@@ -83,7 +83,8 @@ export default async function PatrouillePage({
   return (
     <div className="flex min-h-dvh w-full flex-col bg-canopee-cream">
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-32 sm:px-6">
-        <header className="flex items-start justify-between gap-4">
+        <header className="flex items-start gap-3">
+          <BackButton fallback={`/patrouilles/historique?from=${origin}`} />
           <div className="flex flex-col gap-1">
             <h1 className="font-heading text-2xl text-canopee-forest sm:text-3xl">
               {sentier ?? 'Patrouille'}
@@ -95,13 +96,6 @@ export default async function PatrouillePage({
                 : ` · ${formatDistance(patrol.distanceMeters)}`}
             </p>
           </div>
-
-          <Link
-            href={`/patrouilles/historique?from=${origin}`}
-            className="inline-flex shrink-0 items-center rounded-full bg-canopee-forest px-4 py-2 text-sm font-semibold text-canopee-cream shadow-sm transition-colors hover:bg-canopee-green focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none"
-          >
-            Mes patrouilles
-          </Link>
         </header>
 
         {patrol.endedAt === null ? (
