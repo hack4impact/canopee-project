@@ -68,8 +68,9 @@ export default async function AdminIssuePage({
 
   const facts: [string, string][] = [
     ['Signalé par', report.reporter],
+    ['Position', report.woodedArea ?? 'Autre'],
     [
-      'Position',
+      'Coordonnées GPS',
       `${report.latitude.toFixed(5)}, ${report.longitude.toFixed(5)}`,
     ],
     ...(report.resolvedAt
