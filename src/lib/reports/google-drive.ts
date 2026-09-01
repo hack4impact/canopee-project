@@ -21,7 +21,7 @@ function getDriveClient() {
 
   const auth = new google.auth.GoogleAuth({
     credentials,
-    scopes: ['https://www.googleapis.com/auth/drive.file'],
+    scopes: ['https://www.googleapis.com/auth/drive'],
   })
 
   return google.drive({ version: 'v3', auth })
@@ -68,7 +68,7 @@ export async function archiveReportPhoto(
   )
   const monthFolderId = await getOrCreateFolder(
     drive,
-    String(resolvedAt.getUTCMonth() + 1).padStart(2, '0'),
+    `${resolvedAt.getUTCFullYear()}-${String(resolvedAt.getUTCMonth() + 1).padStart(2, '0')}`,
     yearFolderId,
   )
 
@@ -96,6 +96,7 @@ export async function archiveReportPhoto(
   await drive.files.create({
     requestBody: { name: fileName, parents: [monthFolderId] },
     media: { mimeType: contentType, body: Readable.from(body) },
+    supportsAllDrives: true,
     fields: 'id',
   })
 }
