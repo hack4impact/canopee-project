@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   csvFileName,
   escapeField,
+  parseColumnsParam,
   reportToCsvValues,
   reportsToCsv,
   toCell,
   toCsvRow,
   CSV_BOM,
+  CSV_HEADER_LABELS,
   CSV_HEADERS,
   type ReportExportRow,
 } from '@/lib/reports/csv'
@@ -99,13 +101,65 @@ describe('reportToCsvValues', () => {
   })
 })
 
+describe('parseColumnsParam', () => {
+  it('defaults to every column when the param is absent or blank', () => {
+    expect(parseColumnsParam(null)).toEqual({
+      ok: true,
+      columns: CSV_HEADERS,
+    })
+    expect(parseColumnsParam(undefined)).toEqual({
+      ok: true,
+      columns: CSV_HEADERS,
+    })
+    expect(parseColumnsParam('')).toEqual({ ok: true, columns: CSV_HEADERS })
+    expect(parseColumnsParam('   ')).toEqual({ ok: true, columns: CSV_HEADERS })
+  })
+
+  it('accepts a comma separated list regardless of case or padding', () => {
+    expect(parseColumnsParam('  EVENT_NUMBER , status ,latitude ')).toEqual({
+      ok: true,
+      columns: ['event_number', 'status', 'latitude'],
+    })
+  })
+
+  it('drops duplicates and returns the official header order', () => {
+    expect(parseColumnsParam('status,event_number,status')).toEqual({
+      ok: true,
+      columns: ['event_number', 'status'],
+    })
+  })
+
+  it('rejects a column that does not exist', () => {
+    expect(parseColumnsParam('event_number,gps')).toEqual({
+      ok: false,
+      value: 'gps',
+    })
+  })
+})
+
 describe('reportsToCsv', () => {
   it('starts with the BOM so Excel decodes the French labels', () => {
     expect(reportsToCsv([REPORT]).startsWith(CSV_BOM)).toBe(true)
   })
 
-  it('writes the header row first', () => {
-    expect(rowsOf(reportsToCsv([REPORT]))[0]).toBe(CSV_HEADERS.join(','))
+  it('writes French header names, not the English keys', () => {
+    const header = rowsOf(reportsToCsv([REPORT]))[0]
+
+    expect(header).toBe(
+      CSV_HEADERS.map((column) => CSV_HEADER_LABELS[column]).join(','),
+    )
+    expect(header).toContain('Catégorie')
+    expect(header.split(',')).not.toContain('category')
+  })
+
+  it('emits only the requested columns, in header order', () => {
+    const csv = reportsToCsv([REPORT], ['event_number', 'status', 'latitude'])
+    const rows = rowsOf(csv)
+
+    expect(rows[0]).toBe(
+      'Numéro de signalement unique,Statut observateur,Latitude',
+    )
+    expect(rows[1]).toBe('12,open,45.588')
   })
 
   it('writes one row per report, in the given order', () => {

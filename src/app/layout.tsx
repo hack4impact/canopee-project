@@ -8,7 +8,6 @@ import { ReportSync } from '@/components/report-sync'
 import { DeepLink } from '@/components/deep-link'
 import { getCurrentUserProfile } from '@/lib/auth/current-user'
 import { getActivePatrol } from '@/lib/patrols/queries'
-import 'mapbox-gl/dist/mapbox-gl.css'
 import './globals.css'
 
 const averiaSerifLibre = Averia_Serif_Libre({

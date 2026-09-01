@@ -2,11 +2,14 @@
 
 import { and, eq, isNull } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
-import { db, reports } from '@/db'
+import { db, reports, users } from '@/db'
 import { requireApprovedAccess } from '@/lib/auth/current-user'
 import { archiveReportPhoto } from '@/lib/reports/google-drive'
 import { REPORT_PHOTO_BUCKET } from '@/lib/reports/photo'
 import { createClient } from '@/lib/supabase/server'
+import { ANONYMISED_REPORTER } from '@/lib/auth/delete-account'
+import { sendReportResolvedEmail } from '@/lib/plunk'
+import type { ReportCategory } from '@/lib/reports/categories'
 
 export type ResolveReportState = {
   message?: string
@@ -65,16 +68,67 @@ export async function resolveReport(
     }
   }
 
+  const resolvedAt = new Date()
+
   const [updated] = await db
     .update(reports)
     .set({ resolvedAt })
     .where(and(eq(reports.id, reportId), isNull(reports.resolvedAt)))
-    .returning({ id: reports.id })
+    .returning({
+      eventNumber: reports.eventNumber,
+      category: reports.category,
+      createdAt: reports.createdAt,
+      userId: reports.userId,
+      reporterEmail: reports.reporterEmail,
+    })
 
   if (!updated) {
     return { message: 'Signalement introuvable ou déjà résolu.' }
   }
 
+  await notifyReporter(updated, resolvedAt)
+
   revalidatePath('/reports')
   return {}
+}
+
+async function accountEmail(userId: string | null): Promise<string | null> {
+  if (!userId) {
+    return null
+  }
+
+  const [user] = await db
+    .select({ email: users.email })
+    .from(users)
+    .where(eq(users.id, userId))
+
+  return user?.email ?? null
+}
+
+async function notifyReporter(
+  report: {
+    eventNumber: number
+    category: ReportCategory
+    createdAt: Date
+    userId: string | null
+    reporterEmail: string | null
+  },
+  resolvedAt: Date,
+) {
+  try {
+    const email = report.reporterEmail ?? (await accountEmail(report.userId))
+
+    if (!email || email === ANONYMISED_REPORTER) {
+      return
+    }
+
+    await sendReportResolvedEmail(email, {
+      eventNumber: report.eventNumber,
+      category: report.category,
+      createdAt: report.createdAt,
+      resolvedAt,
+    })
+  } catch (error) {
+    console.error('Resolved-report notification failed:', error)
+  }
 }

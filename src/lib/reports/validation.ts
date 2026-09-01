@@ -38,7 +38,9 @@ export type ReportPhotoInput = {
   type: string
 }
 
-export type ReportErrors = Partial<Record<keyof ReportInput | 'photo', string>>
+export type ReportErrors = Partial<
+  Record<keyof ReportInput | 'photo' | 'reporterEmail', string>
+>
 
 export function validateReport(input: ReportInput): ReportErrors {
   const errors: ReportErrors = {}

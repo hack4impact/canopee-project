@@ -23,6 +23,22 @@
   --color-canopee-sky-dark: #3f9bc0;
   --color-canopee-lime: #c7de35;
 
+  --color-primary: #17aa55;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #ffffff;
+  --color-secondary-foreground: #004523;
+  --color-muted: #ece9d6;
+  --color-muted-foreground: #4a6b57;
+  --color-accent: #ece9d6;
+  --color-accent-foreground: #004523;
+  --color-destructive: #f06053;
+  --color-destructive-foreground: #ffffff;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #171717;
+  --color-border: rgba(0, 69, 35, 0.14);
+  --color-input: rgba(23, 170, 85, 0.3);
+  --color-ring: #17aa55;
+
   --animate-dock-in: dock-in 0.28s ease-out;
   --animate-pop-in: pop-in 0.22s ease-out;
 }
