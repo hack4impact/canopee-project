@@ -10,9 +10,11 @@ import {
 } from '@/lib/reports/categories'
 import { categoriesOfGroup, groupState } from '@/lib/reports/filters'
 import { REPORT_GROUP_COLORS } from '@/lib/reports/group-style'
+import { FaunaFloraExportButton } from '@/components/fauna-flora-export-button'
 
 export function ReportFilters() {
   const {
+    observations,
     groups,
     selection,
     onToggleCategory,
@@ -133,6 +135,8 @@ export function ReportFilters() {
               </button>
             </div>
           )}
+
+          {observations && <FaunaFloraExportButton />}
         </section>
       )}
     </>
