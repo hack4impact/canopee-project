@@ -16,6 +16,9 @@ const PINS: ReportPin[] = [
     latitude: 45.588,
     longitude: -73.723,
     category: 'fallen_tree',
+    hasPhoto: true,
+    createdAt: '2026-08-12T18:20:00.000Z',
+    resolvedAt: null,
   },
   {
     id: 'b2',
@@ -23,6 +26,9 @@ const PINS: ReportPin[] = [
     latitude: 45.589,
     longitude: -73.722,
     category: 'unleashed_dog',
+    hasPhoto: false,
+    createdAt: '2026-08-09T14:05:00.000Z',
+    resolvedAt: '2026-08-10T12:00:00.000Z',
   },
 ]
 
@@ -120,7 +126,17 @@ describe('toFeatureCollection', () => {
       eventNumber: 12,
       category: 'fallen_tree',
       group: 'entretien',
+      hasPhoto: true,
+      createdAt: '2026-08-12T18:20:00.000Z',
+      resolved: false,
     })
+  })
+
+  it('marks a pin resolved once it carries a resolution date', () => {
+    const [, feature] = toFeatureCollection(PINS).features
+
+    expect(feature.properties.resolved).toBe(true)
+    expect(feature.properties.hasPhoto).toBe(false)
   })
 
   it('handles an empty list', () => {
@@ -141,6 +157,7 @@ describe('PIN_EXCLUDED_CATEGORIES', () => {
       'poisson',
       'plante_vasculaire',
       'bryophyte',
+      'faune_flore_other',
     ])
   })
 })

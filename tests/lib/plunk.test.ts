@@ -59,7 +59,7 @@ describe('plunk email helpers', () => {
     expect(payload.body).toContain('Arbre tombé')
     expect(payload.body).toContain('4 mars 2026')
     expect(payload.body).toContain('9 mars 2026')
-    expect(payload.body).not.toContain('<img')
+    expect(payload.body).not.toContain('alt="Photo du signalement"')
   })
 
   it('includes the photo in the resolved email when the report has one', async () => {
@@ -88,5 +88,27 @@ describe('plunk email helpers', () => {
       }),
     ).resolves.toBe(false)
     expect(consoleError).toHaveBeenCalled()
+  })
+
+  it('falls back to a text wordmark when no site url is configured', async () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL
+
+    await sendApprovalEmail('user@example.com')
+
+    const [payload] = sendMock.mock.calls[0]
+    expect(payload.body).toContain('CANOPÉE')
+    expect(payload.body).not.toContain('<img')
+  })
+
+  it('links the logo absolutely when a site url is configured', async () => {
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://canopee.example.ca/'
+
+    await sendApprovalEmail('user@example.com')
+
+    const [payload] = sendMock.mock.calls[0]
+    expect(payload.body).toContain(
+      'src="https://canopee.example.ca/canopee_blanc.png"',
+    )
+    delete process.env.NEXT_PUBLIC_SITE_URL
   })
 })

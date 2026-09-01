@@ -1,4 +1,5 @@
 import Plunk from '@plunk/node'
+import { renderEmail } from '@/lib/emails/template'
 import {
   REPORT_CATEGORY_LABELS,
   type ReportCategory,
@@ -63,12 +64,14 @@ export async function sendApprovalEmail(email: string) {
   return sendEmail(
     email,
     'Votre compte Canopée a été approuvé',
-    `
-      <p>Bonjour,</p>
-      <p>Votre compte a été approuvé.
-      Vous pouvez à présent vous connecter et enregistrer vos patrouilles.</p>
-      <p>Bienvenue chez Canopée!</p>
-    `,
+    renderEmail({
+      heading: 'Votre compte a été approuvé',
+      paragraphs: [
+        'Bonjour,',
+        'Votre compte a été approuvé. Vous pouvez à présent vous connecter et enregistrer vos patrouilles.',
+      ],
+      closing: 'Bienvenue chez Canopée!',
+    }),
   )
 }
 
@@ -76,12 +79,14 @@ export async function sendRejectionEmail(email: string) {
   return sendEmail(
     email,
     'Votre demande de création de compte Canopée',
-    `
-      <p>Bonjour,</p>
-      <p>Malheureusement, votre demande de création de compte
-      n'a pas pu être approuvée.</p>
-      <p>Veuillez nous contacter pour plus d'informations.</p>
-    `,
+    renderEmail({
+      heading: 'Votre demande de création de compte',
+      paragraphs: [
+        'Bonjour,',
+        "Malheureusement, votre demande de création de compte n'a pas pu être approuvée.",
+      ],
+      closing: "Veuillez nous contacter pour plus d'informations.",
+    }),
   )
 }
 
@@ -103,24 +108,34 @@ export async function sendReportResolvedEmail(
   report: ResolvedReportEmail,
 ) {
   const eventNumber = formatEventNumber(report.eventNumber)
-  const photo = report.photoUrl
-    ? `<p><img src="${report.photoUrl}" alt="Photo du signalement" width="400" /></p>`
-    : ''
 
   return sendEmail(
     email,
     `Votre signalement ${eventNumber} a été résolu`,
-    `
-      <p>Bonjour,</p>
-      <p>Le signalement que vous nous avez transmis a été traité.</p>
-      <p>
-        <strong>Numéro d'événement :</strong> ${eventNumber}<br />
-        <strong>Catégorie :</strong> ${REPORT_CATEGORY_LABELS[report.category]}<br />
-        <strong>Signalé le :</strong> ${reportDateFormatter.format(report.createdAt)}<br />
-        <strong>Résolu le :</strong> ${reportDateFormatter.format(report.resolvedAt)}
-      </p>
-      ${photo}
-      <p>Merci de contribuer à la protection de nos milieux naturels.</p>
-    `,
+    renderEmail({
+      heading: 'Votre signalement a été résolu',
+      paragraphs: [
+        'Bonjour,',
+        'Le signalement que vous nous avez transmis a été traité.',
+      ],
+      details: [
+        { label: "Numéro d'événement", value: eventNumber, highlight: true },
+        {
+          label: 'Catégorie',
+          value: REPORT_CATEGORY_LABELS[report.category],
+        },
+        {
+          label: 'Signalé le',
+          value: reportDateFormatter.format(report.createdAt),
+        },
+        {
+          label: 'Résolu le',
+          value: reportDateFormatter.format(report.resolvedAt),
+          highlight: true,
+        },
+      ],
+      photoUrl: report.photoUrl,
+      closing: 'Merci de contribuer à la protection de nos milieux naturels.',
+    }),
   )
 }

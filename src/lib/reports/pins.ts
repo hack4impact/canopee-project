@@ -112,6 +112,9 @@ export type ReportPin = {
   latitude: number
   longitude: number
   category: ReportCategory
+  hasPhoto: boolean
+  createdAt: string
+  resolvedAt: string | null
 }
 
 export type ReportPinProperties = {
@@ -119,6 +122,9 @@ export type ReportPinProperties = {
   eventNumber: number
   category: ReportCategory
   group: ReportGroup
+  hasPhoto: boolean
+  createdAt: string
+  resolved: boolean
 }
 
 export type ReportPinCollection = FeatureCollection<Point, ReportPinProperties>
@@ -139,6 +145,9 @@ export function toFeatureCollection(
         eventNumber: pin.eventNumber,
         category: pin.category,
         group: reportGroupOfCategory(pin.category),
+        hasPhoto: pin.hasPhoto,
+        createdAt: pin.createdAt,
+        resolved: pin.resolvedAt !== null,
       },
     })),
   }
@@ -163,6 +172,12 @@ export function pinLayout(): SymbolLayerSpecification['layout'] {
     'icon-anchor': 'bottom',
     'icon-allow-overlap': true,
     'icon-ignore-placement': true,
+  }
+}
+
+export function pinPaint(): SymbolLayerSpecification['paint'] {
+  return {
+    'icon-opacity': ['case', ['get', 'resolved'], 0.5, 1],
   }
 }
 

@@ -1,13 +1,16 @@
 import type { Metadata } from 'next'
+import { ChevronRightIcon } from 'lucide-react'
 import Link from 'next/link'
 import { BackButton } from '@/components/back-button'
 import { BottomNav } from '@/components/bottom-nav'
+import { PatrolRoutePreview } from '@/components/patrol-route-preview'
 import { requireApprovedUser } from '@/lib/auth/current-user'
 import {
   formatDistance,
   formatDuration,
   formatPatrolDate,
 } from '@/lib/patrols/format'
+import { sectionPatrolsByMonth } from '@/lib/patrols/history'
 import { listPatrolsForUser, parsePageParam } from '@/lib/patrols/queries'
 
 export const metadata: Metadata = {
@@ -51,8 +54,8 @@ export default async function PatrouillesHistoryPage({
 
   return (
     <div className="flex min-h-dvh w-full flex-col bg-canopee-cream">
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-32 sm:px-6">
-        <header className="flex items-center gap-3">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 pb-32 sm:px-6">
+        <header className="sticky top-0 z-30 -mx-4 bg-canopee-cream/95 px-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-3 backdrop-blur-sm sm:-mx-6 sm:px-6 flex items-center gap-3">
           <BackButton fallback={ORIGINS[origin].href} />
           <h1 className="font-heading text-2xl text-canopee-forest sm:text-3xl">
             Mes patrouilles
@@ -66,41 +69,81 @@ export default async function PatrouillesHistoryPage({
             Vous n&apos;avez pas encore de patrouille enregistrée.
           </p>
         ) : (
-          <ul className="flex flex-col gap-3">
-            {items.map((patrol) => (
-              <li key={patrol.id}>
-                {patrol.endedAt === null ? (
-                  <div className={`flex flex-col gap-0.5 px-5 py-4 ${CARD}`}>
-                    <span className="font-heading text-base text-canopee-forest">
-                      {formatPatrolDate(patrol.startedAt)}
-                    </span>
-                    <span className="text-sm text-canopee-forest/70">
-                      Patrouille en cours
-                    </span>
-                  </div>
-                ) : (
-                  <Link
-                    href={`/patrouilles/${patrol.id}?from=${origin}`}
-                    className={`flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:border-canopee-green/40 ${CARD}`}
-                  >
-                    <span className="flex flex-col gap-0.5">
-                      <span className="font-heading text-base text-canopee-forest">
-                        {formatPatrolDate(patrol.startedAt)}
-                      </span>
-                      <span className="text-sm text-canopee-forest/70">
-                        {formatDuration(patrol.durationSeconds)} ·{' '}
-                        {formatDistance(patrol.distanceMetres)}
-                      </span>
-                    </span>
+          sectionPatrolsByMonth(items).map((month) => (
+            <section key={month.label} className="flex flex-col gap-2">
+              <div className="flex items-baseline gap-2 px-0.5">
+                <h2 className="text-[11px] font-extrabold tracking-[0.12em] text-canopee-forest/50 uppercase">
+                  {month.label}
+                </h2>
+                <span className="h-px flex-1 bg-canopee-forest/12" />
+                <span className="text-[11px] font-bold text-canopee-forest/40 tabular-nums">
+                  {month.items.length} · {formatDistance(month.distanceMetres)}
+                </span>
+              </div>
 
-                    <span className="shrink-0 text-sm font-medium text-canopee-green">
-                      Voir le trajet
+              <ul className="flex flex-col gap-3">
+                {month.items.map((patrol) => {
+                  const running = patrol.endedAt === null
+
+                  const trace = (
+                    <PatrolRoutePreview
+                      points={patrol.route}
+                      seed={patrol.id}
+                      width={96}
+                      height={74}
+                      label={`Trajet du ${formatPatrolDate(patrol.startedAt)}`}
+                      className="w-24 shrink-0 border-r border-canopee-forest/8"
+                    />
+                  )
+
+                  const text = (
+                    <span className="flex flex-1 items-center gap-3 px-4 py-3">
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="font-heading text-base text-canopee-forest">
+                          {formatPatrolDate(patrol.startedAt)}
+                        </span>
+                        <span className="text-sm text-canopee-forest/70 tabular-nums">
+                          {running ? (
+                            'Patrouille en cours'
+                          ) : (
+                            <>
+                              {formatDuration(patrol.durationSeconds)} ·{' '}
+                              {formatDistance(patrol.distanceMetres)}
+                            </>
+                          )}
+                        </span>
+                      </span>
+
+                      {!running && (
+                        <ChevronRightIcon className="ml-auto size-4 shrink-0 text-canopee-forest/40" />
+                      )}
                     </span>
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ul>
+                  )
+
+                  return (
+                    <li key={patrol.id}>
+                      {running ? (
+                        <div
+                          className={`flex items-stretch overflow-hidden ${CARD}`}
+                        >
+                          {trace}
+                          {text}
+                        </div>
+                      ) : (
+                        <Link
+                          href={`/patrouilles/${patrol.id}?from=${origin}`}
+                          className={`flex items-stretch overflow-hidden transition-colors hover:border-canopee-green/40 ${CARD}`}
+                        >
+                          {trace}
+                          {text}
+                        </Link>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          ))
         )}
 
         {(page > 1 || hasNextPage) && (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { drainQueuedReports, pendingReportCount } from '@/lib/reports/send'
 import { ReportFlow } from './report-flow'
@@ -8,6 +8,24 @@ import { ReportFlow } from './report-flow'
 export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
   const router = useRouter()
   const [pendingReports, setPendingReports] = useState(0)
+  const [contentHeight, setContentHeight] = useState<number | null>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const element = contentRef.current
+
+    if (!element) {
+      return
+    }
+
+    const observer = new ResizeObserver(([entry]) => {
+      setContentHeight(entry.contentRect.height)
+    })
+
+    observer.observe(element)
+
+    return () => observer.disconnect()
+  }, [])
 
   const drain = useCallback(() => {
     drainQueuedReports()
@@ -40,26 +58,17 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
   }, [router])
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-hidden bg-canopee-forest/40 p-4 backdrop-blur-sm sm:p-6">
-      <button
-        type="button"
-        aria-label="Fermer le signalement"
-        onClick={() => router.push('/carte')}
-        className="fixed inset-0 cursor-default"
-      />
-
+    <div className="fixed inset-0 z-[70] flex animate-in items-center justify-center overflow-hidden bg-canopee-forest/40 fade-in p-4 backdrop-blur-sm duration-200 motion-reduce:animate-none sm:p-6">
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Signaler"
-        className="relative flex h-[min(40rem,calc(100dvh-2rem))] w-full max-w-md flex-col gap-2 rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 sm:px-5 sm:py-5"
+        className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-md animate-dock-in flex-col gap-1.5 rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 motion-reduce:animate-none sm:px-5 sm:py-5"
       >
         <header className="flex shrink-0 items-start justify-between gap-2">
-          <div className="flex flex-col gap-1">
-            <h1 className="font-heading text-2xl text-canopee-forest sm:text-3xl">
-              Signaler
-            </h1>
-          </div>
+          <h1 className="font-heading text-2xl leading-tight text-canopee-forest sm:text-3xl">
+            Signaler
+          </h1>
 
           <button
             type="button"
@@ -94,8 +103,13 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
           </p>
         )}
 
-        <div className="flex min-h-0 flex-1 flex-col justify-center">
-          <ReportFlow photoRequired={photoRequired} />
+        <div
+          style={{ height: contentHeight ?? undefined }}
+          className="max-h-[min(22rem,calc(100dvh-9rem))] overflow-y-auto transition-[height] duration-300 ease-out motion-reduce:transition-none"
+        >
+          <div ref={contentRef}>
+            <ReportFlow photoRequired={photoRequired} />
+          </div>
         </div>
       </div>
     </div>

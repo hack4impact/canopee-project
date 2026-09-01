@@ -12,6 +12,7 @@ export const OBSERVATION_CATEGORIES = [
   'poisson',
   'plante_vasculaire',
   'bryophyte',
+  'faune_flore_other',
 ] as const satisfies readonly ReportCategory[]
 
 export type ObservationCategory = (typeof OBSERVATION_CATEGORIES)[number]

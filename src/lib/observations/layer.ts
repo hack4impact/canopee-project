@@ -31,6 +31,7 @@ export const OBSERVATION_LEGEND: readonly LegendEntry[] = [
     color: OBSERVATION_COLOR,
   },
   { category: 'bryophyte', label: 'Bryophytes', color: OBSERVATION_COLOR },
+  { category: 'faune_flore_other', label: 'Autres', color: OBSERVATION_COLOR },
 ]
 
 const LOW_ZOOM = 10
