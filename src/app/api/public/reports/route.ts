@@ -48,6 +48,10 @@ export async function POST(request: NextRequest) {
 
   const result = await createCitizenReport(email, formData)
 
+  if (result.conflict) {
+    return Response.json(result, { status: 409 })
+  }
+
   if (result.errors || result.message) {
     return Response.json(result, { status: 422 })
   }

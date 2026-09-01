@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { db, reports } from '@/db'
 import type { UserProfile } from '@/lib/auth/current-user'
@@ -22,6 +23,32 @@ export type ReportFormState = {
   errors?: ReportErrors
   submittedId?: string
   queued?: boolean
+  conflict?: boolean
+}
+
+type ExistingReportIdentity = {
+  userId: string | null
+  reporterEmail: string | null
+  category: string
+  latitude: string
+  longitude: string
+}
+
+export function isSameReportRetry(
+  existing: ExistingReportIdentity,
+  candidate: ExistingReportIdentity,
+): boolean {
+  const sameAuthor =
+    (candidate.userId !== null && existing.userId === candidate.userId) ||
+    (candidate.reporterEmail !== null &&
+      existing.reporterEmail === candidate.reporterEmail)
+
+  return (
+    sameAuthor &&
+    existing.category === candidate.category &&
+    existing.latitude === candidate.latitude &&
+    existing.longitude === candidate.longitude
+  )
 }
 
 const UUID =
@@ -124,6 +151,24 @@ async function uploadPhoto(
   }
 }
 
+async function findReportIdentity(
+  id: string,
+): Promise<ExistingReportIdentity | null> {
+  const [row] = await db
+    .select({
+      userId: reports.userId,
+      reporterEmail: reports.reporterEmail,
+      category: reports.category,
+      latitude: reports.latitude,
+      longitude: reports.longitude,
+    })
+    .from(reports)
+    .where(eq(reports.id, id))
+    .limit(1)
+
+  return row ?? null
+}
+
 export async function createReport(
   profile: UserProfile,
   formData: FormData,
@@ -196,6 +241,13 @@ async function submitReport(
   }
 
   const id = readReportId(formData)
+  const candidate: ExistingReportIdentity = {
+    userId: reporter.kind === 'user' ? reporter.profile.id : null,
+    reporterEmail: reporter.kind === 'citizen' ? reporter.email : null,
+    category: input.category,
+    latitude: input.latitude.toFixed(COORDINATE_SCALE),
+    longitude: input.longitude.toFixed(COORDINATE_SCALE),
+  }
 
   try {
     const [created] = await db
@@ -214,13 +266,32 @@ async function submitReport(
         habitat: input.habitat.trim() || null,
         statut: input.statut.trim() || null,
         photoUrl: photoPath,
-        latitude: input.latitude.toFixed(COORDINATE_SCALE),
-        longitude: input.longitude.toFixed(COORDINATE_SCALE),
+        latitude: candidate.latitude,
+        longitude: candidate.longitude,
       })
       .onConflictDoNothing()
       .returning({ id: reports.id })
 
-    return { submittedId: created?.id ?? id ?? undefined }
+    if (created) {
+      return { submittedId: created.id }
+    }
+
+    if (!id) {
+      return {
+        message: 'Impossible d’enregistrer le signalement. Réessayez.',
+      }
+    }
+
+    const existing = await findReportIdentity(id)
+
+    if (existing && isSameReportRetry(existing, candidate)) {
+      return { submittedId: id }
+    }
+
+    return {
+      conflict: true,
+      message: 'Ce signalement n’a pas pu être enregistré. Réessayez.',
+    }
   } catch (cause) {
     console.error('Failed to insert a report row', cause)
 
