@@ -8,6 +8,7 @@ import {
   toCell,
   toCsvRow,
   CSV_BOM,
+  CSV_HEADER_LABELS,
   CSV_HEADERS,
   type ReportExportRow,
 } from '@/lib/reports/csv'
@@ -141,15 +142,23 @@ describe('reportsToCsv', () => {
     expect(reportsToCsv([REPORT]).startsWith(CSV_BOM)).toBe(true)
   })
 
-  it('writes the header row first', () => {
-    expect(rowsOf(reportsToCsv([REPORT]))[0]).toBe(CSV_HEADERS.join(','))
+  it('writes French header names, not the English keys', () => {
+    const header = rowsOf(reportsToCsv([REPORT]))[0]
+
+    expect(header).toBe(
+      CSV_HEADERS.map((column) => CSV_HEADER_LABELS[column]).join(','),
+    )
+    expect(header).toContain('Catégorie')
+    expect(header.split(',')).not.toContain('category')
   })
 
   it('emits only the requested columns, in header order', () => {
     const csv = reportsToCsv([REPORT], ['event_number', 'status', 'latitude'])
     const rows = rowsOf(csv)
 
-    expect(rows[0]).toBe('event_number,status,latitude')
+    expect(rows[0]).toBe(
+      'Numéro de signalement unique,Statut observateur,Latitude',
+    )
     expect(rows[1]).toBe('12,open,45.588')
   })
 
