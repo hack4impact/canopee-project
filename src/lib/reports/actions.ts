@@ -86,7 +86,9 @@ export async function resolveReport(
 
   await notifyReporter(updated, resolvedAt)
 
-  revalidatePath('/reports')
+  revalidatePath('/admin/issues')
+  revalidatePath(`/admin/issues/${reportId}`)
+  revalidatePath('/signalements')
   return {}
 }
 

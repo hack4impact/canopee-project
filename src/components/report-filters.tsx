@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { useMapFilters } from '@/components/map-filters-provider'
 import {
@@ -23,16 +23,50 @@ export function ReportFilters() {
   } = useMapFilters()
   const [open, setOpen] = useState(false)
   const [expanded, setExpanded] = useState<ReportGroup | null>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    function dismiss(event: PointerEvent) {
+      const target = event.target as Node
+
+      if (
+        !buttonRef.current?.contains(target) &&
+        !panelRef.current?.contains(target)
+      ) {
+        setOpen(false)
+      }
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', dismiss)
+    document.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', dismiss)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open])
 
   return (
     <>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-controls="report-filters-panel"
         aria-label="Filtrer les signalements par catégorie"
-        className="absolute top-[calc(7rem+env(safe-area-inset-top))] right-4 z-20 touch-manipulation rounded-full bg-canopee-forest/80 p-3 shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:scale-95 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+        className="absolute top-[calc(4.75rem+env(safe-area-inset-top))] left-4 z-20 touch-manipulation rounded-2xl bg-canopee-forest/80 p-3 shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:scale-95 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       >
         <Image
           src="/pictos/filter.svg"
@@ -46,8 +80,9 @@ export function ReportFilters() {
 
       {open && (
         <section
+          ref={panelRef}
           id="report-filters-panel"
-          className="absolute top-[calc(11rem+env(safe-area-inset-top))] right-4 z-10 w-64 space-y-1 rounded-2xl bg-canopee-forest/80 p-3 text-canopee-cream shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm"
+          className="absolute top-[calc(8.5rem+env(safe-area-inset-top))] left-4 z-10 w-64 space-y-1 rounded-2xl bg-canopee-forest/80 p-3 text-canopee-cream shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm"
         >
           {groups.map((group) => {
             const categories = categoriesOfGroup(group)
@@ -125,7 +160,7 @@ export function ReportFilters() {
                 type="button"
                 onClick={onToggleHeatmap}
                 aria-pressed={heatmapVisible}
-                className="w-full touch-manipulation rounded-full bg-white/10 px-4 py-2.5 text-sm font-medium text-canopee-cream transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none"
+                className="w-full touch-manipulation rounded-xl bg-white/10 px-4 py-2.5 text-sm font-medium text-canopee-cream transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none"
               >
                 {heatmapVisible
                   ? 'Masquer la carte de chaleur'

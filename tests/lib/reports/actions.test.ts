@@ -172,7 +172,7 @@ describe('resolveReport', () => {
     sendResolved.mockRejectedValueOnce(new Error('boom'))
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     await expect(resolveReport({}, makeFormData())).resolves.toEqual({})
-    expect(revalidatePath).toHaveBeenCalledWith('/reports')
+    expect(revalidatePath).toHaveBeenCalledWith('/admin/issues')
     expect(consoleError).toHaveBeenCalled()
     consoleError.mockRestore()
   })

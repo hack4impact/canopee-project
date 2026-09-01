@@ -167,7 +167,7 @@ const SHELL_BASE =
   'flex items-center shadow-lg shadow-black/25 ring-1 ring-white/20 backdrop-blur-md transition-all duration-300 ease-out motion-reduce:transition-none'
 
 const ROUND_BUTTON_BASE =
-  'inline-flex h-14 w-14 touch-manipulation items-center justify-center rounded-full ring-1 ring-white/25 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:ring-white/40 focus-visible:ring-2 focus-visible:outline-none active:translate-y-0 active:scale-[0.95] motion-reduce:transition-none motion-reduce:hover:translate-y-0'
+  'inline-flex h-14 w-14 touch-manipulation items-center justify-center rounded-2xl ring-1 ring-white/25 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:ring-white/40 focus-visible:ring-2 focus-visible:outline-none active:translate-y-0 active:scale-[0.95] motion-reduce:transition-none motion-reduce:hover:translate-y-0'
 
 function PauseResumeButton({
   paused,

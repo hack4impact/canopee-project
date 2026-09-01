@@ -1,6 +1,6 @@
 import type { FeatureCollection, Point } from 'geojson'
 
-export const DEFAULT_ZONE_PRECISION = 3
+export const DEFAULT_ZONE_PRECISION = 4
 
 export const DEFAULT_WINDOW_MONTHS = 2
 

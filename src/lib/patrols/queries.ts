@@ -23,6 +23,7 @@ export type PatrolListItem = {
   endedAt: Date | null
   durationSeconds: number | null
   distanceMetres: number
+  route: Coordinate[]
 }
 
 export type PatrolPage = {
@@ -159,6 +160,7 @@ export async function listPatrolsForUser(
       endedAt: row.endedAt,
       durationSeconds: durationSeconds(row.startedAt, row.endedAt),
       distanceMetres: totalDistanceMetres(routes.get(row.id) ?? []),
+      route: routes.get(row.id) ?? [],
     })),
     hasNextPage,
   }

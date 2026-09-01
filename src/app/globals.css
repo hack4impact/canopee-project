@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 
 :root {
   --background: #f6f4df;
@@ -41,6 +42,17 @@
 
   --animate-dock-in: dock-in 0.28s ease-out;
   --animate-pop-in: pop-in 0.22s ease-out;
+  --animate-breathe: breathe 1.8s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 @keyframes dock-in {
@@ -95,6 +107,18 @@ html {
   }
 }
 
+.photo-skeleton {
+  background-color: rgba(0, 69, 35, 0.5);
+  animation: var(--animate-breathe);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-skeleton {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
 .mapbox-map {
   position: relative;
   min-height: 12rem;
@@ -107,6 +131,11 @@ html {
 
 .mapbox-map .mapboxgl-ctrl-bottom-left {
   bottom: 0.3rem;
+}
+
+.hero-map .mapboxgl-ctrl-bottom-left,
+.hero-map .mapboxgl-ctrl-bottom-right {
+  bottom: 4.25rem;
 }
 
 .scroll-visible {
@@ -147,27 +176,33 @@ html {
 .canopee-popup .mapboxgl-popup-content {
   border-radius: 0.9rem;
   background: #f6f4df;
-  padding: 0.7rem 0.9rem;
+  padding: 0;
+  overflow: hidden;
   box-shadow:
     0 10px 24px -8px rgba(0, 69, 35, 0.45),
     0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
-.canopee-popup .mapboxgl-popup-tip {
+.canopee-popup .mapboxgl-popup-close-button {
+  display: none;
+}
+
+.canopee-popup.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
+.canopee-popup.mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
+.canopee-popup.mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip {
   border-top-color: #f6f4df;
-  border-bottom-color: #f6f4df;
-  border-left-color: #f6f4df;
+}
+
+.canopee-popup.mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
+.canopee-popup.mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip,
+.canopee-popup.mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip {
+  border-bottom-color: var(--canopee-tip, #f6f4df);
+}
+
+.canopee-popup.mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
   border-right-color: #f6f4df;
 }
 
-.canopee-popup .mapboxgl-popup-close-button {
-  padding: 0 0.35rem;
-  color: rgba(0, 69, 35, 0.55);
-  font-size: 1rem;
-  border-radius: 9999px;
-}
-
-.canopee-popup .mapboxgl-popup-close-button:hover {
-  background: rgba(0, 69, 35, 0.1);
-  color: #004523;
+.canopee-popup.mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+  border-left-color: #f6f4df;
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { ChevronRightIcon } from 'lucide-react'
 import Link from 'next/link'
 import { getPendingUsers } from '@/app/admin/volunteers/actions'
 import { AccountSection } from '@/components/account-section'
@@ -6,14 +7,14 @@ import { BottomNav } from '@/components/bottom-nav'
 import { PatrolRoutePreview } from '@/components/patrol-route-preview'
 import { PendingReportsNotice } from '@/components/pending-reports-notice'
 import { requireApprovedUser } from '@/lib/auth/current-user'
-import { isAdmin, type Role } from '@/lib/auth/roles'
+import { canAccess, isAdmin, type Role } from '@/lib/auth/roles'
 import { formatDistance, formatDuration } from '@/lib/patrols/format'
 import {
   getLastPatrolForUser,
   getPatrolTotalsForUser,
   listPatrolRoute,
 } from '@/lib/patrols/queries'
-import { getReportTotalsForUser } from '@/lib/reports/queries'
+import { countOpenReports, getReportTotalsForUser } from '@/lib/reports/queries'
 
 export const metadata: Metadata = {
   title: 'Profil | Canopée',
@@ -44,13 +45,16 @@ const ADMIN_ROW =
 export default async function ProfilPage() {
   const profile = await requireApprovedUser()
   const admin = isAdmin(profile)
+  const handlesIssues = canAccess(profile, 'pro')
 
-  const [patrols, reports, lastPatrol, pendingUsers] = await Promise.all([
-    getPatrolTotalsForUser(profile.id),
-    getReportTotalsForUser(profile.id),
-    getLastPatrolForUser(profile.id),
-    admin ? getPendingUsers() : Promise.resolve([]),
-  ])
+  const [patrols, reports, lastPatrol, pendingUsers, openReports] =
+    await Promise.all([
+      getPatrolTotalsForUser(profile.id),
+      getReportTotalsForUser(profile.id),
+      getLastPatrolForUser(profile.id),
+      admin ? getPendingUsers() : Promise.resolve([]),
+      handlesIssues ? countOpenReports() : Promise.resolve(0),
+    ])
 
   const lastRoute = lastPatrol ? await listPatrolRoute(lastPatrol.id) : []
 
@@ -141,9 +145,13 @@ export default async function ProfilPage() {
                 {formatDuration(patrols.durationSeconds)}
               </span>
             </span>
+            <ChevronRightIcon className="ml-auto size-3.5 shrink-0 text-canopee-cream/70" />
           </Link>
 
-          <div className={`${TILE} bg-canopee-coral`}>
+          <Link
+            href="/signalements"
+            className={`${TILE} bg-canopee-coral hover:bg-canopee-coral-dark focus-visible:ring-2 focus-visible:ring-canopee-green focus-visible:outline-none`}
+          >
             <span className={TILE_NUMBER}>{reports.count}</span>
             <span className="flex min-w-0 flex-col">
               <span className="text-base font-extrabold">Signalements</span>
@@ -159,19 +167,20 @@ export default async function ProfilPage() {
                 )}
               </span>
             </span>
-          </div>
+            <ChevronRightIcon className="ml-auto size-3.5 shrink-0 text-canopee-cream/70" />
+          </Link>
         </div>
 
-        {admin && (
+        {handlesIssues && (
           <section className="flex flex-col gap-1.5">
             <h2 className="text-sm font-extrabold tracking-[0.08em] text-canopee-forest/50 uppercase">
               Administration
             </h2>
 
-            <Link href="/admin/volunteers" className={ADMIN_ROW}>
-              <span className="flex-1">Comptes en attente</span>
-              <span className="font-heading text-lg text-canopee-green tabular-nums">
-                {pendingUsers.length}
+            <Link href="/admin/issues" className={ADMIN_ROW}>
+              <span className="flex-1">Signalements à traiter</span>
+              <span className="font-heading text-lg text-canopee-coral tabular-nums">
+                {openReports}
               </span>
               <svg
                 viewBox="0 0 24 24"
@@ -187,21 +196,44 @@ export default async function ProfilPage() {
               </svg>
             </Link>
 
-            <Link href="/admin/membres" className={ADMIN_ROW}>
-              <span className="flex-1">Gestion des membres</span>
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-3.5 w-3.5 opacity-45"
-                aria-hidden="true"
-              >
-                <path d="m9 18 6-6-6-6" />
-              </svg>
-            </Link>
+            {admin && (
+              <Link href="/admin/volunteers" className={ADMIN_ROW}>
+                <span className="flex-1">Comptes en attente</span>
+                <span className="font-heading text-lg text-canopee-green tabular-nums">
+                  {pendingUsers.length}
+                </span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-3.5 w-3.5 opacity-45"
+                  aria-hidden="true"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </Link>
+            )}
+
+            {admin && (
+              <Link href="/admin/membres" className={ADMIN_ROW}>
+                <span className="flex-1">Gestion des membres</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-3.5 w-3.5 opacity-45"
+                  aria-hidden="true"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </Link>
+            )}
           </section>
         )}
 

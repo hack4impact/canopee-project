@@ -97,6 +97,10 @@ export function ReportForm({
     return <CitizenConfirmation />
   }
 
+  if (state.submittedId) {
+    return <ReportConfirmation queued={state.queued} onAgain={onBack} />
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <button
@@ -130,19 +134,7 @@ export function ReportForm({
         </p>
       )}
 
-      {state.submittedId && (
-        <p
-          aria-live="polite"
-          className="rounded-lg bg-canopee-green/10 px-3 py-2.5 text-sm font-medium text-canopee-forest"
-        >
-          {state.queued
-            ? 'Signalement enregistré. Il partira au retour du réseau.'
-            : 'Signalement envoyé. Merci!'}
-        </p>
-      )}
-
       <ReportWizard
-        key={state.submittedId ?? 'new'}
         group={group}
         photoRequired={photoRequired}
         citizen={citizen}
@@ -150,6 +142,65 @@ export function ReportForm({
         pending={pending}
         serverErrors={state.errors}
       />
+    </div>
+  )
+}
+
+function ReportConfirmation({
+  queued,
+  onAgain,
+}: {
+  queued?: boolean
+  onAgain: () => void
+}) {
+  return (
+    <div
+      aria-live="polite"
+      className="flex min-h-72 flex-1 animate-in flex-col items-center justify-center gap-4 text-center fade-in zoom-in-95 duration-300 motion-reduce:animate-none"
+    >
+      <span
+        aria-hidden
+        className="flex h-16 w-16 items-center justify-center rounded-2xl bg-canopee-green/15 text-canopee-green"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-8 w-8"
+        >
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </span>
+
+      <div className="flex flex-col gap-1.5">
+        <h2 className="font-heading text-2xl text-canopee-forest">
+          {queued ? 'Signalement enregistré' : 'Signalement envoyé'}
+        </h2>
+        <p className="text-sm text-canopee-forest/70">
+          {queued
+            ? 'Il partira automatiquement dès que le réseau reviendra.'
+            : 'Merci. Il apparaît maintenant sur la carte.'}
+        </p>
+      </div>
+
+      <div className="flex w-full flex-col gap-2">
+        <button
+          type="button"
+          onClick={onAgain}
+          className="inline-flex touch-manipulation items-center justify-center rounded-lg bg-canopee-green px-4 py-2.5 font-bold text-white shadow-sm transition-colors duration-150 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/50 focus-visible:outline-none"
+        >
+          Faire un autre signalement
+        </button>
+        <Link
+          href="/carte"
+          className="inline-flex touch-manipulation items-center justify-center rounded-lg border border-canopee-green/30 bg-white px-4 py-2.5 text-sm font-semibold text-canopee-forest transition-colors hover:bg-canopee-green/10 focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none"
+        >
+          Retour à la carte
+        </Link>
+      </div>
     </div>
   )
 }
@@ -270,6 +321,7 @@ function ReportWizard({
   pending,
   serverErrors,
 }: ReportWizardProps) {
+  const theme = REPORT_THEMES[group]
   const [stepIndex, setStepIndex] = useState(0)
   const [reporterEmail, setReporterEmail] = useState('')
   const [category, setCategory] = useState('')
@@ -490,10 +542,10 @@ function ReportWizard({
                 key={key}
                 className={`h-1.5 rounded-full transition-all duration-200 ${
                   index === stepIndex
-                    ? `w-6 ${REPORT_THEMES[group].bar}`
+                    ? `w-6 ${theme.bar}`
                     : index < stepIndex
-                      ? 'w-3 bg-canopee-green/50'
-                      : 'w-3 bg-canopee-green/15'
+                      ? `w-3 ${theme.barPast}`
+                      : `w-3 ${theme.barIdle}`
                 }`}
                 aria-hidden="true"
               />
@@ -524,7 +576,7 @@ function ReportWizard({
         </>
       )}
 
-      <div className="scroll-visible flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain pr-2">
+      <div className="scroll-visible flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-2">
         {step === 'courriel' && (
           <div className="flex flex-col gap-1.5">
             <label htmlFor="reporterEmail" className={LABEL}>
@@ -568,10 +620,8 @@ function ReportWizard({
                 type="button"
                 onClick={() => setCategory(value)}
                 aria-pressed={category === value}
-                className={`rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                  category === value
-                    ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
-                    : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
+                className={`rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
+                  category === value ? theme.optionActive : theme.option
                 }`}
               >
                 {REPORT_CATEGORY_LABELS[value]}
@@ -593,10 +643,8 @@ function ReportWizard({
                 type="button"
                 onClick={() => setTypology(value)}
                 aria-pressed={typology === value}
-                className={`rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                  typology === value
-                    ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
-                    : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
+                className={`rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
+                  typology === value ? theme.optionActive : theme.option
                 }`}
               >
                 {REPORT_TYPOLOGY_LABELS[value]}
@@ -623,19 +671,33 @@ function ReportWizard({
                     type="button"
                     onClick={() => setCategory(value)}
                     aria-pressed={category === value}
-                    className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                      category === value
-                        ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
-                        : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
+                    className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
+                      category === value ? theme.optionActive : theme.option
                     }`}
                   >
                     <SpeciesPicto
                       name={value}
-                      className="mx-auto mb-1 h-6 w-6 text-canopee-green"
+                      className={`mx-auto mb-1 h-6 w-6 ${theme.accent}`}
                     />
                     {REPORT_CATEGORY_LABELS[value]}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => setCategory('faune_flore_other')}
+                  aria-pressed={category === 'faune_flore_other'}
+                  className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
+                    category === 'faune_flore_other'
+                      ? theme.optionActive
+                      : theme.option
+                  }`}
+                >
+                  <SpeciesPicto
+                    name="autre"
+                    className={`mx-auto mb-1 h-6 w-6 ${theme.accent}`}
+                  />
+                  {REPORT_CATEGORY_LABELS.faune_flore_other}
+                </button>
               </div>
             </div>
             <div>
@@ -649,17 +711,15 @@ function ReportWizard({
                     type="button"
                     onClick={() => setCategory(value)}
                     aria-pressed={category === value}
-                    className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                      category === value
-                        ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
-                        : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
+                    className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
+                      category === value ? theme.optionActive : theme.option
                     }`}
                   >
                     <SpeciesPicto
                       name={
                         value === 'plante_vasculaire' ? 'vasculaire' : value
                       }
-                      className="mx-auto mb-1 h-6 w-6 text-canopee-green"
+                      className={`mx-auto mb-1 h-6 w-6 ${theme.accent}`}
                     />
                     {REPORT_CATEGORY_LABELS[value]}
                   </button>
@@ -696,7 +756,6 @@ function ReportWizard({
 
         {step === 'photo' && (
           <div className="flex flex-col gap-1.5">
-            <span className={LABEL}>Veuillez ajouter une photo</span>
             <input
               ref={photoInputRef}
               id="photo"
@@ -709,7 +768,9 @@ function ReportWizard({
               className="hidden"
             />
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className={LABEL}>Veuillez ajouter une photo</span>
+
               <button
                 type="button"
                 onClick={() => photoInputRef.current?.click()}
@@ -719,11 +780,11 @@ function ReportWizard({
                 <UploadIcon className="h-5 w-5" />
                 {photo ? 'Changer la photo' : 'Choisir une photo'}
               </button>
-
-              <span className="min-w-0 break-all text-sm text-canopee-forest/60">
-                {photo ? photo.name : 'Aucune photo choisie'}
-              </span>
             </div>
+
+            <span className="min-w-0 break-all text-sm text-canopee-forest/60">
+              {photo ? photo.name : 'Aucune photo choisie'}
+            </span>
 
             {preparingPhoto && (
               <p role="status" className="text-sm text-canopee-forest/70">

@@ -31,7 +31,11 @@ function keyOf(value: string): string {
   return (hash >>> 0).toString(36)
 }
 
-function project(points: readonly RoutePoint[]): Trace | null {
+function project(
+  points: readonly RoutePoint[],
+  width: number,
+  height: number,
+): Trace | null {
   if (!hasDrawableRoute(points)) {
     return null
   }
@@ -50,16 +54,19 @@ function project(points: readonly RoutePoint[]): Trace | null {
   const squeeze = Math.cos((((south + north) / 2) * Math.PI) / 180)
   const spanX = Math.max((east - west) * squeeze, MIN_SPAN)
   const spanY = Math.max(north - south, MIN_SPAN)
-  const availableX = WIDTH - PADDING_X * 2
-  const availableY = HEIGHT - PADDING_TOP - PADDING_BOTTOM
+  const paddingX = width * (PADDING_X / WIDTH)
+  const paddingTop = height * (PADDING_TOP / HEIGHT)
+  const paddingBottom = height * (PADDING_BOTTOM / HEIGHT)
+  const availableX = width - paddingX * 2
+  const availableY = height - paddingTop - paddingBottom
   const scale = Math.min(availableX / spanX, availableY / spanY)
-  const offsetX = PADDING_X + (availableX - spanX * scale) / 2
-  const offsetY = PADDING_BOTTOM + (availableY - spanY * scale) / 2
+  const offsetX = paddingX + (availableX - spanX * scale) / 2
+  const offsetY = paddingBottom + (availableY - spanY * scale) / 2
 
   const projected: [number, number][] = coordinates.map(
     ([longitude, latitude]) => [
       offsetX + (longitude - west) * squeeze * scale,
-      HEIGHT - offsetY - (latitude - south) * scale,
+      height - offsetY - (latitude - south) * scale,
     ],
   )
 
@@ -84,22 +91,28 @@ export function PatrolRoutePreview({
   points,
   seed,
   className,
+  width = WIDTH,
+  height = HEIGHT,
+  label = 'Trajet de la dernière patrouille',
 }: {
   points: readonly RoutePoint[]
   seed: string
   className?: string
+  width?: number
+  height?: number
+  label?: string
 }) {
-  const trace = project(points)
+  const trace = project(points, width, height)
   const pattern = `dots-${keyOf(seed)}`
 
   return (
     <span className={className} style={{ backgroundColor: GROUND }}>
       <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="xMidYMid meet"
         className="h-full w-full"
         role="img"
-        aria-label="Trajet de la dernière patrouille"
+        aria-label={label}
       >
         <defs>
           <pattern
@@ -122,15 +135,15 @@ export function PatrolRoutePreview({
         <rect
           x={-120}
           y={-60}
-          width={WIDTH + 240}
-          height={HEIGHT + 120}
+          width={width + 240}
+          height={height + 120}
           fill={GROUND}
         />
         <rect
           x={-120}
           y={-60}
-          width={WIDTH + 240}
-          height={HEIGHT + 120}
+          width={width + 240}
+          height={height + 120}
           fill={`url(#${pattern})`}
         />
 

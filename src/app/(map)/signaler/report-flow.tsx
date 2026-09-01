@@ -72,15 +72,20 @@ export function ReportFlow({
   citizen?: boolean
 }) {
   const [group, setGroup] = useState<ReportGroup | null>(null)
+  const [returning, setReturning] = useState(false)
 
   if (group === null) {
     return (
-      <div className="mx-auto flex w-full max-w-sm flex-col gap-3">
+      <div
+        className={`mx-auto flex w-full max-w-sm animate-in flex-col gap-3 fade-in duration-250 motion-reduce:animate-none ${
+          returning ? 'slide-in-from-left-4' : ''
+        }`}
+      >
         <p className="text-base font-medium text-canopee-forest/80">
           Choisissez le type de signalement :
         </p>
 
-        {GROUPS.map(({ group: value, title, description, icon }) => {
+        {GROUPS.map(({ group: value, title, description, icon }, index) => {
           const theme = REPORT_THEMES[value]
 
           return (
@@ -88,7 +93,8 @@ export function ReportFlow({
               key={value}
               type="button"
               onClick={() => setGroup(value)}
-              className={`group flex w-full touch-manipulation items-center gap-4 rounded-2xl border border-transparent px-4 py-6 text-left shadow-sm transition-[border-color,background-color,transform] duration-150 ease-out focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99] motion-reduce:transition-none motion-reduce:active:scale-100 sm:px-5 sm:py-7 ${theme.card} ${theme.cardHover} ${theme.ring}`}
+              style={{ animationDelay: `${index * 70}ms` }}
+              className={`group flex w-full touch-manipulation animate-in items-center gap-4 rounded-2xl border border-transparent px-4 py-6 text-left shadow-sm transition-[border-color,background-color,transform] duration-150 ease-out fill-mode-backwards fade-in slide-in-from-bottom-3 focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99] motion-reduce:animate-none motion-reduce:transition-none motion-reduce:active:scale-100 sm:px-5 sm:py-7 ${theme.card} ${theme.cardHover} ${theme.ring}`}
             >
               <span
                 className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl transition-colors duration-150 ${theme.chip} ${theme.chipActive}`}
@@ -111,11 +117,16 @@ export function ReportFlow({
   }
 
   return (
-    <ReportForm
-      group={group}
-      onBack={() => setGroup(null)}
-      photoRequired={photoRequired}
-      citizen={citizen}
-    />
+    <div className="animate-in fade-in slide-in-from-right-4 duration-250 motion-reduce:animate-none">
+      <ReportForm
+        group={group}
+        onBack={() => {
+          setReturning(true)
+          setGroup(null)
+        }}
+        photoRequired={photoRequired}
+        citizen={citizen}
+      />
+    </div>
   )
 }
