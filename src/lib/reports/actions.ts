@@ -68,8 +68,6 @@ export async function resolveReport(
     }
   }
 
-  const resolvedAt = new Date()
-
   const [updated] = await db
     .update(reports)
     .set({ resolvedAt })

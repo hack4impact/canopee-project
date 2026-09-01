@@ -82,20 +82,12 @@ export function parseColumnsParam(
   const requested = value
     .split(',')
     .map((part) => part.trim().toLowerCase())
-    .filter((part) => part !== '')
-
-  if (requested.length === 0) {
-    return { ok: true, columns: CSV_HEADERS }
-  }
-
+    .filter(Boolean)
   const unknown = requested.find((part) => !isCsvColumn(part))
 
-  if (unknown !== undefined) {
-    return { ok: false, value: unknown }
-  }
+  if (unknown !== undefined) return { ok: false, value: unknown }
 
   const chosen = new Set(requested as CsvColumn[])
-
   return {
     ok: true,
     columns: CSV_HEADERS.filter((column) => chosen.has(column)),
@@ -104,14 +96,10 @@ export function parseColumnsParam(
 
 /** Excel and LibreOffice need it to read the French labels as UTF-8. */
 export const CSV_BOM = '\uFEFF'
-
 const ROW_SEPARATOR = '\r\n'
-
 const NEEDS_QUOTING = /["\n\r,]/
-
 const FORMULA_PREFIXES = ['=', '+', '-', '@', '\t', '\r']
 
-/** Stops a spreadsheet from evaluating public-submitted text as a formula. */
 function defuse(value: string): string {
   return FORMULA_PREFIXES.some((prefix) => value.startsWith(prefix))
     ? `'${value}`
@@ -123,10 +111,7 @@ export function escapeField(value: string): string {
 }
 
 export function toCell(value: CsvValue): string {
-  if (value === null) {
-    return ''
-  }
-
+  if (value === null) return ''
   return typeof value === 'number' ? String(value) : escapeField(defuse(value))
 }
 
@@ -164,7 +149,6 @@ export function reportsToCsv(
     toCsvRow(columns.map((column) => CSV_HEADER_LABELS[column])),
     ...reports.map((report) => {
       const values = reportToCsvValues(report)
-
       return toCsvRow(
         columns.map((column) => values[CSV_HEADERS.indexOf(column)]),
       )

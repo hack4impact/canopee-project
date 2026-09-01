@@ -17,12 +17,10 @@ import {
   type ReportPin,
   type ReportStatus,
 } from '@/lib/reports/pins'
-
 export {
   REPORT_CATEGORY_LABELS,
   type ReportCategory,
 } from '@/lib/reports/categories'
-
 import type { ReportCategory } from '@/lib/reports/categories'
 
 export type PatrolReport = {
@@ -38,10 +36,7 @@ export async function listReportsDuringPatrol(
   startedAt: Date,
   endedAt: Date | null,
 ): Promise<PatrolReport[]> {
-  if (!endedAt) {
-    return []
-  }
-
+  if (!endedAt) return []
   return db
     .select({
       id: reports.id,
@@ -69,28 +64,21 @@ export type ReportListItem = {
   createdAt: Date
   resolvedAt: Date | null
 }
-
 export type ReportSortBy = 'date' | 'status'
 export type ReportStatusFilter = 'open' | 'resolved' | 'all'
 
 export async function listAllReports(
-  options: {
-    sortBy?: ReportSortBy
-    statusFilter?: ReportStatusFilter
-  } = {},
+  options: { sortBy?: ReportSortBy; statusFilter?: ReportStatusFilter } = {},
 ): Promise<ReportListItem[]> {
   const { sortBy = 'date', statusFilter = 'all' } = options
-
   const whereClause =
     statusFilter === 'open'
       ? isNull(reports.resolvedAt)
       : statusFilter === 'resolved'
         ? isNotNull(reports.resolvedAt)
         : undefined
-
   const orderByClause =
     sortBy === 'status' ? asc(reports.resolvedAt) : desc(reports.createdAt)
-
   return db
     .select({
       id: reports.id,
@@ -109,10 +97,7 @@ export async function listReportPins(
   status: ReportStatus,
   categories: readonly ReportCategory[] = PIN_CATEGORIES,
 ): Promise<ReportPin[]> {
-  if (categories.length === 0) {
-    return []
-  }
-
+  if (categories.length === 0) return []
   const rows = await db
     .select({
       id: reports.id,
@@ -131,7 +116,6 @@ export async function listReportPins(
       ),
     )
     .orderBy(desc(reports.createdAt))
-
   return rows.map((row) => ({
     id: row.id,
     eventNumber: row.eventNumber,
@@ -141,11 +125,7 @@ export async function listReportPins(
   }))
 }
 
-export type ReportTotals = {
-  count: number
-  resolved: number
-}
-
+export type ReportTotals = { count: number; resolved: number }
 export async function getReportTotalsForUser(
   userId: string,
 ): Promise<ReportTotals> {
@@ -156,7 +136,6 @@ export async function getReportTotalsForUser(
     })
     .from(reports)
     .where(eq(reports.userId, userId))
-
   return row ?? { count: 0, resolved: 0 }
 }
 
@@ -168,7 +147,6 @@ export async function countRecentCitizenReports(
     .select({ count: sql<number>`count(*)::int` })
     .from(reports)
     .where(and(eq(reports.reporterEmail, email), gte(reports.createdAt, since)))
-
   return row?.count ?? 0
 }
 
@@ -195,7 +173,6 @@ export async function listReportsForExport(): Promise<ReportExportRow[]> {
     .from(reports)
     .leftJoin(users, eq(reports.userId, users.id))
     .orderBy(asc(reports.eventNumber))
-
   return rows.map(({ reporterEmail, userEmail, ...row }) => ({
     ...row,
     latitude: Number(row.latitude),
