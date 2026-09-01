@@ -142,7 +142,7 @@ describe('resolveReport', () => {
     const result = await resolveReport({}, formData())
 
     expect(result).toEqual({})
-    expect(revalidatePath).toHaveBeenCalledWith('/reports')
+    expect(revalidatePath).toHaveBeenCalledWith('/admin/issues')
     expect(consoleError).toHaveBeenCalled()
     consoleError.mockRestore()
   })

@@ -10,10 +10,7 @@ import {
   type ObservationCategory,
 } from '@/lib/observations/collection'
 import type { ObservationExportRow } from '@/lib/observations/export'
-import {
-  resolvedCutoff,
-  resolvedDelayHours,
-} from '@/lib/observations/visibility'
+import { resolvedCutoff } from '@/lib/observations/visibility'
 
 export async function listObservations(
   viewer: ObservationViewer,
@@ -23,7 +20,7 @@ export async function listObservations(
     return []
   }
 
-  const cutoff = resolvedCutoff(new Date(), resolvedDelayHours())
+  const cutoff = resolvedCutoff(new Date())
 
   const rows = await db
     .select({

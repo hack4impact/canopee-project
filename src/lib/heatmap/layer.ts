@@ -54,9 +54,9 @@ export function heatmapPaint(
       ['exponential', 2],
       ['zoom'],
       LOW_ZOOM,
-      3,
+      4,
       HIGH_ZOOM,
-      192,
+      48,
     ],
     'heatmap-opacity': 0.85,
   }

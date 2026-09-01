@@ -39,6 +39,7 @@ export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
   poisson: 'Poissons',
   plante_vasculaire: 'Plantes vasculaires',
   bryophyte: 'Bryophytes',
+  faune_flore_other: 'Autres',
 }
 
 export const REPORT_CATEGORIES = Object.keys(
@@ -99,6 +100,7 @@ export const REPORT_GROUP_CATEGORIES: Record<
     'poisson',
     'plante_vasculaire',
     'bryophyte',
+    'faune_flore_other',
   ],
 }
 

@@ -53,6 +53,7 @@ export const reportCategoryEnum = pgEnum('report_category', [
   'poisson',
   'plante_vasculaire',
   'bryophyte',
+  'faune_flore_other',
 ])
 
 export const users = pgTable('users', {
