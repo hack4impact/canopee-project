@@ -105,7 +105,7 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
 
         <div
           style={{ height: contentHeight ?? undefined }}
-          className="max-h-[calc(100dvh-9rem)] overflow-y-auto transition-[height] duration-300 ease-out motion-reduce:transition-none"
+          className="max-h-[min(22rem,calc(100dvh-9rem))] overflow-y-auto transition-[height] duration-300 ease-out motion-reduce:transition-none"
         >
           <div ref={contentRef}>
             <ReportFlow photoRequired={photoRequired} />
