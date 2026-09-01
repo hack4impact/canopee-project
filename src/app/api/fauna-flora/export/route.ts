@@ -11,10 +11,6 @@ import { listObservationsForExport } from '@/lib/observations/queries'
 export async function GET(request: NextRequest) {
   const profile = await getCurrentUserProfile()
 
-  if (!profile) {
-    return Response.json({ error: 'Not signed in.' }, { status: 401 })
-  }
-
   if (!canViewObservations(profile)) {
     return Response.json({ error: 'Insufficient role.' }, { status: 403 })
   }
