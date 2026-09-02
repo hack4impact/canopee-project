@@ -7,6 +7,7 @@ import {
   toCsv,
 } from '@/lib/observations/export'
 import { listObservationsForExport } from '@/lib/observations/queries'
+import { parseDateRangeParams } from '@/lib/reports/date-range'
 
 export async function GET(request: NextRequest) {
   const profile = await getCurrentUserProfile()
@@ -15,8 +16,17 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: 'Insufficient role.' }, { status: 403 })
   }
 
+  const dateRange = parseDateRangeParams(
+    request.nextUrl.searchParams.get('startDate'),
+    request.nextUrl.searchParams.get('endDate'),
+  )
+
+  if (!dateRange.ok) {
+    return Response.json({ error: dateRange.error }, { status: 400 })
+  }
+
   const delimiter = parseDelimiterParam(request.nextUrl.searchParams.get('sep'))
-  const observations = await listObservationsForExport(profile)
+  const observations = await listObservationsForExport(profile, dateRange.range)
 
   return new Response(toCsv(observations, delimiter), {
     headers: {

@@ -8,6 +8,7 @@ import {
   reportsToCsv,
 } from '@/lib/reports/csv'
 import { listReportsForExport } from '@/lib/reports/queries'
+import { parseDateRangeParams } from '@/lib/reports/date-range'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +34,16 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const reports = await listReportsForExport()
+  const dateRange = parseDateRangeParams(
+    request.nextUrl.searchParams.get('startDate'),
+    request.nextUrl.searchParams.get('endDate'),
+  )
+
+  if (!dateRange.ok) {
+    return Response.json({ error: dateRange.error }, { status: 400 })
+  }
+
+  const reports = await listReportsForExport(dateRange.range)
 
   return new Response(reportsToCsv(reports, parsed.columns), {
     headers: {
