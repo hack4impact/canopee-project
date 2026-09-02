@@ -68,6 +68,15 @@ missing auth entirely, not role escalation.
    gets saved, but the response still says "success." Likely intentional for
    the retry case; worth confirming with whoever built it. (**Authered completely by Claude AI**)
 
+## Fixes in #151
+
+1. `POST /api/map-loads` requires an approved volunteer (same gate as heatmap).
+2. `GET /api/cron/mapbox-usage` returns 401 if `CRON_SECRET` is missing or the Bearer token is wrong.
+3. `src/app/users/page copy.tsx` is deleted.
+4. `/admin/volunteers` calls `requireAdmin()` at the page, matching `/admin/membres`.
+5. Permission tests live under `tests/app/api/` for reports, heatmap, export, patrols, patrol-points, upload-token, public reports, map-loads, and cron.
+6. Public and authenticated report POST: same author + category + lat/lng is treated as a retry (200). A different payload with the same id returns 409. The phone queue deletes 409 items so it does not loop.
+
 # Follow-up issues for gaps
 
 ## Issue #1
