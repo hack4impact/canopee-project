@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNull, or } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm'
 import { db, reports, users } from '@/db'
 import {
   canViewObservations,
@@ -11,6 +11,7 @@ import {
 } from '@/lib/observations/collection'
 import type { ObservationExportRow } from '@/lib/observations/export'
 import { resolvedCutoff } from '@/lib/observations/visibility'
+import type { DateRange } from '@/lib/reports/date-range'
 
 export async function listObservations(
   viewer: ObservationViewer,
@@ -48,6 +49,7 @@ export async function listObservations(
 
 export async function listObservationsForExport(
   viewer: ObservationViewer,
+  range?: DateRange,
 ): Promise<ObservationExportRow[]> {
   if (!canViewObservations(viewer)) {
     console.debug('[observations] Unauthorized export attempt', { viewer })
@@ -75,7 +77,13 @@ export async function listObservationsForExport(
     })
     .from(reports)
     .leftJoin(users, eq(reports.userId, users.id))
-    .where(inArray(reports.category, [...OBSERVATION_CATEGORIES]))
+    .where(
+      and(
+        inArray(reports.category, [...OBSERVATION_CATEGORIES]),
+        range?.start ? gte(reports.createdAt, range.start) : undefined,
+        range?.end ? lte(reports.createdAt, range.end) : undefined,
+      ),
+    )
     .orderBy(asc(reports.eventNumber))
 
   return rows.map((row) => ({

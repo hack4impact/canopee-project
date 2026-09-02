@@ -136,4 +136,61 @@ describe('GET /api/fauna-flora/export', () => {
       2,
     )
   })
+
+  it('rejects a date range where startDate is after endDate', async () => {
+    getCurrentUserProfile.mockResolvedValue({ role: 'pro', status: 'approved' })
+
+    const response = await GET(
+      requestFor(
+        'http://localhost/api/fauna-flora/export?startDate=2026-02-01&endDate=2026-01-01',
+      ),
+    )
+
+    expect(response.status).toBe(400)
+    expect(listObservationsForExport).not.toHaveBeenCalled()
+  })
+
+  it('rejects an unparseable date', async () => {
+    getCurrentUserProfile.mockResolvedValue({ role: 'pro', status: 'approved' })
+
+    const response = await GET(
+      requestFor(
+        'http://localhost/api/fauna-flora/export?startDate=not-a-date',
+      ),
+    )
+
+    expect(response.status).toBe(400)
+    expect(listObservationsForExport).not.toHaveBeenCalled()
+  })
+
+  it('passes a parsed date range through to the query', async () => {
+    getCurrentUserProfile.mockResolvedValue({ role: 'pro', status: 'approved' })
+    listObservationsForExport.mockResolvedValue([])
+
+    await GET(
+      requestFor(
+        'http://localhost/api/fauna-flora/export?startDate=2026-01-01&endDate=2026-01-31',
+      ),
+    )
+
+    expect(listObservationsForExport).toHaveBeenCalledWith(
+      expect.objectContaining({ role: 'pro', status: 'approved' }),
+      {
+        start: new Date('2026-01-01'),
+        end: new Date(Date.UTC(2026, 0, 31, 23, 59, 59, 999)),
+      },
+    )
+  })
+
+  it('exports all records when no date range is given', async () => {
+    getCurrentUserProfile.mockResolvedValue({ role: 'pro', status: 'approved' })
+    listObservationsForExport.mockResolvedValue([])
+
+    await GET(requestFor())
+
+    expect(listObservationsForExport).toHaveBeenCalledWith(
+      expect.objectContaining({ role: 'pro', status: 'approved' }),
+      { start: undefined, end: undefined },
+    )
+  })
 })

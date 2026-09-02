@@ -28,6 +28,7 @@ export {
   type ReportCategory,
 } from '@/lib/reports/categories'
 import type { ReportCategory } from '@/lib/reports/categories'
+import type { DateRange } from '@/lib/reports/date-range'
 
 export type PatrolReport = {
   id: string
@@ -344,7 +345,9 @@ export async function countRecentCitizenReports(
   return row?.count ?? 0
 }
 
-export async function listReportsForExport(): Promise<ReportExportRow[]> {
+export async function listReportsForExport(
+  range?: DateRange,
+): Promise<ReportExportRow[]> {
   const rows = await db
     .select({
       eventNumber: reports.eventNumber,
@@ -366,6 +369,12 @@ export async function listReportsForExport(): Promise<ReportExportRow[]> {
     })
     .from(reports)
     .leftJoin(users, eq(reports.userId, users.id))
+    .where(
+      and(
+        range?.start ? gte(reports.createdAt, range.start) : undefined,
+        range?.end ? lte(reports.createdAt, range.end) : undefined,
+      ),
+    )
     .orderBy(asc(reports.eventNumber))
   return rows.map(({ reporterEmail, userEmail, ...row }) => ({
     ...row,
