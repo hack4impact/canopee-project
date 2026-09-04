@@ -4,14 +4,62 @@ import { google } from 'googleapis'
 import { Readable } from 'node:stream'
 
 const DRIVE_FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID
+const SHARED_DRIVE_ID = process.env.GOOGLE_DRIVE_SHARED_DRIVE_ID
 const SERVICE_ACCOUNT_CREDENTIALS =
   process.env.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS
+
+type DriveErrorLike = {
+  code?: number
+  status?: number
+  message?: string
+  errors?: Array<{ reason?: string; location?: string }>
+}
 
 function required(value: string | undefined, name: string): string {
   if (!value) {
     throw new Error(`${name} is not configured`)
   }
   return value
+}
+
+function isMissingParentError(error: unknown): boolean {
+  const maybe = error as DriveErrorLike | undefined
+  if (!maybe) return false
+
+  if (maybe.code === 404 || maybe.status === 404) return true
+  if (
+    typeof maybe.message === 'string' &&
+    /file not found|not found/i.test(maybe.message)
+  ) {
+    return true
+  }
+
+  return (
+    maybe.errors?.some(
+      (entry) => entry.reason === 'notFound' || entry.location === 'fileId',
+    ) ?? false
+  )
+}
+
+function buildFolderRequestBody(
+  name: string,
+  parentId?: string,
+  driveId?: string,
+) {
+  const requestBody: Record<string, unknown> = {
+    name,
+    mimeType: 'application/vnd.google-apps.folder',
+  }
+
+  if (parentId) {
+    requestBody.parents = [parentId]
+  }
+
+  if (driveId) {
+    requestBody.driveId = driveId
+  }
+
+  return requestBody
 }
 
 function getDriveClient() {
@@ -32,26 +80,64 @@ async function getOrCreateFolder(
   name: string,
   parentId: string,
 ): Promise<string> {
-  const result = await drive.files.list({
-    q: `'${parentId}' in parents and name = '${name.replaceAll("'", "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
-    fields: 'files(id)',
-    spaces: 'drive',
-    pageSize: 1,
-  })
+  const fallbackParentId = parentId === 'root' ? undefined : parentId
+  const query = fallbackParentId
+    ? `'${fallbackParentId}' in parents and name = '${name.replaceAll("'", "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`
+    : `name = '${name.replaceAll("'", "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and 'root' in parents and trashed = false`
 
-  const existingId = result.data.files?.[0]?.id
+  let existingId: string | undefined
+
+  try {
+    const result = await drive.files.list({
+      q: query,
+      fields: 'files(id)',
+      spaces: 'drive',
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
+      pageSize: 1,
+    })
+
+    existingId = result.data.files?.[0]?.id
+  } catch (error) {
+    if (!fallbackParentId || !isMissingParentError(error)) {
+      throw error
+    }
+  }
+
   if (existingId) return existingId
 
-  const created = await drive.files.create({
-    requestBody: {
-      name,
-      mimeType: 'application/vnd.google-apps.folder',
-      parents: [parentId],
-    },
-    fields: 'id',
-  })
+  let parentForCreate: string | undefined = fallbackParentId
 
-  return required(created.data.id ?? undefined, 'Google Drive folder ID')
+  try {
+    const created = await drive.files.create({
+      requestBody: buildFolderRequestBody(
+        name,
+        parentForCreate,
+        SHARED_DRIVE_ID,
+      ),
+      supportsAllDrives: true,
+      fields: 'id',
+    })
+
+    return required(created.data.id ?? undefined, 'Google Drive folder ID')
+  } catch (error) {
+    if (!parentForCreate || !isMissingParentError(error)) {
+      throw error
+    }
+
+    parentForCreate = undefined
+    const created = await drive.files.create({
+      requestBody: buildFolderRequestBody(
+        name,
+        parentForCreate,
+        SHARED_DRIVE_ID,
+      ),
+      supportsAllDrives: true,
+      fields: 'id',
+    })
+
+    return required(created.data.id ?? undefined, 'Google Drive folder ID')
+  }
 }
 
 export async function archiveReportPhoto(
@@ -94,7 +180,11 @@ export async function archiveReportPhoto(
   const fileName = `${eventNumber}.${extension}`
 
   await drive.files.create({
-    requestBody: { name: fileName, parents: [monthFolderId] },
+    requestBody: {
+      name: fileName,
+      parents: [monthFolderId],
+      ...(SHARED_DRIVE_ID ? { driveId: SHARED_DRIVE_ID } : {}),
+    },
     media: { mimeType: contentType, body: Readable.from(body) },
     supportsAllDrives: true,
     fields: 'id',
