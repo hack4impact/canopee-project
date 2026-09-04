@@ -97,7 +97,7 @@ async function getOrCreateFolder(
       pageSize: 1,
     })
 
-    existingId = result.data.files?.[0]?.id
+    existingId = result.data.files?.[0]?.id ?? undefined
   } catch (error) {
     if (!fallbackParentId || !isMissingParentError(error)) {
       throw error
