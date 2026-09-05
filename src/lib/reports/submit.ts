@@ -1,7 +1,10 @@
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { eq } from 'drizzle-orm'
+import { after } from 'next/server'
 import { db, reports } from '@/db'
 import type { UserProfile } from '@/lib/auth/current-user'
 import { isReportCategory } from '@/lib/reports/categories'
+import { uploadReportPhotoToDrive } from '@/lib/reports/google-drive'
 import {
   CITIZEN_PHOTO_FOLDER,
   REPORT_PHOTO_BUCKET,
@@ -124,6 +127,29 @@ async function uploadPhoto(
   }
 }
 
+function copyPhotoToDrive(
+  reportId: string,
+  eventNumber: number,
+  photoPath: string,
+): void {
+  after(async () => {
+    try {
+      const link = await uploadReportPhotoToDrive(
+        photoPath,
+        eventNumber,
+        new Date(),
+      )
+
+      await db
+        .update(reports)
+        .set({ drivePhotoUrl: link })
+        .where(eq(reports.id, reportId))
+    } catch (cause) {
+      console.error('Failed to copy a report photo to Google Drive', cause)
+    }
+  })
+}
+
 export async function createReport(
   profile: UserProfile,
   formData: FormData,
@@ -218,7 +244,11 @@ async function submitReport(
         longitude: input.longitude.toFixed(COORDINATE_SCALE),
       })
       .onConflictDoNothing()
-      .returning({ id: reports.id })
+      .returning({ id: reports.id, eventNumber: reports.eventNumber })
+
+    if (created && photoPath) {
+      copyPhotoToDrive(created.id, created.eventNumber, photoPath)
+    }
 
     return { submittedId: created?.id ?? id ?? undefined }
   } catch (cause) {

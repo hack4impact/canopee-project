@@ -26,6 +26,7 @@ const REPORT: ReportExportRow = {
   latitude: 45.588,
   longitude: -73.723,
   photoUrl: null,
+  drivePhotoUrl: null,
   createdAt: new Date('2026-03-04T15:30:00.000Z'),
   resolvedAt: null,
   reporter: 'benevole@example.org',

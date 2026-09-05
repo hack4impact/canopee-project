@@ -1,0 +1,1 @@
+ALTER TABLE "reports" ADD COLUMN "drive_photo_url" text;

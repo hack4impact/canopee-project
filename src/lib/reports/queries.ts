@@ -381,6 +381,7 @@ export async function listReportsForExport(): Promise<ReportExportRow[]> {
       latitude: reports.latitude,
       longitude: reports.longitude,
       photoUrl: reports.photoUrl,
+      drivePhotoUrl: reports.drivePhotoUrl,
       createdAt: reports.createdAt,
       resolvedAt: reports.resolvedAt,
       reporterEmail: reports.reporterEmail,

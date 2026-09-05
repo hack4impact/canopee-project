@@ -16,6 +16,7 @@ export type ReportExportRow = {
   latitude: number
   longitude: number
   photoUrl: string | null
+  drivePhotoUrl: string | null
   createdAt: Date
   resolvedAt: Date | null
   reporter: string | null
@@ -40,6 +41,7 @@ export const CSV_HEADERS = [
   'latitude',
   'longitude',
   'photo_url',
+  'photo_link',
   'reporter',
 ] as const
 
@@ -62,6 +64,7 @@ export const CSV_HEADER_LABELS: Record<CsvColumn, string> = {
   latitude: 'Latitude',
   longitude: 'Longitude',
   photo_url: 'Nom du fichier',
+  photo_link: 'Lien de la photo',
   reporter: 'Observateurs/observatrices',
 }
 
@@ -137,6 +140,7 @@ export function reportToCsvValues(report: ReportExportRow): CsvValue[] {
     report.latitude,
     report.longitude,
     report.photoUrl,
+    report.drivePhotoUrl,
     report.reporter,
   ]
 }
