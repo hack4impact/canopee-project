@@ -323,6 +323,7 @@ function ReportWizard({
 }: ReportWizardProps) {
   const theme = REPORT_THEMES[group]
   const [stepIndex, setStepIndex] = useState(0)
+  const [direction, setDirection] = useState<'forward' | 'back'>('forward')
   const [reporterEmail, setReporterEmail] = useState('')
   const [category, setCategory] = useState('')
   const [typology, setTypology] = useState('')
@@ -478,12 +479,14 @@ function ReportWizard({
     })
 
     if (stepIndex < steps.length - 1) {
+      setDirection('forward')
       setStepIndex(stepIndex + 1)
     }
   }
 
   function back() {
     if (stepIndex > 0) {
+      setDirection('back')
       setStepIndex(stepIndex - 1)
     }
   }
@@ -576,7 +579,14 @@ function ReportWizard({
         </>
       )}
 
-      <div className="scroll-visible flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-2">
+      <div
+        key={step}
+        className={`flex min-h-0 flex-1 animate-in flex-col gap-2 fade-in duration-200 motion-reduce:animate-none ${
+          direction === 'forward'
+            ? 'slide-in-from-right-3'
+            : 'slide-in-from-left-3'
+        }`}
+      >
         {step === 'courriel' && (
           <div className="flex flex-col gap-1.5">
             <label htmlFor="reporterEmail" className={LABEL}>
@@ -613,7 +623,7 @@ function ReportWizard({
         )}
 
         {step === 'constate' && (
-          <div className="flex flex-col gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {REPORT_GROUP_CATEGORIES[group].map((value) => (
               <button
                 key={value}
@@ -628,7 +638,7 @@ function ReportWizard({
               </button>
             ))}
             {errors.category && (
-              <p id="category-error" className={ERROR}>
+              <p id="category-error" className={`${ERROR} sm:col-span-2`}>
                 {errors.category}
               </p>
             )}
@@ -636,7 +646,7 @@ function ReportWizard({
         )}
 
         {step === 'typologie' && (
-          <div className="flex flex-col gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {REPORT_TYPOLOGIES.map((value) => (
               <button
                 key={value}
@@ -651,7 +661,7 @@ function ReportWizard({
               </button>
             ))}
             {errors.typology && (
-              <p id="typology-error" className={ERROR}>
+              <p id="typology-error" className={`${ERROR} sm:col-span-2`}>
                 {errors.typology}
               </p>
             )}
@@ -664,7 +674,7 @@ function ReportWizard({
               <p className="mb-2 text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
                 Faune
               </p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                 {REPORT_FAUNE_CATEGORIES.map((value) => (
                   <button
                     key={value}
@@ -704,7 +714,7 @@ function ReportWizard({
               <p className="mb-2 text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
                 Flore
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {REPORT_FLORE_CATEGORIES.map((value) => (
                   <button
                     key={value}
@@ -813,7 +823,7 @@ function ReportWizard({
 
         {step === 'nombre' && (
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="quantity" className={LABEL}>
+            <label htmlFor="quantity" className="sr-only">
               Combien ?
             </label>
             <input
@@ -899,6 +909,7 @@ function ReportWizard({
             setDescription={setDescription}
             errors={errors}
             remaining={remaining}
+            hideLabel
           />
         )}
 
@@ -1018,15 +1029,17 @@ function CommentField({
   setDescription,
   errors,
   remaining,
+  hideLabel = false,
 }: {
   description: string
   setDescription: (value: string) => void
   errors: ReportErrors
   remaining: number
+  hideLabel?: boolean
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor="description" className={LABEL}>
+      <label htmlFor="description" className={hideLabel ? 'sr-only' : LABEL}>
         Commentaire
       </label>
       <textarea

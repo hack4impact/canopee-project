@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ReportFlow } from '@/app/(map)/signaler/report-flow'
 
 export function CitizenReport() {
   const router = useRouter()
+  const [filling, setFilling] = useState(false)
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -28,7 +29,11 @@ export function CitizenReport() {
         <div className="absolute top-1/3 right-[12%] h-44 w-44 rounded-full bg-canopee-green/25 blur-2xl" />
       </div>
 
-      <div className="relative z-10 flex h-[min(40rem,calc(100dvh-2rem))] w-full max-w-md flex-col gap-2 rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 sm:px-5 sm:py-5">
+      <div
+        className={`relative z-10 flex max-h-[calc(100dvh-2rem)] w-full flex-col gap-2 rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 transition-[max-width] duration-300 ease-out motion-reduce:transition-none sm:px-5 sm:py-5 ${
+          filling ? 'max-w-xl' : 'max-w-sm'
+        }`}
+      >
         <header className="flex shrink-0 items-start justify-between gap-2">
           <div className="flex flex-col gap-0.5">
             <h1 className="font-heading text-2xl text-canopee-forest sm:text-3xl">
@@ -57,8 +62,12 @@ export function CitizenReport() {
           </Link>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col justify-center">
-          <ReportFlow photoRequired={false} citizen />
+        <div className="scroll-visible flex min-h-0 flex-1 flex-col justify-center overflow-y-auto">
+          <ReportFlow
+            photoRequired={false}
+            citizen
+            onFillingChange={setFilling}
+          />
         </div>
       </div>
     </div>

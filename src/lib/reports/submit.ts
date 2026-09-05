@@ -3,7 +3,10 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { after } from 'next/server'
 import { db, reports } from '@/db'
 import type { UserProfile } from '@/lib/auth/current-user'
-import { isReportCategory } from '@/lib/reports/categories'
+import {
+  isReportCategory,
+  reportGroupOfCategory,
+} from '@/lib/reports/categories'
 import { uploadReportPhotoToDrive } from '@/lib/reports/google-drive'
 import {
   CITIZEN_PHOTO_FOLDER,
@@ -250,6 +253,17 @@ async function submitReport(
     input.longitude === null
   ) {
     return { errors }
+  }
+
+  if (
+    reporter.kind === 'citizen' &&
+    reportGroupOfCategory(input.category) === 'faune_flore'
+  ) {
+    return {
+      errors: {
+        category: 'Ce type de signalement est réservé aux patrouilleurs.',
+      },
+    }
   }
 
   let photoPath: string | null = null

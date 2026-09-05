@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import type { Metadata, Viewport } from 'next'
 import { ViewTransition } from 'react'
+import { BackButton } from '@/components/back-button'
 import { REDIRECT_PARAM, safeRedirectPath } from '@/lib/auth/routes'
 import { LoginForm } from './login-form'
 
@@ -39,6 +40,10 @@ export default async function LoginPage(props: PageProps<'/login'>) {
 
       <ViewTransition name="auth-card" share="morph">
         <main className="relative z-10 w-full max-w-sm rounded-3xl bg-canopee-cream p-8 shadow-2xl shadow-black/40 sm:p-10">
+          <div className="absolute top-4 left-4">
+            <BackButton fallback="/" />
+          </div>
+
           <header className="flex flex-col items-center gap-3">
             <Image
               src="/logos/canopee-logo.png"

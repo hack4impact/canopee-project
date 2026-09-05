@@ -53,7 +53,7 @@ export type ReportGroup = (typeof REPORT_GROUPS)[number]
 
 export const REPORT_GROUP_LABELS: Record<ReportGroup, string> = {
   entretien: 'Entretien',
-  citoyen: 'Citoyen',
+  citoyen: 'Intervention',
   faune_flore: 'Faune / flore',
 }
 
