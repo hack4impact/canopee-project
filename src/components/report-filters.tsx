@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { FaunaFloraExportButton } from '@/components/fauna-flora-export-button'
 import { useMapFilters } from '@/components/map-filters-provider'
 import {
   REPORT_CATEGORY_LABELS,
@@ -14,7 +13,6 @@ import { REPORT_GROUP_COLORS } from '@/lib/reports/group-style'
 
 export function ReportFilters() {
   const {
-    observations,
     groups,
     selection,
     onToggleCategory,
@@ -170,8 +168,6 @@ export function ReportFilters() {
               </button>
             </div>
           )}
-
-          {observations && <FaunaFloraExportButton />}
         </section>
       )}
     </>

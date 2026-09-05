@@ -25,48 +25,91 @@ export type ReportExportRow = {
 export type CsvValue = string | number | null
 
 export const CSV_HEADERS = [
-  'event_number',
-  'created_at',
-  'status',
-  'resolved_at',
-  'category',
-  'category_label',
-  'description',
-  'typology',
-  'quantity',
-  'unit',
-  'species',
+  'numero_signalement',
+  'date_observation',
+  'statut_signalement',
+  'date_resolution',
+  'categorie',
+  'libelle_categorie',
+  'commentaires',
+  'typologie',
+  'nombre_observe',
+  'unite',
+  'nom_commun',
   'habitat',
-  'statut',
+  'statut_provincial',
   'latitude',
   'longitude',
-  'photo_url',
-  'photo_link',
-  'reporter',
+  'nom_fichier',
+  'lien_photo',
+  'observateurs',
 ] as const
 
 export type CsvColumn = (typeof CSV_HEADERS)[number]
 
 export const CSV_HEADER_LABELS: Record<CsvColumn, string> = {
-  event_number: 'Numéro de signalement unique',
-  created_at: "Date de l'observation",
-  status: 'Statut observateur',
-  resolved_at: 'Date de résolution',
-  category: 'Catégorie',
-  category_label: 'Libellé de la catégorie',
-  description: 'Commentaires',
-  typology: 'Typologie',
-  quantity: 'Nombre observé',
-  unit: 'Unité associée au nombre',
-  species: 'Nom commun',
+  numero_signalement: 'Numéro de signalement unique',
+  date_observation: "Date de l'observation",
+  statut_signalement: 'Statut du signalement',
+  date_resolution: 'Date de résolution',
+  categorie: 'Catégorie',
+  libelle_categorie: 'Libellé de la catégorie',
+  commentaires: 'Commentaires',
+  typologie: 'Typologie',
+  nombre_observe: 'Nombre observé',
+  unite: 'Unité associée au nombre',
+  nom_commun: 'Nom commun',
   habitat: 'Habitat',
-  statut: 'Statut provincial',
+  statut_provincial: 'Statut provincial',
   latitude: 'Latitude',
   longitude: 'Longitude',
-  photo_url: 'Nom du fichier',
-  photo_link: 'Lien de la photo',
-  reporter: 'Observateurs/observatrices',
+  nom_fichier: 'Nom du fichier',
+  lien_photo: 'Lien de la photo',
+  observateurs: 'Observateurs/observatrices',
 }
+
+export const CSV_COLUMN_GROUPS: {
+  label: string
+  columns: readonly CsvColumn[]
+}[] = [
+  {
+    label: 'Identification',
+    columns: [
+      'numero_signalement',
+      'categorie',
+      'libelle_categorie',
+      'typologie',
+    ],
+  },
+  {
+    label: 'Localisation',
+    columns: ['latitude', 'longitude'],
+  },
+  {
+    label: 'Faune et flore',
+    columns: [
+      'nom_commun',
+      'habitat',
+      'nombre_observe',
+      'unite',
+      'statut_provincial',
+    ],
+  },
+  {
+    label: 'Suivi',
+    columns: [
+      'date_observation',
+      'statut_signalement',
+      'date_resolution',
+      'observateurs',
+      'commentaires',
+    ],
+  },
+  {
+    label: 'Photo',
+    columns: ['nom_fichier', 'lien_photo'],
+  },
+]
 
 export type ParsedColumns =
   { ok: true; columns: readonly CsvColumn[] } | { ok: false; value: string }
@@ -126,7 +169,7 @@ export function reportToCsvValues(report: ReportExportRow): CsvValue[] {
   return [
     report.eventNumber,
     report.createdAt.toISOString(),
-    report.resolvedAt ? 'resolved' : 'open',
+    report.resolvedAt ? 'Résolu' : 'En attente',
     report.resolvedAt ? report.resolvedAt.toISOString() : null,
     report.category,
     REPORT_CATEGORY_LABELS[report.category] ?? report.category,

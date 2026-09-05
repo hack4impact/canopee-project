@@ -88,6 +88,8 @@ export function IssueList({
         </div>
       </div>
 
+      <ReportsCsvExport />
+
       {reports.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-canopee-forest/25 px-5 py-10 text-center text-sm text-canopee-forest/70">
           Aucun signalement dans ce filtre.
@@ -264,8 +266,6 @@ export function IssueList({
           })}
         </ul>
       )}
-
-      <ReportsCsvExport />
     </div>
   )
 }

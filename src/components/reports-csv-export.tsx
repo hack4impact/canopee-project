@@ -1,33 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import { ChevronDownIcon, DownloadIcon } from 'lucide-react'
 import {
+  CSV_COLUMN_GROUPS,
   CSV_HEADER_LABELS,
   CSV_HEADERS,
   type CsvColumn,
 } from '@/lib/reports/csv'
 
 const EXPORT_URL = '/api/reports/export'
-
-const COLUMN_ORDER: readonly CsvColumn[] = [
-  'category',
-  'category_label',
-  'typology',
-  'species',
-  'latitude',
-  'longitude',
-  'created_at',
-  'reporter',
-  'description',
-  'habitat',
-  'quantity',
-  'unit',
-  'photo_url',
-  'statut',
-  'status',
-  'resolved_at',
-  'event_number',
-]
 
 function fileNameFromResponse(response: Response): string {
   const header = response.headers.get('Content-Disposition') ?? ''
@@ -39,8 +21,25 @@ export function ReportsCsvExport() {
   const [selected, setSelected] = useState<Set<CsvColumn>>(
     () => new Set(CSV_HEADERS),
   )
+  const [open, setOpen] = useState(false)
+  const [expanded, setExpanded] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  function toggleGroup(columns: readonly CsvColumn[]) {
+    setSelected((current) => {
+      const next = new Set(current)
+      const all = columns.every((column) => next.has(column))
+      for (const column of columns) {
+        if (all) {
+          next.delete(column)
+        } else {
+          next.add(column)
+        }
+      }
+      return next
+    })
+  }
 
   function toggleColumn(column: CsvColumn) {
     setSelected((current) => {
@@ -91,36 +90,117 @@ export function ReportsCsvExport() {
   }
 
   return (
-    <div className="rounded-2xl border border-canopee-forest/10 bg-white/70 p-4 shadow-sm">
-      <p className="text-sm font-medium text-canopee-forest">Colonnes</p>
+    <div className="rounded-2xl border border-canopee-forest/10 bg-white/70 shadow-sm">
+      <div className="flex items-center gap-2 p-2 pl-3">
+        <button
+          type="button"
+          onClick={() => setOpen((current) => !current)}
+          aria-expanded={open}
+          aria-controls="csv-columns"
+          className="flex min-h-11 flex-1 touch-manipulation items-center gap-1.5 rounded-lg text-left text-[13px] font-semibold text-canopee-forest transition-colors hover:text-canopee-green focus-visible:ring-2 focus-visible:ring-canopee-green focus-visible:outline-none"
+        >
+          {selected.size} colonne{selected.size === 1 ? '' : 's'}
+          <ChevronDownIcon
+            aria-hidden="true"
+            className={`size-3.5 shrink-0 text-canopee-forest/45 transition-transform duration-150 ${
+              open ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
 
-      <ul className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
-        {COLUMN_ORDER.map((column) => (
-          <li key={column}>
-            <label className="flex items-start gap-2 text-sm text-canopee-forest">
-              <input
-                type="checkbox"
-                checked={selected.has(column)}
-                onChange={() => toggleColumn(column)}
-                className="mt-0.5 size-4 shrink-0 accent-canopee-green"
-              />
-              {CSV_HEADER_LABELS[column]}
-            </label>
-          </li>
-        ))}
-      </ul>
+        <button
+          type="button"
+          onClick={() => void handleExport()}
+          disabled={pending || selected.size === 0}
+          className="inline-flex min-h-11 touch-manipulation items-center gap-1.5 rounded-lg bg-canopee-green px-4 text-[13px] font-bold text-white transition-colors hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <DownloadIcon aria-hidden="true" className="size-4 shrink-0" />
+          {pending ? 'Export…' : 'Exporter'}
+        </button>
+      </div>
 
-      <button
-        type="button"
-        onClick={() => void handleExport()}
-        disabled={pending || selected.size === 0}
-        className="mt-4 rounded-lg bg-canopee-green px-4 py-2 text-sm font-bold text-white hover:bg-canopee-forest disabled:opacity-50"
-      >
-        {pending ? 'Export en cours…' : 'Exporter en CSV'}
-      </button>
+      {open && (
+        <div id="csv-columns" className="border-t border-canopee-forest/10">
+          {CSV_COLUMN_GROUPS.map(({ label, columns }, index) => {
+            const picked = columns.filter((column) => selected.has(column))
+            const partial = picked.length > 0 && picked.length < columns.length
+            const isExpanded = expanded === label
+
+            return (
+              <div
+                key={label}
+                className={
+                  index > 0 ? 'border-t border-canopee-forest/8' : undefined
+                }
+              >
+                <div className="flex items-center gap-3 px-3">
+                  <input
+                    type="checkbox"
+                    aria-label={`Tout cocher dans ${label}`}
+                    checked={picked.length === columns.length}
+                    ref={(element) => {
+                      if (element) {
+                        element.indeterminate = partial
+                      }
+                    }}
+                    onChange={() => toggleGroup(columns)}
+                    className="size-4 shrink-0 accent-canopee-green"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(isExpanded ? null : label)}
+                    aria-expanded={isExpanded}
+                    aria-controls={`csv-group-list-${label}`}
+                    className="flex min-h-11 flex-1 touch-manipulation items-center gap-2 rounded-lg text-left focus-visible:ring-2 focus-visible:ring-canopee-green focus-visible:outline-none"
+                  >
+                    <span className="flex-1 text-[13px] font-semibold text-canopee-forest">
+                      {label}
+                    </span>
+                    {partial && (
+                      <span className="text-[11px] font-medium text-canopee-forest/45 tabular-nums">
+                        {picked.length} sur {columns.length}
+                      </span>
+                    )}
+                    <ChevronDownIcon
+                      aria-hidden="true"
+                      className={`size-3.5 shrink-0 text-canopee-forest/40 transition-transform duration-150 ${
+                        isExpanded ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {isExpanded && (
+                  <ul
+                    id={`csv-group-list-${label}`}
+                    className="flex flex-col gap-3 pb-3.5 pl-10"
+                  >
+                    {columns.map((column) => (
+                      <li key={column}>
+                        <label className="flex items-start gap-2.5 text-[13px] leading-snug text-canopee-forest/85">
+                          <input
+                            type="checkbox"
+                            checked={selected.has(column)}
+                            onChange={() => toggleColumn(column)}
+                            className="mt-px size-4 shrink-0 accent-canopee-green"
+                          />
+                          {CSV_HEADER_LABELS[column]}
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {error && (
-        <p aria-live="polite" className="mt-2 text-sm text-canopee-coral">
+        <p
+          aria-live="polite"
+          className="border-t border-canopee-forest/10 px-3 py-2 text-sm text-canopee-coral"
+        >
           {error}
         </p>
       )}
