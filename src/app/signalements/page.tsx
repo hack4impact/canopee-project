@@ -173,6 +173,10 @@ export default async function SignalementsPage({
                             <span className="text-[11.5px] text-canopee-forest/60 tabular-nums">
                               {formatEventNumber(report.eventNumber)}
                             </span>
+                            <span className="text-[11px] text-canopee-forest/55">
+                              {(report as { woodedArea?: string }).woodedArea ??
+                                'Autre'}
+                            </span>
                           </span>
 
                           <span

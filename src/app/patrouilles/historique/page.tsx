@@ -50,7 +50,7 @@ export default async function PatrouillesHistoryPage({
   const { page: pageParam, from } = await searchParams
   const page = parsePageParam(pageParam)
   const origin = parseOrigin(from)
-  const { items, hasNextPage } = await listPatrolsForUser(profile.id, page)
+  const { items } = await listPatrolsForUser(profile.id, page)
 
   return (
     <div className="flex min-h-dvh w-full flex-col bg-canopee-cream">
@@ -146,27 +146,15 @@ export default async function PatrouillesHistoryPage({
           ))
         )}
 
-        {(page > 1 || hasNextPage) && (
+        {page > 1 && (
           <nav className="flex items-center justify-between gap-4 text-sm">
-            {page > 1 ? (
-              <Link
-                href={pageHref(page - 1, origin)}
-                className="text-canopee-forest/70 underline underline-offset-4 hover:text-canopee-forest"
-              >
-                Page précédente
-              </Link>
-            ) : (
-              <span />
-            )}
-
-            {hasNextPage && (
-              <Link
-                href={pageHref(page + 1, origin)}
-                className="text-canopee-forest/70 underline underline-offset-4 hover:text-canopee-forest"
-              >
-                Page suivante
-              </Link>
-            )}
+            <Link
+              href={pageHref(page - 1, origin)}
+              className="text-canopee-forest/70 underline underline-offset-4 hover:text-canopee-forest"
+            >
+              Page précédente
+            </Link>
+            <span />
           </nav>
         )}
       </main>

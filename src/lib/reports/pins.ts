@@ -195,6 +195,11 @@ export function clusterCountLayout(): SymbolLayerSpecification['layout'] {
   return {
     'text-field': ['get', 'point_count_abbreviated'],
     'text-size': 13,
+    'text-font': [
+      'Averia Serif',
+      'Open Sans Semibold',
+      'Arial Unicode MS Bold',
+    ],
     'text-allow-overlap': true,
   }
 }

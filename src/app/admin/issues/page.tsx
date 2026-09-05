@@ -25,7 +25,7 @@ export default async function AdminIssuesPage({
   await requireApprovedAccess('pro')
 
   const params = await searchParams
-  const sortBy: ReportSortBy = params.sortBy === 'status' ? 'status' : 'date'
+  const sortBy: ReportSortBy = params.sortBy === 'wooded' ? 'wooded' : 'wooded'
   const statusFilter: ReportStatusFilter =
     params.statusFilter === 'open' || params.statusFilter === 'resolved'
       ? params.statusFilter

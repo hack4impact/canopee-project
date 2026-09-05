@@ -1,45 +1,60 @@
 import { eq } from 'drizzle-orm'
 import { forbidden, redirect } from 'next/navigation'
-import { cache } from 'react'
 import { db, users } from '@/db'
 import { canAccess, isAdmin, isApproved, type Role } from '@/lib/auth/roles'
 import { createClient } from '@/lib/supabase/server'
 
 export type UserProfile = typeof users.$inferSelect
 
-export const getCurrentUserProfile = cache(
-  async function (): Promise<UserProfile | null> {
-    try {
-      const supabase = await createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+async function lookupProfileByAuthUserId(
+  authUserId: string,
+): Promise<UserProfile | null> {
+  const profileQuery = db
+    .select()
+    .from(users)
+    .where(eq(users.authUserId, authUserId))
+    .limit(1)
 
-      if (!user) {
-        return null
-      }
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('profile lookup timeout')), 1500)
+  })
 
-      const [profile] = await db
-        .select()
-        .from(users)
-        .where(eq(users.authUserId, user.id))
-        .limit(1)
+  try {
+    const [profile] = (await Promise.race([profileQuery, timeoutPromise])) as [
+      UserProfile | undefined,
+    ]
 
-      return profile ?? null
-    } catch (error) {
-      const cause = (error as { cause?: { code?: string; message?: string } })
-        .cause
-      console.warn(
-        'Unable to resolve the current user profile:',
-        error,
-        '| cause:',
-        cause?.code,
-        cause?.message,
-      )
+    return profile ?? null
+  } catch {
+    return null
+  }
+}
+
+export async function getCurrentUserProfile(): Promise<UserProfile | null> {
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
       return null
     }
-  },
-)
+
+    return await lookupProfileByAuthUserId(user.id)
+  } catch (error) {
+    const cause = (error as { cause?: { code?: string; message?: string } })
+      .cause
+    console.warn(
+      'Unable to resolve the current user profile:',
+      error,
+      '| cause:',
+      cause?.code,
+      cause?.message,
+    )
+    return null
+  }
+}
 
 export async function requireAdmin(): Promise<UserProfile> {
   const profile = await getCurrentUserProfile()

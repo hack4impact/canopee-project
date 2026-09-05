@@ -11,12 +11,14 @@ import {
   or,
   sql,
 } from 'drizzle-orm'
+import { woodedAreaAt } from '@/lib/patrols/woods'
 import { db, reports, users } from '@/db'
 import { resolvedCutoff } from '@/lib/observations/visibility'
 import type { ReportExportRow } from '@/lib/reports/csv'
-import type {
-  ReportHistorySort,
-  ReportHistoryStatus,
+import {
+  sortReportsByHistory,
+  type ReportHistorySort,
+  type ReportHistoryStatus,
 } from '@/lib/reports/history'
 import {
   PIN_CATEGORIES,
@@ -80,6 +82,7 @@ export type ReportListItem = {
   createdAt: Date
   resolvedAt: Date | null
   reporter: string
+  woodedArea: string | null
 }
 
 export function reporterLabel(
@@ -95,13 +98,17 @@ export function reporterLabel(
 
   return reporterEmail ? 'Signalement citoyen' : 'Compte supprimé'
 }
-export type ReportSortBy = 'date' | 'status'
+export type ReportSortBy = 'wooded'
 export type ReportStatusFilter = 'open' | 'resolved' | 'all'
+
+function woodedAreaLabel(latitude: number, longitude: number): string {
+  return woodedAreaAt({ latitude, longitude }) ?? 'Autre'
+}
 
 export async function listAllReports(
   options: { sortBy?: ReportSortBy; statusFilter?: ReportStatusFilter } = {},
 ): Promise<ReportListItem[]> {
-  const { sortBy = 'date', statusFilter = 'all' } = options
+  const { sortBy = 'wooded', statusFilter = 'all' } = options
   const whereClause =
     statusFilter === 'open'
       ? isNull(reports.resolvedAt)
@@ -109,7 +116,7 @@ export async function listAllReports(
         ? isNotNull(reports.resolvedAt)
         : undefined
   const orderByClause =
-    sortBy === 'status' ? asc(reports.resolvedAt) : desc(reports.createdAt)
+    sortBy === 'wooded' ? desc(reports.createdAt) : desc(reports.createdAt)
 
   const rows = await db
     .select({
@@ -137,13 +144,20 @@ export async function listAllReports(
     .where(whereClause)
     .orderBy(orderByClause)
 
-  return rows.map(
-    ({ firstName, lastName, reporterEmail, ...row }): ReportListItem => ({
-      ...row,
-      latitude: Number(row.latitude),
-      longitude: Number(row.longitude),
-      reporter: reporterLabel(firstName, lastName, reporterEmail),
-    }),
+  return sortReportsByHistory(
+    rows.map(
+      ({ firstName, lastName, reporterEmail, ...row }): ReportListItem => ({
+        ...row,
+        latitude: Number(row.latitude),
+        longitude: Number(row.longitude),
+        reporter: reporterLabel(firstName, lastName, reporterEmail),
+        woodedArea: woodedAreaLabel(
+          Number(row.latitude),
+          Number(row.longitude),
+        ),
+      }),
+    ),
+    'wooded',
   )
 }
 
@@ -196,6 +210,7 @@ export type UserReport = {
   category: ReportCategory
   createdAt: Date
   resolvedAt: Date | null
+  woodedArea: string
 }
 
 export type UserReportPage = {
@@ -211,16 +226,6 @@ function statusCondition(status: ReportHistoryStatus) {
   return status === 'resolved' ? isNotNull(reports.resolvedAt) : undefined
 }
 
-function historyOrder(sort: ReportHistorySort) {
-  if (sort === 'oldest') {
-    return [asc(reports.createdAt)]
-  }
-
-  return sort === 'category'
-    ? [asc(reports.category), desc(reports.createdAt)]
-    : [desc(reports.createdAt)]
-}
-
 export async function listReportsForUser(
   userId: string,
   options: {
@@ -229,7 +234,7 @@ export async function listReportsForUser(
     sort?: ReportHistorySort
   } = {},
 ): Promise<UserReportPage> {
-  const { page = 1, status = 'all', sort = 'recent' } = options
+  const { page = 1, status = 'all', sort = 'wooded' } = options
   const offset = Math.max(0, page - 1) * REPORTS_PAGE_SIZE
 
   const rows = await db
@@ -239,17 +244,30 @@ export async function listReportsForUser(
       category: reports.category,
       createdAt: reports.createdAt,
       resolvedAt: reports.resolvedAt,
+      latitude: reports.latitude,
+      longitude: reports.longitude,
     })
     .from(reports)
     .where(and(eq(reports.userId, userId), statusCondition(status)))
-    .orderBy(...historyOrder(sort))
+    .orderBy(desc(reports.createdAt))
     .limit(REPORTS_PAGE_SIZE + 1)
     .offset(offset)
 
   const hasNextPage = rows.length > REPORTS_PAGE_SIZE
 
+  const items = (hasNextPage ? rows.slice(0, REPORTS_PAGE_SIZE) : rows).map(
+    (row) => ({
+      id: row.id,
+      eventNumber: row.eventNumber,
+      category: row.category,
+      createdAt: row.createdAt,
+      resolvedAt: row.resolvedAt,
+      woodedArea: woodedAreaLabel(Number(row.latitude), Number(row.longitude)),
+    }),
+  )
+
   return {
-    items: hasNextPage ? rows.slice(0, REPORTS_PAGE_SIZE) : rows,
+    items: sortReportsByHistory(items, sort),
     hasNextPage,
   }
 }
@@ -294,6 +312,10 @@ export async function getReportById(id: string): Promise<ReportDetail | null> {
     latitude: Number(row.latitude),
     longitude: Number(row.longitude),
     reporter: reporterLabel(firstName, lastName, reporterEmail),
+    woodedArea: woodedAreaAt({
+      latitude: Number(row.latitude),
+      longitude: Number(row.longitude),
+    }),
   }
 }
 

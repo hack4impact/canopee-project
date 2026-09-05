@@ -1,8 +1,4 @@
-import {
-  reportGroupOfCategory,
-  REPORT_GROUP_LABELS,
-  type ReportCategory,
-} from '@/lib/reports/categories'
+import type { ReportCategory } from '@/lib/reports/categories'
 
 export const REPORT_HISTORY_STATUSES = ['all', 'open', 'resolved'] as const
 
@@ -10,16 +6,16 @@ export type ReportHistoryStatus = (typeof REPORT_HISTORY_STATUSES)[number]
 
 export const DEFAULT_HISTORY_STATUS: ReportHistoryStatus = 'all'
 
-export const REPORT_HISTORY_SORTS = ['recent', 'oldest', 'category'] as const
+export const REPORT_HISTORY_SORTS = ['recent', 'oldest', 'wooded'] as const
 
 export type ReportHistorySort = (typeof REPORT_HISTORY_SORTS)[number]
 
-export const DEFAULT_HISTORY_SORT: ReportHistorySort = 'recent'
+export const DEFAULT_HISTORY_SORT: ReportHistorySort = 'wooded'
 
 export const REPORT_HISTORY_SORT_LABELS: Record<ReportHistorySort, string> = {
   recent: 'Récents',
   oldest: 'Anciens',
-  category: 'Catégorie',
+  wooded: 'Boisé',
 }
 
 export function parseHistoryStatus(
@@ -57,6 +53,52 @@ export function formatMonthLabel(date: Date): string {
 export type SectionedReport = {
   category: ReportCategory
   createdAt: Date
+  woodedArea?: string | null
+}
+
+export function sortReportsByHistory<T extends SectionedReport>(
+  items: readonly T[],
+  sort: ReportHistorySort,
+): T[] {
+  const sorted = [...items]
+
+  if (sort === 'oldest') {
+    sorted.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    return sorted
+  }
+
+  if (sort === 'recent') {
+    sorted.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    return sorted
+  }
+
+  sorted.sort((a, b) => {
+    const leftName = a.woodedArea ?? 'Autre'
+    const rightName = b.woodedArea ?? 'Autre'
+
+    const leftIsOther = leftName === 'Autre'
+    const rightIsOther = rightName === 'Autre'
+
+    if (leftIsOther && !rightIsOther) {
+      return 1
+    }
+
+    if (!leftIsOther && rightIsOther) {
+      return -1
+    }
+
+    const woodedAreaComparison = leftName.localeCompare(rightName, 'fr', {
+      sensitivity: 'base',
+    })
+
+    if (woodedAreaComparison !== 0) {
+      return woodedAreaComparison
+    }
+
+    return b.createdAt.getTime() - a.createdAt.getTime()
+  })
+
+  return sorted
 }
 
 export type ReportSection<T extends SectionedReport> = {
@@ -70,15 +112,15 @@ export function sectionReports<T extends SectionedReport>(
   sort: ReportHistorySort,
 ): ReportSection<T>[] {
   const sections: ReportSection<T>[] = []
+  const sortedItems = sortReportsByHistory(items, sort)
 
-  for (const item of items) {
+  for (const item of sortedItems) {
     const label =
-      sort === 'category'
-        ? REPORT_GROUP_LABELS[reportGroupOfCategory(item.category)]
+      sort === 'wooded'
+        ? (item.woodedArea ?? 'Autre')
         : formatMonthLabel(item.createdAt)
 
-    const key =
-      sort === 'category' ? reportGroupOfCategory(item.category) : label
+    const key = sort === 'wooded' ? (item.woodedArea ?? 'Autre') : label
 
     const current = sections.at(-1)
 
