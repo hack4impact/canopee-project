@@ -25,8 +25,9 @@ function getDbInstance(): DbInstance {
     globalForDb.canopeeDbClient ??
     postgres(connectionString, {
       prepare: false,
-      max: 5,
-      idle_timeout: 20,
+      max: 20,
+      idle_timeout: 300,
+      connect_timeout: 15,
     })
 
   if (process.env.NODE_ENV !== 'production') {
