@@ -57,6 +57,11 @@ function signedOut() {
   limit.mockResolvedValue([])
 }
 
+function databaseUnavailable() {
+  getUser.mockResolvedValue({ data: { user: { id: 'auth-1' } } })
+  limit.mockRejectedValue(new Error('connection timeout'))
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
 })
@@ -78,6 +83,11 @@ describe('getCurrentUserProfile', () => {
       role: 'volunteer',
       status: 'approved',
     })
+  })
+
+  it('lets a lookup failure through instead of reporting no session', async () => {
+    databaseUnavailable()
+    await expect(getCurrentUserProfile()).rejects.toThrow('connection timeout')
   })
 })
 
@@ -168,5 +178,10 @@ describe('requireApprovedAccess (endpoint gate)', () => {
     await expect(requireApprovedAccess()).resolves.toMatchObject({
       status: 'approved',
     })
+  })
+
+  it('surfaces a lookup failure rather than 403ing a legitimate caller', async () => {
+    databaseUnavailable()
+    await expect(requireApprovedAccess()).rejects.not.toThrow(ForbiddenError)
   })
 })
