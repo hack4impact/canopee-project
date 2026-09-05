@@ -1,6 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import {
+  DateRangePicker,
+  currentYearRange,
+  toDateParam,
+  type DateRange,
+} from '@/components/date-range-picker'
 
 const EXPORT_URL = '/api/fauna-flora/export'
 
@@ -11,6 +17,7 @@ function fileNameFromResponse(response: Response): string {
 }
 
 export function FaunaFloraExportButton() {
+  const [range, setRange] = useState<DateRange>(currentYearRange)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -19,7 +26,13 @@ export function FaunaFloraExportButton() {
     setError(null)
 
     try {
-      const response = await fetch(EXPORT_URL, { redirect: 'manual' })
+      const params = new URLSearchParams()
+      params.set('startDate', toDateParam(range.from))
+      params.set('endDate', toDateParam(range.to))
+
+      const response = await fetch(`${EXPORT_URL}?${params}`, {
+        redirect: 'manual',
+      })
 
       if (!response.ok) {
         throw new Error(`Export failed (${response.status})`)
@@ -41,6 +54,9 @@ export function FaunaFloraExportButton() {
 
   return (
     <div className="mt-2 border-t border-white/10 pt-3">
+      <div className="mb-2">
+        <DateRangePicker value={range} onChange={setRange} />
+      </div>
       <button
         type="button"
         onClick={() => void handleExport()}
