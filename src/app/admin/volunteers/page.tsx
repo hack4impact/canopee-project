@@ -23,10 +23,6 @@ export default async function AdminVolunteersPage() {
             <h1 className="font-heading text-3xl text-canopee-forest">
               Comptes en attente
             </h1>
-            <p className="text-base font-semibold text-canopee-forest/55">
-              {pendingUsers.length} demande
-              {pendingUsers.length === 1 ? '' : 's'} à examiner
-            </p>
           </div>
         </header>
 

@@ -195,9 +195,6 @@ export function VolunteerQueue({
         <p className="text-base font-bold text-canopee-forest">
           Aucune demande en attente
         </p>
-        <p className="text-sm text-canopee-forest/55">
-          Les nouvelles inscriptions apparaîtront ici.
-        </p>
       </div>
     )
   }

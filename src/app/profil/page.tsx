@@ -82,10 +82,6 @@ export default async function ProfilPage() {
 
         {lastPatrol && (
           <div className="flex flex-col gap-1.5">
-            <h2 className="text-sm font-extrabold tracking-[0.08em] text-canopee-forest/50 uppercase">
-              Statistiques
-            </h2>
-
             <Link
               href={`/patrouilles/${lastPatrol.id}?from=profil`}
               className="block overflow-hidden rounded-2xl ring-1 ring-canopee-forest/10 transition-colors hover:ring-canopee-green/40 focus-visible:ring-2 focus-visible:ring-canopee-green focus-visible:outline-none"

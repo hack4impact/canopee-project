@@ -182,7 +182,7 @@ function ReportConfirmation({
         <p className="text-sm text-canopee-forest/70">
           {queued
             ? 'Il partira automatiquement dès que le réseau reviendra.'
-            : 'Merci. Il apparaît maintenant sur la carte.'}
+            : 'Il apparaît maintenant sur la carte.'}
         </p>
       </div>
 
@@ -230,7 +230,7 @@ function CitizenConfirmation() {
           Signalement envoyé
         </h2>
         <p className="text-sm text-canopee-forest/70">
-          Merci. Vous recevrez un courriel à l’adresse indiquée lorsque votre
+          Vous recevrez un courriel à l’adresse indiquée lorsque votre
           signalement aura été traité.
         </p>
       </div>
@@ -278,7 +278,7 @@ const STEP_TITLES: Record<StepKey, string> = {
   courriel: 'Comment vous joindre ?',
   constate: 'Qu’avez-vous constaté ?',
   typologie: 'Typologie',
-  categorie: 'Sélectionnez la catégorie observée',
+  categorie: 'Catégorie',
   photo: 'Photo',
   nombre: 'Combien ?',
   espece: 'Quelle espèce avez-vous observé ?',
@@ -602,7 +602,7 @@ function ReportWizard({
               className="text-xs text-canopee-forest/60"
             >
               Elle sert uniquement à vous prévenir quand votre signalement est
-              traité. Aucun compte n’est créé.
+              traité.
             </p>
             {errors.reporterEmail && (
               <p id="reporter-email-error" className={ERROR}>
@@ -833,9 +833,6 @@ function ReportWizard({
                 {errors.quantity}
               </p>
             )}
-            <p className="text-xs text-canopee-forest/60">
-              Facultatif — vous pouvez passer à l’étape suivante.
-            </p>
           </div>
         )}
 

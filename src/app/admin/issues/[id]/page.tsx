@@ -191,8 +191,7 @@ export default async function AdminIssuePage({
 
         {resolved ? (
           <p className={`px-5 py-4 text-sm text-canopee-forest/70 ${CARD}`}>
-            Ce signalement est clos. Le dossier et sa photo restent en base,
-            seule sa position a quitté la carte.
+            Signalement clos.
           </p>
         ) : (
           <ResolveReportButton

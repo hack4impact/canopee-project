@@ -35,8 +35,7 @@ export default function SignupPage() {
               Créez votre compte
             </h1>
             <p className="text-center text-sm text-canopee-forest/80">
-              Les nouveaux comptes sont créés en tant que bénévoles et doivent
-              être approuvés par un administrateur.
+              Votre compte doit être approuvé par un administrateur.
             </p>
           </header>
 

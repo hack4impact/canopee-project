@@ -80,8 +80,7 @@ export default async function SignalementsPage({
         {totals.count === 0 ? (
           <div className="my-auto flex flex-col items-center gap-3 rounded-2xl border border-dashed border-canopee-forest/25 px-6 py-10 text-center">
             <p className="text-sm leading-relaxed text-canopee-forest/70">
-              Aucun signalement enregistré pour l&apos;instant. Ceux transmis
-              depuis la carte apparaîtront ici, avec leur suivi.
+              Aucun signalement.
             </p>
             <Link
               href="/signaler"

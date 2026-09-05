@@ -66,7 +66,7 @@ export default async function PatrouillesHistoryPage({
           <p
             className={`my-auto px-6 py-12 text-center text-sm leading-relaxed text-canopee-forest/70 ${CARD}`}
           >
-            Vous n&apos;avez pas encore de patrouille enregistrée.
+            Aucune patrouille.
           </p>
         ) : (
           sectionPatrolsByMonth(items).map((month) => (

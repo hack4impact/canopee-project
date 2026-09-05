@@ -43,9 +43,7 @@ export default async function SignupConfirmPage(
               <span className="font-medium text-canopee-forest">{sentTo}</span>.
             </p>
             <p>
-              Cliquez sur le lien qu&apos;il contient pour activer votre compte,
-              puis connectez-vous. Une fois votre compte approuvé par un
-              administrateur, vous pourrez commencer à patrouiller.
+              Cliquez sur le lien qu&apos;il contient pour activer votre compte.
             </p>
             <p>
               Si vous ne voyez pas le courriel, vérifiez vos courriels

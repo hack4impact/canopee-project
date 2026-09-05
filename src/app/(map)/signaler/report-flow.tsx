@@ -81,10 +81,6 @@ export function ReportFlow({
           returning ? 'slide-in-from-left-4' : ''
         }`}
       >
-        <p className="text-base font-medium text-canopee-forest/80">
-          Choisissez le type de signalement :
-        </p>
-
         {GROUPS.map(({ group: value, title, description, icon }, index) => {
           const theme = REPORT_THEMES[value]
 

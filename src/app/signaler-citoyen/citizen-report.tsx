@@ -34,9 +34,6 @@ export function CitizenReport() {
             <h1 className="font-heading text-2xl text-canopee-forest sm:text-3xl">
               Signaler
             </h1>
-            <p className="text-sm text-canopee-forest/70">
-              Sans compte, en quelques étapes.
-            </p>
           </div>
 
           <Link

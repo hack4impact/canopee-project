@@ -52,8 +52,7 @@ export function ResolveReportButton({
         <>
           <p className="text-sm text-canopee-forest/70">
             Le signalement quittera la carte et un courriel de confirmation
-            partira vers la personne qui l&apos;a soumis. Le dossier reste en
-            base.
+            partira vers la personne qui l&apos;a soumis.
           </p>
           <div className="flex gap-2">
             <Button

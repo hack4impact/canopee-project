@@ -103,8 +103,7 @@ export default async function PatrouillePage({
           <p
             className={`my-auto px-6 py-12 text-center text-sm leading-relaxed text-canopee-forest/70 ${CARD}`}
           >
-            Cette patrouille est en cours. Son résumé s&apos;affichera une fois
-            qu&apos;elle sera terminée.
+            Patrouille en cours.
           </p>
         ) : (
           <>
