@@ -45,7 +45,7 @@ export function FaunaFloraExportButton() {
         type="button"
         onClick={() => void handleExport()}
         disabled={pending}
-        className="w-full touch-manipulation rounded-full bg-white/10 px-4 py-2.5 text-sm font-medium text-canopee-cream transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none disabled:opacity-50"
+        className="w-full touch-manipulation rounded-xl bg-white/10 px-4 py-2.5 text-sm font-medium text-canopee-cream transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none disabled:opacity-50"
       >
         {pending ? 'Export en cours…' : 'Exporter faune/flore'}
       </button>

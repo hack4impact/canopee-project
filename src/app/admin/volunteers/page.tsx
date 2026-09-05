@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { BackButton } from '@/components/back-button'
 import { BottomNav } from '@/components/bottom-nav'
+import { requireAdmin } from '@/lib/auth/current-user'
 import { getPendingUsers } from './actions'
 import { VolunteerQueue } from './volunteer-queue'
 
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 export default async function AdminVolunteersPage() {
+  await requireAdmin()
   const pendingUsers = await getPendingUsers()
 
   return (

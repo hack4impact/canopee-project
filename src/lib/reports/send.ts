@@ -106,7 +106,7 @@ export async function drainQueuedReports(): Promise<number> {
       .json()
       .catch(() => null)) as ReportFormState | null
 
-    if (response.status === 422 && state?.errors) {
+    if (response.status === 409 || (response.status === 422 && state?.errors)) {
       await deleteQueuedReport(report.id)
       continue
     }
