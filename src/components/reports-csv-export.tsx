@@ -6,6 +6,12 @@ import {
   CSV_HEADERS,
   type CsvColumn,
 } from '@/lib/reports/csv'
+import {
+  DateRangePicker,
+  currentYearRange,
+  toDateParam,
+  type DateRange,
+} from '@/components/date-range-picker'
 
 const EXPORT_URL = '/api/reports/export'
 
@@ -39,6 +45,7 @@ export function ReportsCsvExport() {
   const [selected, setSelected] = useState<Set<CsvColumn>>(
     () => new Set(CSV_HEADERS),
   )
+  const [range, setRange] = useState<DateRange>(currentYearRange)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -68,8 +75,10 @@ export function ReportsCsvExport() {
         const columns = CSV_HEADERS.filter((column) => selected.has(column))
         params.set('columns', columns.join(','))
       }
+      params.set('startDate', toDateParam(range.from))
+      params.set('endDate', toDateParam(range.to))
 
-      const url = params.size > 0 ? `${EXPORT_URL}?${params}` : EXPORT_URL
+      const url = `${EXPORT_URL}?${params}`
       const response = await fetch(url, { redirect: 'manual' })
 
       if (!response.ok) {
@@ -92,7 +101,12 @@ export function ReportsCsvExport() {
 
   return (
     <div className="rounded-2xl border border-canopee-forest/10 bg-white/70 p-4 shadow-sm">
-      <p className="text-sm font-medium text-canopee-forest">Colonnes</p>
+      <p className="text-sm font-medium text-canopee-forest">Période</p>
+      <div className="mt-2">
+        <DateRangePicker value={range} onChange={setRange} />
+      </div>
+
+      <p className="mt-4 text-sm font-medium text-canopee-forest">Colonnes</p>
 
       <ul className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
         {COLUMN_ORDER.map((column) => (
