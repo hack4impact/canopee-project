@@ -13,18 +13,18 @@ import {
 import { MonthYearSelect, type MonthYear } from '@/components/month-year-select'
 
 const MONTH_ABBREVIATIONS = [
-  'janv.',
-  'févr.',
-  'mars',
-  'avr.',
-  'mai',
-  'juin',
-  'juill.',
-  'août',
-  'sept.',
-  'oct.',
-  'nov.',
-  'déc.',
+  'Janv.',
+  'Févr.',
+  'Mars',
+  'Avr.',
+  'Mai',
+  'Juin',
+  'Juill.',
+  'Août',
+  'Sept.',
+  'Oct.',
+  'Nov.',
+  'Déc.',
 ]
 
 export interface DateRange {
@@ -75,14 +75,14 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
       </PopoverTrigger>
       <PopoverContent className="w-auto" align="start">
         <div className="flex flex-col gap-1.5">
-          <Label>From</Label>
+          <Label>De</Label>
           <MonthYearSelect
             value={draftFrom}
             onChange={(next) => commit(next, draftTo)}
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label>To</Label>
+          <Label>À</Label>
           <MonthYearSelect
             value={draftTo}
             onChange={(next) => commit(draftFrom, next)}
