@@ -51,23 +51,31 @@ export function UserLocation({
     const targetMap = map
     let cancelled = false
     let marker: mapboxgl.Marker | null = null
+    let centred = false
+    let lastFixAt = 0
 
-    function placeMarker(position: GeolocationPosition, moveCamera: boolean) {
-      if (cancelled) {
+    function placeMarker(position: GeolocationPosition) {
+      if (cancelled || position.timestamp < lastFixAt) {
         return
       }
+
+      lastFixAt = position.timestamp
 
       const { longitude, latitude } = position.coords
       lastPositionRef.current = { longitude, latitude }
 
-      marker?.remove()
-      marker = new mapboxgl.Marker({
-        element: createUserLocationElement(),
-      })
-        .setLngLat([longitude, latitude])
-        .addTo(targetMap)
+      if (marker) {
+        marker.setLngLat([longitude, latitude])
+      } else {
+        marker = new mapboxgl.Marker({
+          element: createUserLocationElement(),
+        })
+          .setLngLat([longitude, latitude])
+          .addTo(targetMap)
+      }
 
-      if (moveCamera && flyToOnLocate) {
+      if (!centred && flyToOnLocate) {
+        centred = true
         targetMap.flyTo({
           center: [longitude, latitude],
           zoom: LOCATE_ZOOM,
@@ -76,28 +84,21 @@ export function UserLocation({
       }
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => placeMarker(position, true),
-      () => {},
-      {
-        enableHighAccuracy: false,
-        timeout: 3_000,
-        maximumAge: LOCATE_CACHE_MAX_AGE_MS,
-      },
-    )
+    navigator.geolocation.getCurrentPosition(placeMarker, () => {}, {
+      enableHighAccuracy: false,
+      timeout: 3_000,
+      maximumAge: LOCATE_CACHE_MAX_AGE_MS,
+    })
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => placeMarker(position, false),
-      () => {},
-      {
-        enableHighAccuracy: true,
-        timeout: LOCATE_TIMEOUT_MS,
-        maximumAge: 0,
-      },
-    )
+    const watchId = navigator.geolocation.watchPosition(placeMarker, () => {}, {
+      enableHighAccuracy: true,
+      timeout: LOCATE_TIMEOUT_MS,
+      maximumAge: 0,
+    })
 
     return () => {
       cancelled = true
+      navigator.geolocation.clearWatch(watchId)
       marker?.remove()
       marker = null
     }
