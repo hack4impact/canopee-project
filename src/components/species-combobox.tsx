@@ -1,7 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { searchSpecies, type Species } from '@/lib/reports/species'
+import {
+  getSpeciesByCategory,
+  searchSpecies,
+  type Species,
+} from '@/lib/reports/species'
 import type { ReportCategory } from '@/lib/reports/categories'
 
 type SpeciesComboboxProps = {
@@ -12,6 +16,8 @@ type SpeciesComboboxProps = {
   placeholder?: string
   describedBy?: string
 }
+
+const SUGGESTION_LIMIT = 20
 
 const FIELD =
   'w-full rounded-lg border border-canopee-green/30 bg-white px-3 py-2.5 text-canopee-forest placeholder-zinc-500 transition-colors outline-none focus:border-canopee-green focus:ring-2 focus:ring-canopee-green/40'
@@ -37,10 +43,15 @@ export function SpeciesCombobox({
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const suggestions = useMemo<Species[]>(
-    () => (value.trim() ? searchSpecies(value, category, 20) : []),
-    [value, category],
-  )
+  const suggestions = useMemo<Species[]>(() => {
+    if (value.trim()) {
+      return searchSpecies(value, category, SUGGESTION_LIMIT)
+    }
+
+    return category
+      ? getSpeciesByCategory(category).slice(0, SUGGESTION_LIMIT)
+      : []
+  }, [value, category])
 
   const expanded = isOpen && suggestions.length > 0
   const listboxId = `${id}-listbox`
