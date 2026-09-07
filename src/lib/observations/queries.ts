@@ -26,9 +26,14 @@ export async function listObservations(
   const rows = await db
     .select({
       id: reports.id,
+      eventNumber: reports.eventNumber,
       category: reports.category,
       latitude: reports.latitude,
       longitude: reports.longitude,
+      species: reports.species,
+      photoUrl: reports.photoUrl,
+      createdAt: reports.createdAt,
+      resolvedAt: reports.resolvedAt,
     })
     .from(reports)
     .where(
@@ -41,9 +46,14 @@ export async function listObservations(
 
   return rows.map((row) => ({
     id: row.id,
+    eventNumber: row.eventNumber,
     category: row.category as ObservationCategory,
     latitude: Number(row.latitude),
     longitude: Number(row.longitude),
+    species: row.species,
+    hasPhoto: row.photoUrl !== null,
+    createdAt: row.createdAt.toISOString(),
+    resolvedAt: row.resolvedAt?.toISOString() ?? null,
   }))
 }
 

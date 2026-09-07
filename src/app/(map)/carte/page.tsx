@@ -26,7 +26,7 @@ export default async function CartePage() {
       <TopPanel />
       <HeatmapLayer />
       <ReportPinsLayer canOpenDetail={canOpenDetail} />
-      {observations && <ObservationsLayer />}
+      {observations && <ObservationsLayer canOpenDetail={canOpenDetail} />}
       <UserLocation
         flyToOnLocate={false}
         compassClassName="absolute top-[calc(1rem+env(safe-area-inset-top))] left-4 z-10"
