@@ -13,18 +13,18 @@ import {
 import { MonthYearSelect, type MonthYear } from '@/components/month-year-select'
 
 const MONTH_ABBREVIATIONS = [
-  'Janv.',
-  'Févr.',
-  'Mars',
-  'Avr.',
-  'Mai',
-  'Juin',
-  'Juill.',
-  'Août',
-  'Sept.',
-  'Oct.',
-  'Nov.',
-  'Déc.',
+  'janv.',
+  'févr.',
+  'mars',
+  'avr.',
+  'mai',
+  'juin',
+  'juill.',
+  'août',
+  'sept.',
+  'oct.',
+  'nov.',
+  'déc.',
 ]
 
 export interface DateRange {
