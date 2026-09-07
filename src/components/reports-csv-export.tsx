@@ -8,6 +8,12 @@ import {
   CSV_HEADERS,
   type CsvColumn,
 } from '@/lib/reports/csv'
+import {
+  DateRangePicker,
+  currentYearRange,
+  toDateParam,
+  type DateRange,
+} from '@/components/date-range-picker'
 
 const EXPORT_URL = '/api/reports/export'
 
@@ -27,6 +33,7 @@ export function ReportsCsvExport() {
   )
   const [open, setOpen] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [range, setRange] = useState<DateRange>(currentYearRange)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -68,6 +75,8 @@ export function ReportsCsvExport() {
     try {
       const params = new URLSearchParams({
         columns: CSV_HEADERS.filter((column) => selected.has(column)).join(','),
+        startDate: toDateParam(range.from),
+        endDate: toDateParam(range.to),
       })
 
       const response = await fetch(`${EXPORT_URL}?${params}`, {
@@ -94,6 +103,10 @@ export function ReportsCsvExport() {
 
   return (
     <div className="rounded-2xl border border-canopee-forest/10 bg-white/70 shadow-sm">
+      <div className="border-b border-canopee-forest/10 px-3 py-2.5">
+        <DateRangePicker value={range} onChange={setRange} />
+      </div>
+
       <div className="flex items-center gap-2 p-2 pl-3">
         <button
           type="button"

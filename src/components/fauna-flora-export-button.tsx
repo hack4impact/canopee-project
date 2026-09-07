@@ -2,6 +2,12 @@
 
 import { useState } from 'react'
 import { DownloadIcon } from 'lucide-react'
+import {
+  DateRangePicker,
+  currentYearRange,
+  toDateParam,
+  type DateRange,
+} from '@/components/date-range-picker'
 
 const EXPORT_URL = '/api/fauna-flora/export'
 
@@ -16,6 +22,7 @@ export function FaunaFloraExportButton({
 }: {
   columnCount: number
 }) {
+  const [range, setRange] = useState<DateRange>(currentYearRange)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -24,7 +31,13 @@ export function FaunaFloraExportButton({
     setError(null)
 
     try {
-      const response = await fetch(EXPORT_URL, { redirect: 'manual' })
+      const params = new URLSearchParams()
+      params.set('startDate', toDateParam(range.from))
+      params.set('endDate', toDateParam(range.to))
+
+      const response = await fetch(`${EXPORT_URL}?${params}`, {
+        redirect: 'manual',
+      })
 
       if (!response.ok) {
         throw new Error(`Export failed (${response.status})`)
@@ -46,6 +59,10 @@ export function FaunaFloraExportButton({
 
   return (
     <div className="rounded-2xl border border-canopee-forest/10 bg-white/70 shadow-sm">
+      <div className="border-b border-canopee-forest/10 px-3 py-2.5">
+        <DateRangePicker value={range} onChange={setRange} />
+      </div>
+
       <div className="flex items-center gap-2 p-2 pl-3">
         <p className="min-h-11 flex-1 content-center text-[13px] font-semibold text-canopee-forest">
           Format ministère · {columnCount} colonnes

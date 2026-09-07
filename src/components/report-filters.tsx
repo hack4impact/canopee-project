@@ -34,7 +34,14 @@ export function ReportFilters() {
     function dismiss(event: PointerEvent) {
       const target = event.target as Node
 
+      const insidePortalContent =
+        target instanceof Element &&
+        target.closest(
+          '[data-slot="popover-content"], [data-slot="select-content"]',
+        )
+
       if (
+        !insidePortalContent &&
         !buttonRef.current?.contains(target) &&
         !panelRef.current?.contains(target)
       ) {
