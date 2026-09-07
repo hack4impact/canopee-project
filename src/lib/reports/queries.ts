@@ -8,9 +8,11 @@ import {
   isNotNull,
   isNull,
   lte,
+  notInArray,
   or,
   sql,
 } from 'drizzle-orm'
+import { OBSERVATION_CATEGORIES } from '@/lib/observations/collection'
 import { woodedAreaAt } from '@/lib/patrols/woods'
 import { db, reports, users } from '@/db'
 import { resolvedCutoff } from '@/lib/observations/visibility'
@@ -211,6 +213,7 @@ export type UserReport = {
   createdAt: Date
   resolvedAt: Date | null
   woodedArea: string
+  photoUrl: string | null
 }
 
 export type UserReportPage = {
@@ -246,6 +249,7 @@ export async function listReportsForUser(
       resolvedAt: reports.resolvedAt,
       latitude: reports.latitude,
       longitude: reports.longitude,
+      photoUrl: reports.photoUrl,
     })
     .from(reports)
     .where(and(eq(reports.userId, userId), statusCondition(status)))
@@ -263,6 +267,7 @@ export async function listReportsForUser(
       createdAt: row.createdAt,
       resolvedAt: row.resolvedAt,
       woodedArea: woodedAreaLabel(Number(row.latitude), Number(row.longitude)),
+      photoUrl: row.photoUrl,
     }),
   )
 
@@ -274,7 +279,10 @@ export async function listReportsForUser(
 
 export type ReportDetail = ReportListItem
 
-export async function getReportById(id: string): Promise<ReportDetail | null> {
+export async function getReportById(
+  id: string,
+  userId?: string,
+): Promise<ReportDetail | null> {
   const [row] = await db
     .select({
       id: reports.id,
@@ -298,7 +306,11 @@ export async function getReportById(id: string): Promise<ReportDetail | null> {
     })
     .from(reports)
     .leftJoin(users, eq(reports.userId, users.id))
-    .where(eq(reports.id, id))
+    .where(
+      userId
+        ? and(eq(reports.id, id), eq(reports.userId, userId))
+        : eq(reports.id, id),
+    )
     .limit(1)
 
   if (!row) {
@@ -394,6 +406,7 @@ export async function listReportsForExport(
     .leftJoin(users, eq(reports.userId, users.id))
     .where(
       and(
+        notInArray(reports.category, [...OBSERVATION_CATEGORIES]),
         range?.start ? gte(reports.createdAt, range.start) : undefined,
         range?.end ? lte(reports.createdAt, range.end) : undefined,
       ),

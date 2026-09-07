@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { ImageOffIcon } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { BackButton } from '@/components/back-button'
 import { BottomNav } from '@/components/bottom-nav'
@@ -7,6 +9,7 @@ import { requireApprovedUser } from '@/lib/auth/current-user'
 import { REPORT_CATEGORY_LABELS } from '@/lib/reports/categories'
 import { formatEventNumber } from '@/lib/reports/format'
 import { reportGroupColor } from '@/lib/reports/group-style'
+import { getReportPhotoUrl } from '@/lib/reports/photo'
 import {
   parseHistorySort,
   parseHistoryStatus,
@@ -27,8 +30,9 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
-const dayFormatter = new Intl.DateTimeFormat('fr-CA', {
-  day: '2-digit',
+const dateFormatter = new Intl.DateTimeFormat('fr-CA', {
+  day: 'numeric',
+  month: 'short',
   timeZone: 'America/Toronto',
 })
 
@@ -58,8 +62,17 @@ export default async function SignalementsPage({
     getReportTotalsForUser(profile.id),
   ])
 
+  const withPhotos = await Promise.all(
+    items.map(async (report) => ({
+      ...report,
+      photoUrl: report.photoUrl
+        ? await getReportPhotoUrl(report.photoUrl)
+        : null,
+    })),
+  )
+
   const open = totals.count - totals.resolved
-  const sections = sectionReports(items, sort)
+  const sections = sectionReports(withPhotos, sort)
 
   const filters: { value: ReportHistoryStatus; label: string; n: number }[] = [
     { value: 'all', label: 'Tous', n: totals.count },
@@ -135,58 +148,66 @@ export default async function SignalementsPage({
                       const resolved = report.resolvedAt !== null
 
                       return (
-                        <li
-                          key={report.id}
-                          className={`grid grid-cols-[1.75rem_1fr_auto] items-center gap-3 rounded-[13px] border px-3 py-2.5 ${
-                            resolved
-                              ? 'border-dashed border-canopee-forest/15'
-                              : 'border-canopee-forest/10 bg-white/70'
-                          }`}
-                        >
-                          <span className="flex flex-col items-center leading-none">
-                            <span className="text-[15px] font-extrabold text-canopee-forest tabular-nums">
-                              {dayFormatter.format(report.createdAt)}
-                            </span>
-                            <span
-                              className={`mt-[3px] h-[3px] w-3.5 rounded-[1px] ${
-                                resolved ? 'opacity-40' : ''
-                              }`}
-                              style={{
-                                backgroundColor: reportGroupColor(
-                                  report.category,
-                                ),
-                              }}
-                            />
-                          </span>
-
-                          <span className="flex min-w-0 flex-col">
-                            <span
-                              className={`truncate font-heading text-sm ${
-                                resolved
-                                  ? 'text-canopee-forest/70'
-                                  : 'text-canopee-forest'
-                              }`}
-                            >
-                              {REPORT_CATEGORY_LABELS[report.category]}
-                            </span>
-                            <span className="text-[11.5px] text-canopee-forest/60 tabular-nums">
-                              {formatEventNumber(report.eventNumber)}
-                            </span>
-                            <span className="text-[11px] text-canopee-forest/55">
-                              {(report as { woodedArea?: string }).woodedArea ??
-                                'Autre'}
-                            </span>
-                          </span>
-
-                          <span
-                            className={`text-[11px] font-extrabold tracking-[0.04em] ${
+                        <li key={report.id}>
+                          <Link
+                            href={`/signalements/${report.id}`}
+                            className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green focus-visible:outline-none ${
                               resolved
-                                ? 'text-canopee-forest/45'
-                                : 'text-canopee-coral-dark'
+                                ? 'border-dashed border-canopee-forest/15 hover:border-canopee-forest/30'
+                                : 'border-canopee-forest/10 bg-white/70 hover:border-canopee-green/40'
                             }`}
                           >
-                            {resolved ? 'Résolu' : 'En attente'}
-                          </span>
+                            <span className="relative size-12 shrink-0 overflow-hidden rounded-xl bg-canopee-forest/5">
+                              {report.photoUrl ? (
+                                <Image
+                                  src={report.photoUrl}
+                                  alt=""
+                                  width={96}
+                                  height={96}
+                                  unoptimized
+                                  className={`h-full w-full object-cover ${resolved ? 'opacity-55' : ''}`}
+                                />
+                              ) : (
+                                <ImageOffIcon
+                                  aria-label="Aucune photo"
+                                  className="absolute top-1/2 left-1/2 size-5 -translate-x-1/2 -translate-y-1/2"
+                                  style={{
+                                    color: reportGroupColor(report.category),
+                                    opacity: resolved ? 0.35 : 0.55,
+                                  }}
+                                />
+                              )}
+                            </span>
+
+                            <span className="flex min-w-0 flex-1 flex-col">
+                              <span
+                                className={`truncate font-heading text-sm ${
+                                  resolved
+                                    ? 'text-canopee-forest/70'
+                                    : 'text-canopee-forest'
+                                }`}
+                              >
+                                {REPORT_CATEGORY_LABELS[report.category]}
+                              </span>
+                              <span className="truncate text-xs text-canopee-forest/60 tabular-nums">
+                                {formatEventNumber(report.eventNumber)} ·{' '}
+                                {dateFormatter.format(report.createdAt)}
+                              </span>
+                              <span className="truncate text-[11px] font-semibold text-canopee-forest/55">
+                                {report.woodedArea}
+                              </span>
+                            </span>
+
+                            <span
+                              className={`shrink-0 text-[11px] font-extrabold tracking-[0.04em] ${
+                                resolved
+                                  ? 'text-canopee-forest/45'
+                                  : 'text-canopee-coral-dark'
+                              }`}
+                            >
+                              {resolved ? 'Résolu' : 'En attente'}
+                            </span>
+                          </Link>
                         </li>
                       )
                     })}
