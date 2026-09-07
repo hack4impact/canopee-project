@@ -79,21 +79,12 @@ export const CSV_COLUMN_GROUPS: {
       'categorie',
       'libelle_categorie',
       'typologie',
+      'nombre_observe',
     ],
   },
   {
     label: 'Localisation',
     columns: ['latitude', 'longitude'],
-  },
-  {
-    label: 'Faune et flore',
-    columns: [
-      'nom_commun',
-      'habitat',
-      'nombre_observe',
-      'unite',
-      'statut_provincial',
-    ],
   },
   {
     label: 'Suivi',

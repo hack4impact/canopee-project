@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { DownloadIcon } from 'lucide-react'
 
 const EXPORT_URL = '/api/fauna-flora/export'
 
@@ -10,7 +11,11 @@ function fileNameFromResponse(response: Response): string {
   return match?.[1] ?? 'signalements-faune-flore.csv'
 }
 
-export function FaunaFloraExportButton() {
+export function FaunaFloraExportButton({
+  columnCount,
+}: {
+  columnCount: number
+}) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,17 +45,28 @@ export function FaunaFloraExportButton() {
   }
 
   return (
-    <div className="mt-2 border-t border-white/10 pt-3">
-      <button
-        type="button"
-        onClick={() => void handleExport()}
-        disabled={pending}
-        className="w-full touch-manipulation rounded-xl bg-white/10 px-4 py-2.5 text-sm font-medium text-canopee-cream transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none disabled:opacity-50"
-      >
-        {pending ? 'Export en cours…' : 'Exporter faune/flore'}
-      </button>
+    <div className="rounded-2xl border border-canopee-forest/10 bg-white/70 shadow-sm">
+      <div className="flex items-center gap-2 p-2 pl-3">
+        <p className="min-h-11 flex-1 content-center text-[13px] font-semibold text-canopee-forest">
+          Format ministère · {columnCount} colonnes
+        </p>
+
+        <button
+          type="button"
+          onClick={() => void handleExport()}
+          disabled={pending}
+          className="inline-flex min-h-11 touch-manipulation items-center gap-1.5 rounded-lg bg-canopee-green px-4 text-[13px] font-bold text-white transition-colors hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <DownloadIcon aria-hidden="true" className="size-4 shrink-0" />
+          {pending ? 'Export…' : 'Exporter'}
+        </button>
+      </div>
+
       {error && (
-        <p aria-live="polite" className="mt-2 text-sm text-red-300">
+        <p
+          aria-live="polite"
+          className="border-t border-canopee-forest/10 px-3 py-2 text-sm text-canopee-coral"
+        >
           {error}
         </p>
       )}

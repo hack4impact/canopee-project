@@ -11,6 +11,10 @@ import {
 
 const EXPORT_URL = '/api/reports/export'
 
+const PICKER_COLUMNS: readonly CsvColumn[] = CSV_COLUMN_GROUPS.flatMap(
+  (group) => group.columns,
+)
+
 function fileNameFromResponse(response: Response): string {
   const header = response.headers.get('Content-Disposition') ?? ''
   const match = header.match(/filename="([^"]+)"/)
@@ -19,9 +23,9 @@ function fileNameFromResponse(response: Response): string {
 
 export function ReportsCsvExport() {
   const [selected, setSelected] = useState<Set<CsvColumn>>(
-    () => new Set(CSV_HEADERS),
+    () => new Set(PICKER_COLUMNS),
   )
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -62,14 +66,13 @@ export function ReportsCsvExport() {
     setError(null)
 
     try {
-      const params = new URLSearchParams()
-      if (selected.size < CSV_HEADERS.length) {
-        const columns = CSV_HEADERS.filter((column) => selected.has(column))
-        params.set('columns', columns.join(','))
-      }
+      const params = new URLSearchParams({
+        columns: CSV_HEADERS.filter((column) => selected.has(column)).join(','),
+      })
 
-      const url = params.size > 0 ? `${EXPORT_URL}?${params}` : EXPORT_URL
-      const response = await fetch(url, { redirect: 'manual' })
+      const response = await fetch(`${EXPORT_URL}?${params}`, {
+        redirect: 'manual',
+      })
 
       if (!response.ok) {
         throw new Error(`Export failed (${response.status})`)
