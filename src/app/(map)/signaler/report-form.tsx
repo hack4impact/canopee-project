@@ -3,6 +3,7 @@
 import {
   useActionState,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -11,7 +12,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ReportLocationPicker } from '@/components/report-location-picker'
 import { CITIZEN_REPORT_ROUTE } from '@/lib/auth/routes'
-import { SpeciesPicto } from '@/components/species-picto'
+import { SpeciesPicto, type SpeciesPictoName } from '@/components/species-picto'
 import { SpeciesCombobox } from '@/components/species-combobox'
 import { Spinner } from '@/components/spinner'
 import { isGeolocationAvailable } from '@/lib/mapbox'
@@ -37,6 +38,7 @@ import {
   validateReport,
   type ReportErrors,
 } from '@/lib/reports/validation'
+import { findSpecies } from '@/lib/reports/species'
 import { sendCitizenReport, sendReport } from '@/lib/reports/send'
 import type { ReportFormState } from '@/lib/reports/submit'
 import { REPORT_THEMES } from './report-theme'
@@ -49,6 +51,14 @@ const FIELD =
   'rounded-lg border border-canopee-green/30 bg-white px-3 py-2.5 text-canopee-forest placeholder-zinc-500 transition-colors outline-none focus:border-canopee-green focus:ring-2 focus:ring-canopee-green/40'
 
 const LABEL = 'text-sm font-medium text-canopee-forest'
+
+const FLORE_PICTOS: Record<
+  (typeof REPORT_FLORE_CATEGORIES)[number],
+  SpeciesPictoName
+> = {
+  espece_menacee: 'menacee_vulnerable',
+  espece_exotique: 'exotique_envahissante',
+}
 
 const ERROR = 'text-sm font-medium text-canopee-coral-dark'
 
@@ -80,11 +90,13 @@ function isSupportedOnServer(): boolean {
 export function ReportForm({
   group,
   onBack,
+  onBackChange,
   photoRequired,
   citizen = false,
 }: {
   group: ReportGroup
   onBack: () => void
+  onBackChange?: (handler: (() => void) | null) => void
   photoRequired: boolean
   citizen?: boolean
 }) {
@@ -102,28 +114,7 @@ export function ReportForm({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
-      <button
-        type="button"
-        onClick={onBack}
-        className="inline-flex touch-manipulation items-center gap-1.5 self-start rounded-lg px-2 py-1.5 text-sm font-semibold text-canopee-forest/70 transition-colors hover:bg-canopee-green/10 hover:text-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-4 w-4"
-          aria-hidden="true"
-        >
-          <path d="m12 19-7-7 7-7" />
-          <path d="M19 12H5" />
-        </svg>
-        Changer de type
-      </button>
-
+    <div className="flex min-h-[min(36rem,calc(100vw_-_2rem),calc(100dvh_-_9rem))] flex-1 flex-col gap-2">
       <h2 className={`font-heading text-lg ${REPORT_THEMES[group].accent}`}>
         {REPORT_GROUP_LABELS[group]}
       </h2>
@@ -136,6 +127,8 @@ export function ReportForm({
 
       <ReportWizard
         group={group}
+        onExit={onBack}
+        onBackChange={onBackChange}
         photoRequired={photoRequired}
         citizen={citizen}
         formAction={formAction}
@@ -255,6 +248,8 @@ function CitizenConfirmation() {
 
 type ReportWizardProps = {
   group: ReportGroup
+  onExit: () => void
+  onBackChange?: (handler: (() => void) | null) => void
   photoRequired: boolean
   citizen: boolean
   formAction: (formData: FormData) => void
@@ -315,6 +310,8 @@ function UploadIcon({ className }: { className?: string }) {
 
 function ReportWizard({
   group,
+  onExit,
+  onBackChange,
   photoRequired,
   citizen,
   formAction,
@@ -355,6 +352,12 @@ function ReportWizard({
     override ?? (gpsFix.status === 'ready' ? gpsFix.position : null)
 
   const errors = { ...serverErrors, ...clientErrors }
+
+  const speciesMatch = useMemo(
+    () =>
+      findSpecies(species, isReportCategory(category) ? category : undefined),
+    [species, category],
+  )
 
   const steps = citizen
     ? (['courriel', ...GROUP_STEPS[group]] as readonly StepKey[])
@@ -454,7 +457,7 @@ function ReportWizard({
       case 'nombre':
         return quantity === '' || Number.isInteger(Number(quantity))
       case 'espece':
-        return species.trim() !== ''
+        return speciesMatch !== undefined
       case 'details':
         return description.trim() !== ''
       case 'commentaire':
@@ -478,6 +481,10 @@ function ReportWizard({
       return cleared
     })
 
+    if (step === 'espece' && speciesMatch) {
+      setSpecies(speciesMatch.commonName)
+    }
+
     if (stepIndex < steps.length - 1) {
       setDirection('forward')
       setStepIndex(stepIndex + 1)
@@ -485,11 +492,26 @@ function ReportWizard({
   }
 
   function back() {
-    if (stepIndex > 0) {
-      setDirection('back')
-      setStepIndex(stepIndex - 1)
+    if (stepIndex === 0) {
+      onExit()
+      return
     }
+
+    setDirection('back')
+    setStepIndex(stepIndex - 1)
   }
+
+  const backRef = useRef(back)
+
+  useEffect(() => {
+    backRef.current = back
+  })
+
+  useEffect(() => {
+    onBackChange?.(() => backRef.current())
+
+    return () => onBackChange?.(null)
+  }, [onBackChange])
 
   function submit(formData: FormData) {
     const found = validateReport({
@@ -726,9 +748,7 @@ function ReportWizard({
                     }`}
                   >
                     <SpeciesPicto
-                      name={
-                        value === 'plante_vasculaire' ? 'vasculaire' : value
-                      }
+                      name={FLORE_PICTOS[value]}
                       className={`mx-auto mb-1 h-6 w-6 ${theme.accent}`}
                     />
                     {REPORT_CATEGORY_LABELS[value]}
@@ -756,10 +776,17 @@ function ReportWizard({
               category={isReportCategory(category) ? category : undefined}
               describedBy={errors.species ? 'species-error' : undefined}
             />
-            {errors.species && (
+            {errors.species ? (
               <p id="species-error" className={ERROR}>
                 {errors.species}
               </p>
+            ) : (
+              species.trim() !== '' &&
+              !speciesMatch && (
+                <p className="text-sm text-canopee-forest/60">
+                  Choisissez une espèce dans la liste.
+                </p>
+              )
             )}
           </div>
         )}
@@ -974,16 +1001,7 @@ function ReportWizard({
       </div>
 
       <div className="flex shrink-0 flex-col gap-2">
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={back}
-            disabled={stepIndex === 0}
-            className="inline-flex touch-manipulation items-center gap-1.5 rounded-lg border border-canopee-green/30 bg-white px-4 py-2.5 text-sm font-semibold text-canopee-forest transition-colors hover:bg-canopee-green/10 focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Retour
-          </button>
-
+        <div className="flex items-center justify-end gap-3">
           {isLastStep ? (
             <button
               key="send"

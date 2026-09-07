@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ReportFlow } from '@/app/(map)/signaler/report-flow'
@@ -8,6 +8,11 @@ import { ReportFlow } from '@/app/(map)/signaler/report-flow'
 export function CitizenReport() {
   const router = useRouter()
   const [filling, setFilling] = useState(false)
+  const [back, setBack] = useState<{ run: () => void } | null>(null)
+
+  const handleBackChange = useCallback((handler: (() => void) | null) => {
+    setBack(handler ? { run: handler } : null)
+  }, [])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -31,11 +36,36 @@ export function CitizenReport() {
 
       <div
         className={`relative z-10 flex max-h-[calc(100dvh-2rem)] w-full flex-col gap-2 rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 transition-[max-width] duration-300 ease-out motion-reduce:transition-none sm:px-5 sm:py-5 ${
-          filling ? 'max-w-xl' : 'max-w-sm'
+          filling
+            ? 'max-w-[min(36rem,calc(100dvh_-_6rem))]'
+            : 'max-w-[min(24rem,calc(100dvh_-_6rem))]'
         }`}
       >
         <header className="flex shrink-0 items-start justify-between gap-2">
-          <div className="flex flex-col gap-0.5">
+          <div className="flex min-w-0 items-center gap-1.5">
+            {back && (
+              <button
+                type="button"
+                onClick={back.run}
+                aria-label="Retour"
+                className="inline-flex shrink-0 touch-manipulation items-center justify-center rounded-lg p-1.5 text-canopee-forest/60 transition-colors hover:bg-canopee-green/10 hover:text-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                >
+                  <path d="m12 19-7-7 7-7" />
+                  <path d="M19 12H5" />
+                </svg>
+              </button>
+            )}
+
             <h1 className="font-heading text-2xl text-canopee-forest sm:text-3xl">
               Signaler
             </h1>
@@ -67,6 +97,7 @@ export function CitizenReport() {
             photoRequired={false}
             citizen
             onFillingChange={setFilling}
+            onBackChange={handleBackChange}
           />
         </div>
       </div>
