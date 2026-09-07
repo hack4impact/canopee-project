@@ -8,13 +8,13 @@ const __dirname = path.dirname(__filename)
 
 type WizardCategory =
   | 'amphibien'
-  | 'bryophyte'
+  | 'espece_exotique'
+  | 'espece_menacee'
   | 'insecte'
   | 'invertebre'
   | 'mammifere'
   | 'mollusque'
   | 'oiseau'
-  | 'plante_vasculaire'
   | 'poisson'
   | 'reptile'
 
@@ -48,18 +48,20 @@ interface ParsedSpecies {
 
 const CATEGORY_MAPPING: Record<string, WizardCategory> = {
   Amphibiens: 'amphibien',
-  Bryophytes: 'bryophyte',
+  Bryophytes: 'espece_menacee',
   Insectes: 'insecte',
   Invertébrés: 'invertebre',
   Mammifères: 'mammifere',
   Mollusques: 'mollusque',
   Oiseaux: 'oiseau',
-  'Plantes vasculaires': 'plante_vasculaire',
-  Embryophytes: 'plante_vasculaire',
-  Charophyte: 'plante_vasculaire',
+  'Plantes vasculaires': 'espece_menacee',
+  Embryophytes: 'espece_menacee',
+  Charophyte: 'espece_menacee',
   Poissons: 'poisson',
   Reptiles: 'reptile',
 }
+
+const EXOTIC_STATUS = 'Espèce floristique exotique envahissante'
 
 function parseCSVLine(line: string): string[] {
   const result: string[] = []
@@ -126,11 +128,13 @@ function convertSpecies(raw: RawSpecies[]): ParsedSpecies[] {
   const unmappedGroups = new Set<string>()
 
   for (const item of raw) {
-    const category = CATEGORY_MAPPING[item.group]
-    if (!category) {
+    const mapped = CATEGORY_MAPPING[item.group]
+    if (!mapped) {
       unmappedGroups.add(item.group)
       continue
     }
+
+    const category = item.status === EXOTIC_STATUS ? 'espece_exotique' : mapped
 
     const capitalizedCommonName =
       item.commonName.charAt(0).toUpperCase() + item.commonName.slice(1)
@@ -167,13 +171,13 @@ function generateTypeScript(species: ParsedSpecies[]): string {
 
   return `export type ReportCategory =
   | 'amphibien'
-  | 'bryophyte'
+  | 'espece_exotique'
+  | 'espece_menacee'
   | 'insecte'
   | 'invertebre'
   | 'mammifere'
   | 'mollusque'
   | 'oiseau'
-  | 'plante_vasculaire'
   | 'poisson'
   | 'reptile'
 

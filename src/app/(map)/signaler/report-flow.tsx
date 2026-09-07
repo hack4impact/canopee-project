@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { REPORT_GROUP_LABELS, type ReportGroup } from '@/lib/reports/categories'
 import { ReportForm } from './report-form'
 import { REPORT_THEMES } from './report-theme'
@@ -67,32 +67,44 @@ const GROUPS: GroupOption[] = [
 export function ReportFlow({
   photoRequired,
   citizen = false,
+  onFillingChange,
+  onBackChange,
 }: {
   photoRequired: boolean
   citizen?: boolean
+  onFillingChange?: (filling: boolean) => void
+  onBackChange?: (handler: (() => void) | null) => void
 }) {
   const [group, setGroup] = useState<ReportGroup | null>(null)
   const [returning, setReturning] = useState(false)
+  const groups = citizen
+    ? GROUPS.filter(({ group: value }) => value !== 'faune_flore')
+    : GROUPS
+
+  useEffect(() => {
+    if (group === null) {
+      onBackChange?.(null)
+    }
+  }, [group, onBackChange])
 
   if (group === null) {
     return (
       <div
-        className={`mx-auto flex w-full max-w-sm animate-in flex-col gap-3 fade-in duration-250 motion-reduce:animate-none ${
+        className={`mx-auto flex w-full animate-in flex-col gap-3 fade-in duration-250 motion-reduce:animate-none ${
           returning ? 'slide-in-from-left-4' : ''
         }`}
       >
-        <p className="text-base font-medium text-canopee-forest/80">
-          Choisissez le type de signalement :
-        </p>
-
-        {GROUPS.map(({ group: value, title, description, icon }, index) => {
+        {groups.map(({ group: value, title, description, icon }, index) => {
           const theme = REPORT_THEMES[value]
 
           return (
             <button
               key={value}
               type="button"
-              onClick={() => setGroup(value)}
+              onClick={() => {
+                setGroup(value)
+                onFillingChange?.(true)
+              }}
               style={{ animationDelay: `${index * 70}ms` }}
               className={`group flex w-full touch-manipulation animate-in items-center gap-4 rounded-2xl border border-transparent px-4 py-6 text-left shadow-sm transition-[border-color,background-color,transform] duration-150 ease-out fill-mode-backwards fade-in slide-in-from-bottom-3 focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99] motion-reduce:animate-none motion-reduce:transition-none motion-reduce:active:scale-100 sm:px-5 sm:py-7 ${theme.card} ${theme.cardHover} ${theme.ring}`}
             >
@@ -123,7 +135,9 @@ export function ReportFlow({
         onBack={() => {
           setReturning(true)
           setGroup(null)
+          onFillingChange?.(false)
         }}
+        onBackChange={onBackChange}
         photoRequired={photoRequired}
         citizen={citizen}
       />

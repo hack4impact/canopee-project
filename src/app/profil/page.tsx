@@ -15,6 +15,7 @@ import {
   listPatrolRoute,
 } from '@/lib/patrols/queries'
 import { countOpenReports, getReportTotalsForUser } from '@/lib/reports/queries'
+import { ADMIN_ROW } from '@/lib/ui/admin-row'
 
 export const metadata: Metadata = {
   title: 'Profil | Canopée',
@@ -38,9 +39,6 @@ const TILE =
   'flex items-center gap-3 rounded-2xl px-3.5 py-4 text-canopee-cream transition-colors'
 
 const TILE_NUMBER = 'font-heading text-3xl leading-none font-bold tabular-nums'
-
-const ADMIN_ROW =
-  'flex items-center gap-3 rounded-xl border border-canopee-forest/20 bg-white px-3 py-2.5 text-[15px] font-bold text-canopee-forest transition-colors hover:border-canopee-green/50 focus-visible:ring-2 focus-visible:ring-canopee-green focus-visible:outline-none'
 
 export default async function ProfilPage() {
   const profile = await requireApprovedUser()
@@ -82,10 +80,6 @@ export default async function ProfilPage() {
 
         {lastPatrol && (
           <div className="flex flex-col gap-1.5">
-            <h2 className="text-sm font-extrabold tracking-[0.08em] text-canopee-forest/50 uppercase">
-              Statistiques
-            </h2>
-
             <Link
               href={`/patrouilles/${lastPatrol.id}?from=profil`}
               className="block overflow-hidden rounded-2xl ring-1 ring-canopee-forest/10 transition-colors hover:ring-canopee-green/40 focus-visible:ring-2 focus-visible:ring-canopee-green focus-visible:outline-none"

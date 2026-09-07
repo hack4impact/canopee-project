@@ -5,7 +5,8 @@ const {
   update,
   returning,
   requireApprovedAccess,
-  archiveReportPhoto,
+  uploadReportPhotoToDrive,
+  set,
   remove,
   revalidatePath,
   sendResolved,
@@ -14,7 +15,8 @@ const {
   update: vi.fn(),
   returning: vi.fn(),
   requireApprovedAccess: vi.fn(),
-  archiveReportPhoto: vi.fn(),
+  uploadReportPhotoToDrive: vi.fn(),
+  set: vi.fn(),
   remove: vi.fn(),
   revalidatePath: vi.fn(),
   sendResolved: vi.fn(),
@@ -26,6 +28,7 @@ vi.mock('@/db', () => ({
     id: 'id',
     eventNumber: 'eventNumber',
     photoUrl: 'photoUrl',
+    drivePhotoUrl: 'drivePhotoUrl',
     resolvedAt: 'resolvedAt',
     category: 'category',
     createdAt: 'createdAt',
@@ -35,7 +38,7 @@ vi.mock('@/db', () => ({
   users: { email: 'email' },
 }))
 vi.mock('@/lib/auth/current-user', () => ({ requireApprovedAccess }))
-vi.mock('@/lib/reports/google-drive', () => ({ archiveReportPhoto }))
+vi.mock('@/lib/reports/google-drive', () => ({ uploadReportPhotoToDrive }))
 vi.mock('next/cache', () => ({ revalidatePath }))
 vi.mock('drizzle-orm', () => ({ and: vi.fn(), eq: vi.fn(), isNull: vi.fn() }))
 vi.mock('@/lib/reports/photo', () => ({ REPORT_PHOTO_BUCKET: 'report-photos' }))
@@ -50,6 +53,7 @@ import { ANONYMISED_REPORTER } from '@/lib/auth/delete-account'
 import { resolveReport } from '@/lib/reports/actions'
 
 const REPORT_ID = '123e4567-e89b-12d3-a456-426614174000'
+const DRIVE_LINK = 'https://drive.google.com/file/d/abc123/view'
 
 function makeFormData(id: string = REPORT_ID): FormData {
   const data = new FormData()
@@ -81,13 +85,12 @@ function setReportLookup(rows: unknown[]) {
 beforeEach(() => {
   vi.clearAllMocks()
   requireApprovedAccess.mockResolvedValue(undefined)
-  archiveReportPhoto.mockResolvedValue(undefined)
+  uploadReportPhotoToDrive.mockResolvedValue(DRIVE_LINK)
   remove.mockResolvedValue({ error: null })
   returning.mockResolvedValue(resolvedRow())
   sendResolved.mockResolvedValue(true)
-  update.mockReturnValue({
-    set: vi.fn(() => ({ where: vi.fn(() => ({ returning })) })),
-  })
+  set.mockReturnValue({ where: vi.fn(() => ({ returning })) })
+  update.mockReturnValue({ set })
 })
 
 describe('resolveReport', () => {
@@ -96,13 +99,13 @@ describe('resolveReport', () => {
       { id: REPORT_ID, eventNumber: 42, photoPath: 'user/photo.jpg' },
     ])
     await expect(resolveReport({}, makeFormData())).resolves.toEqual({})
-    expect(archiveReportPhoto).toHaveBeenCalledWith(
+    expect(uploadReportPhotoToDrive).toHaveBeenCalledWith(
       'user/photo.jpg',
       42,
       expect.any(Date),
     )
     expect(remove).toHaveBeenCalledWith(['user/photo.jpg'])
-    expect(archiveReportPhoto.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(uploadReportPhotoToDrive.mock.invocationCallOrder[0]).toBeLessThan(
       remove.mock.invocationCallOrder[0],
     )
     expect(remove.mock.invocationCallOrder[0]).toBeLessThan(
@@ -110,11 +113,40 @@ describe('resolveReport', () => {
     )
   })
 
+  it('stores the Drive link on the resolved report', async () => {
+    setReportLookup([
+      { id: REPORT_ID, eventNumber: 42, photoPath: 'user/photo.jpg' },
+    ])
+    await resolveReport({}, makeFormData())
+    expect(set).toHaveBeenCalledWith({
+      resolvedAt: expect.any(Date),
+      drivePhotoUrl: DRIVE_LINK,
+    })
+  })
+
+  it('reuses the link uploaded at submission instead of copying twice', async () => {
+    setReportLookup([
+      {
+        id: REPORT_ID,
+        eventNumber: 42,
+        photoPath: 'user/photo.jpg',
+        drivePhotoUrl: DRIVE_LINK,
+      },
+    ])
+    await resolveReport({}, makeFormData())
+    expect(uploadReportPhotoToDrive).not.toHaveBeenCalled()
+    expect(remove).toHaveBeenCalledWith(['user/photo.jpg'])
+    expect(set).toHaveBeenCalledWith({
+      resolvedAt: expect.any(Date),
+      drivePhotoUrl: DRIVE_LINK,
+    })
+  })
+
   it('does not delete from Supabase or resolve when Drive archival fails', async () => {
     setReportLookup([
       { id: REPORT_ID, eventNumber: 42, photoPath: 'user/photo.jpg' },
     ])
-    archiveReportPhoto.mockRejectedValue(new Error('Drive unavailable'))
+    uploadReportPhotoToDrive.mockRejectedValue(new Error('Drive unavailable'))
     vi.spyOn(console, 'error').mockImplementation(() => {})
     await expect(resolveReport({}, makeFormData())).resolves.toEqual({
       message:

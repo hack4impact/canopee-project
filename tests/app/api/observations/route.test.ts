@@ -13,9 +13,14 @@ const { GET } = await import('@/app/api/observations/route')
 
 const OBSERVATION: Observation = {
   id: '3f7c1a92-5d64-4f0b-9a21-8c5e7b04d113',
+  eventNumber: 12,
   category: 'reptile',
   latitude: 45.5865,
   longitude: -73.7243,
+  species: 'Couleuvre rayée',
+  hasPhoto: false,
+  createdAt: '2026-07-04T12:00:00.000Z',
+  resolvedAt: null,
 }
 
 const DENIED = [
@@ -99,7 +104,13 @@ describe('GET /api/observations', () => {
             },
             properties: {
               id: OBSERVATION.id,
+              eventNumber: OBSERVATION.eventNumber,
               category: OBSERVATION.category,
+              group: 'faune_flore',
+              species: OBSERVATION.species,
+              hasPhoto: OBSERVATION.hasPhoto,
+              createdAt: OBSERVATION.createdAt,
+              resolved: false,
             },
           },
         ],

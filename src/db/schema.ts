@@ -51,8 +51,8 @@ export const reportCategoryEnum = pgEnum('report_category', [
   'invertebre',
   'mollusque',
   'poisson',
-  'plante_vasculaire',
-  'bryophyte',
+  'espece_menacee',
+  'espece_exotique',
   'faune_flore_other',
 ])
 
@@ -89,6 +89,7 @@ export const reports = pgTable(
     habitat: text('habitat'),
     statut: text('statut'),
     photoUrl: text('photo_url'),
+    drivePhotoUrl: text('drive_photo_url'),
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),
     userId: uuid('user_id').references(() => users.id),
     reporterEmail: text('reporter_email'),

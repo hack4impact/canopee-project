@@ -1,8 +1,13 @@
 import { eq } from 'drizzle-orm'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { after } from 'next/server'
 import { db, reports } from '@/db'
 import type { UserProfile } from '@/lib/auth/current-user'
-import { isReportCategory } from '@/lib/reports/categories'
+import {
+  isReportCategory,
+  reportGroupOfCategory,
+} from '@/lib/reports/categories'
+import { uploadReportPhotoToDrive } from '@/lib/reports/google-drive'
 import {
   CITIZEN_PHOTO_FOLDER,
   REPORT_PHOTO_BUCKET,
@@ -151,6 +156,29 @@ async function uploadPhoto(
   }
 }
 
+function copyPhotoToDrive(
+  reportId: string,
+  eventNumber: number,
+  photoPath: string,
+): void {
+  after(async () => {
+    try {
+      const link = await uploadReportPhotoToDrive(
+        photoPath,
+        eventNumber,
+        new Date(),
+      )
+
+      await db
+        .update(reports)
+        .set({ drivePhotoUrl: link })
+        .where(eq(reports.id, reportId))
+    } catch (cause) {
+      console.error('Failed to copy a report photo to Google Drive', cause)
+    }
+  })
+}
+
 async function findReportIdentity(
   id: string,
 ): Promise<ExistingReportIdentity | null> {
@@ -227,6 +255,17 @@ async function submitReport(
     return { errors }
   }
 
+  if (
+    reporter.kind === 'citizen' &&
+    reportGroupOfCategory(input.category) === 'faune_flore'
+  ) {
+    return {
+      errors: {
+        category: 'Ce type de signalement est réservé aux patrouilleurs.',
+      },
+    }
+  }
+
   let photoPath: string | null = null
 
   if (photo) {
@@ -270,7 +309,11 @@ async function submitReport(
         longitude: candidate.longitude,
       })
       .onConflictDoNothing()
-      .returning({ id: reports.id })
+      .returning({ id: reports.id, eventNumber: reports.eventNumber })
+
+    if (created && photoPath) {
+      copyPhotoToDrive(created.id, created.eventNumber, photoPath)
+    }
 
     if (created) {
       return { submittedId: created.id }

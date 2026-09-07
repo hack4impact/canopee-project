@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import mapboxgl from 'mapbox-gl'
+import { useRouter } from 'next/navigation'
 import { useMapFilters } from '@/components/map-filters-provider'
 import { useSharedMap } from '@/components/map-provider'
 import type { ObservationCollection } from '@/lib/observations/collection'
@@ -11,6 +13,12 @@ import {
   OBSERVATIONS_LAYER_ID,
   OBSERVATIONS_SOURCE_ID,
 } from '@/lib/observations/layer'
+import { REPORT_GROUP_COLORS } from '@/lib/reports/group-style'
+import {
+  pinPopupContent,
+  prefersHover,
+  type PinPopupProperties,
+} from '@/lib/reports/pin-popup'
 import { observationCategoriesOf } from '@/lib/reports/filters'
 
 type ObservationsPayload = {
@@ -30,13 +38,25 @@ function loadPinImage(): Promise<HTMLImageElement> {
   })
 }
 
-export function ObservationsLayer() {
+export function ObservationsLayer({
+  canOpenDetail = false,
+}: {
+  canOpenDetail?: boolean
+}) {
   const map = useSharedMap()
+  const router = useRouter()
+  const openDetail = useRef<((id: string) => void) | null>(null)
   const [payload, setPayload] = useState<ObservationsPayload | null>(null)
   const [failed, setFailed] = useState(false)
   const { selection } = useMapFilters()
   const categoriesKey = observationCategoriesOf(selection).join(',')
   const [image, setImage] = useState<HTMLImageElement | null>(null)
+
+  useEffect(() => {
+    openDetail.current = canOpenDetail
+      ? (id) => router.push(`/admin/issues/${id}`)
+      : null
+  }, [canOpenDetail, router])
 
   useEffect(() => {
     let cancelled = false
@@ -125,12 +145,111 @@ export function ObservationsLayer() {
       layout: observationPinLayout(),
     })
 
+    const hoverOpens = prefersHover()
+
+    const popup = new mapboxgl.Popup({
+      className: 'canopee-popup',
+      closeButton: false,
+      closeOnClick: !hoverOpens,
+      offset: [0, -40],
+      maxWidth: '17rem',
+    })
+
+    let openId: string | null = null
+    let closeTimer: ReturnType<typeof setTimeout> | null = null
+
+    const cancelClose = () => {
+      if (closeTimer) {
+        clearTimeout(closeTimer)
+        closeTimer = null
+      }
+    }
+
+    const scheduleClose = () => {
+      cancelClose()
+      closeTimer = setTimeout(() => popup.remove(), 160)
+    }
+
+    popup.on('close', () => {
+      openId = null
+    })
+
+    const hidePopup = () => {
+      cancelClose()
+      popup.remove()
+    }
+
+    const showPopup = (
+      event: mapboxgl.MapMouseEvent & {
+        features?: mapboxgl.MapboxGeoJSONFeature[]
+      },
+    ) => {
+      const feature = event.features?.[0]
+
+      if (!feature || feature.geometry.type !== 'Point') {
+        return
+      }
+
+      const properties = feature.properties as unknown as PinPopupProperties
+
+      if (openId === properties.id && popup.isOpen()) {
+        return
+      }
+
+      cancelClose()
+      openId = properties.id
+
+      popup
+        .setLngLat(feature.geometry.coordinates as [number, number])
+        .setDOMContent(pinPopupContent(properties, openDetail.current))
+        .addTo(map)
+
+      const element = popup.getElement()
+
+      element?.style.setProperty(
+        '--canopee-tip',
+        REPORT_GROUP_COLORS[properties.group],
+      )
+
+      if (hoverOpens) {
+        element?.addEventListener('mouseenter', cancelClose)
+        element?.addEventListener('mouseleave', hidePopup)
+      }
+    }
+
+    const showPointer = () => {
+      map.getCanvas().style.cursor = 'pointer'
+    }
+
+    const clearPointer = () => {
+      map.getCanvas().style.cursor = ''
+    }
+
+    map.on('mouseenter', OBSERVATIONS_LAYER_ID, showPointer)
+    map.on('mouseleave', OBSERVATIONS_LAYER_ID, clearPointer)
+
+    if (hoverOpens) {
+      map.on('mousemove', OBSERVATIONS_LAYER_ID, showPopup)
+      map.on('mouseleave', OBSERVATIONS_LAYER_ID, scheduleClose)
+    } else {
+      map.on('click', OBSERVATIONS_LAYER_ID, showPopup)
+    }
+
     return () => {
       map.off('remove', handleRemove)
+      cancelClose()
 
       if (mapRemoved) {
         return
       }
+
+      popup.remove()
+
+      map.off('mouseenter', OBSERVATIONS_LAYER_ID, showPointer)
+      map.off('mouseleave', OBSERVATIONS_LAYER_ID, clearPointer)
+      map.off('mousemove', OBSERVATIONS_LAYER_ID, showPopup)
+      map.off('mouseleave', OBSERVATIONS_LAYER_ID, scheduleClose)
+      map.off('click', OBSERVATIONS_LAYER_ID, showPopup)
 
       if (map.getLayer(OBSERVATIONS_LAYER_ID)) {
         map.removeLayer(OBSERVATIONS_LAYER_ID)

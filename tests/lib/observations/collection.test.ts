@@ -6,9 +6,14 @@ import {
 
 const observation: Observation = {
   id: 'a1',
+  eventNumber: 12,
   category: 'reptile',
   latitude: 45.57,
   longitude: -73.75,
+  species: 'Couleuvre rayée',
+  hasPhoto: true,
+  createdAt: '2026-07-04T12:00:00.000Z',
+  resolvedAt: null,
 }
 
 describe('toFeatureCollection', () => {

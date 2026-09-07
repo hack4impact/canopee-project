@@ -73,7 +73,7 @@ describe('validateReport', () => {
     expect(
       validateReport(
         input({
-          category: 'plante_vasculaire',
+          category: 'espece_menacee',
           typology: undefined,
         }),
       ).species,

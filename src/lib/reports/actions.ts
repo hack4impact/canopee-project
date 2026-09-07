@@ -4,7 +4,7 @@ import { and, eq, isNull } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { db, reports, users } from '@/db'
 import { requireApprovedAccess } from '@/lib/auth/current-user'
-import { archiveReportPhoto } from '@/lib/reports/google-drive'
+import { uploadReportPhotoToDrive } from '@/lib/reports/google-drive'
 import { REPORT_PHOTO_BUCKET } from '@/lib/reports/photo'
 import { createClient } from '@/lib/supabase/server'
 import { ANONYMISED_REPORTER } from '@/lib/auth/delete-account'
@@ -39,6 +39,7 @@ export async function resolveReport(
       id: reports.id,
       eventNumber: reports.eventNumber,
       photoPath: reports.photoUrl,
+      drivePhotoUrl: reports.drivePhotoUrl,
     })
     .from(reports)
     .where(and(eq(reports.id, reportId), isNull(reports.resolvedAt)))
@@ -49,9 +50,15 @@ export async function resolveReport(
 
   const resolvedAt = new Date()
 
+  let drivePhotoUrl = report.drivePhotoUrl
+
   if (report.photoPath) {
     try {
-      await archiveReportPhoto(report.photoPath, report.eventNumber, resolvedAt)
+      drivePhotoUrl ??= await uploadReportPhotoToDrive(
+        report.photoPath,
+        report.eventNumber,
+        resolvedAt,
+      )
 
       const supabase = await createClient()
       const { error } = await supabase.storage
@@ -70,7 +77,7 @@ export async function resolveReport(
 
   const [updated] = await db
     .update(reports)
-    .set({ resolvedAt })
+    .set({ resolvedAt, drivePhotoUrl })
     .where(and(eq(reports.id, reportId), isNull(reports.resolvedAt)))
     .returning({
       eventNumber: reports.eventNumber,

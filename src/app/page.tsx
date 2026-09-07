@@ -81,7 +81,7 @@ export default async function RootPage() {
             href="/login"
             className={`${CARD} bg-canopee-green/10 hover:border-canopee-green hover:bg-canopee-green/20 focus-visible:ring-canopee-green/40`}
           >
-            <span className={TITLE}>Je suis bénévole ou patrouilleur</span>
+            <span className={TITLE}>Je suis patrouilleur</span>
             <Arrow className="text-canopee-green" />
           </Link>
         </div>

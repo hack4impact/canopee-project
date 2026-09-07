@@ -5,6 +5,10 @@ const files = vi.hoisted(() => ({
   create: vi.fn(),
 }))
 
+const permissions = vi.hoisted(() => ({ create: vi.fn() }))
+
+const DRIVE_LINK = 'https://drive.google.com/file/d/file-id/view'
+
 vi.mock('googleapis', () => ({
   google: {
     auth: {
@@ -13,12 +17,12 @@ vi.mock('googleapis', () => ({
       }),
     },
     drive: vi.fn(function MockDrive() {
-      return { files }
+      return { files, permissions }
     }),
   },
 }))
 
-describe('archiveReportPhoto', () => {
+describe('uploadReportPhotoToDrive', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
@@ -35,6 +39,8 @@ describe('archiveReportPhoto', () => {
 
     files.list.mockReset()
     files.create.mockReset()
+    permissions.create.mockReset()
+    permissions.create.mockResolvedValue({})
 
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -51,17 +57,20 @@ describe('archiveReportPhoto', () => {
       .mockRejectedValueOnce({ code: 404, message: 'File not found' })
       .mockResolvedValueOnce({ data: { id: 'year-id' } })
       .mockResolvedValueOnce({ data: { id: 'month-id' } })
-      .mockResolvedValueOnce({ data: { id: 'file-id' } })
+      .mockResolvedValueOnce({
+        data: { id: 'file-id', webViewLink: DRIVE_LINK },
+      })
 
-    const { archiveReportPhoto } = await import('@/lib/reports/google-drive')
+    const { uploadReportPhotoToDrive } =
+      await import('@/lib/reports/google-drive')
 
     await expect(
-      archiveReportPhoto(
+      uploadReportPhotoToDrive(
         'reports/photo.jpg',
         42,
         new Date('2026-09-04T12:00:00Z'),
       ),
-    ).resolves.toBeUndefined()
+    ).resolves.toBe(DRIVE_LINK)
 
     expect(files.create).toHaveBeenCalledTimes(4)
     expect(files.create.mock.calls[0][0].requestBody.parents).toEqual([
@@ -80,17 +89,20 @@ describe('archiveReportPhoto', () => {
     files.list.mockResolvedValue({
       data: { files: [{ id: 'existing-folder' }] },
     })
-    files.create.mockResolvedValue({ data: { id: 'file-id' } })
+    files.create.mockResolvedValue({
+      data: { id: 'file-id', webViewLink: DRIVE_LINK },
+    })
 
-    const { archiveReportPhoto } = await import('@/lib/reports/google-drive')
+    const { uploadReportPhotoToDrive } =
+      await import('@/lib/reports/google-drive')
 
     await expect(
-      archiveReportPhoto(
+      uploadReportPhotoToDrive(
         'reports/photo.jpg',
         42,
         new Date('2026-09-04T12:00:00Z'),
       ),
-    ).resolves.toBeUndefined()
+    ).resolves.toBe(DRIVE_LINK)
 
     expect(files.list).toHaveBeenCalledWith(
       expect.objectContaining({

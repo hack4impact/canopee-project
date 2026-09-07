@@ -14,10 +14,7 @@ vi.mock('@/lib/reports/submit', () => ({ createReport }))
 
 const { GET, POST } = await import('@/app/api/reports/route')
 
-function requestFor(
-  url = 'http://localhost/api/reports',
-  init?: RequestInit,
-) {
+function requestFor(url = 'http://localhost/api/reports', init?: RequestInit) {
   return {
     nextUrl: new URL(url),
     formData: async () => new FormData(),

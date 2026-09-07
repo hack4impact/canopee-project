@@ -1,4 +1,4 @@
-'use server'
+import 'server-only'
 
 import { google } from 'googleapis'
 import { Readable } from 'node:stream'
@@ -140,21 +140,21 @@ async function getOrCreateFolder(
   }
 }
 
-export async function archiveReportPhoto(
+export async function uploadReportPhotoToDrive(
   path: string,
   eventNumber: number,
-  resolvedAt: Date,
-): Promise<void> {
+  filedAt: Date,
+): Promise<string> {
   const rootFolderId = required(DRIVE_FOLDER_ID, 'GOOGLE_DRIVE_FOLDER_ID')
   const drive = getDriveClient()
   const yearFolderId = await getOrCreateFolder(
     drive,
-    String(resolvedAt.getUTCFullYear()),
+    String(filedAt.getUTCFullYear()),
     rootFolderId,
   )
   const monthFolderId = await getOrCreateFolder(
     drive,
-    `${resolvedAt.getUTCFullYear()}-${String(resolvedAt.getUTCMonth() + 1).padStart(2, '0')}`,
+    `${filedAt.getUTCFullYear()}-${String(filedAt.getUTCMonth() + 1).padStart(2, '0')}`,
     yearFolderId,
   )
 
@@ -179,7 +179,7 @@ export async function archiveReportPhoto(
   const extension = path.split('.').pop() || 'jpg'
   const fileName = `${eventNumber}.${extension}`
 
-  await drive.files.create({
+  const created = await drive.files.create({
     requestBody: {
       name: fileName,
       parents: [monthFolderId],
@@ -187,6 +187,19 @@ export async function archiveReportPhoto(
     },
     media: { mimeType: contentType, body: Readable.from(body) },
     supportsAllDrives: true,
-    fields: 'id',
+    fields: 'id, webViewLink',
   })
+
+  const fileId = required(created.data.id ?? undefined, 'Google Drive file ID')
+
+  await drive.permissions.create({
+    fileId,
+    requestBody: { role: 'reader', type: 'anyone' },
+    supportsAllDrives: true,
+  })
+
+  return required(
+    created.data.webViewLink ?? undefined,
+    'Google Drive web view link',
+  )
 }

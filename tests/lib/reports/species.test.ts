@@ -113,8 +113,8 @@ describe('species search', () => {
       'invertebre',
       'mollusque',
       'poisson',
-      'plante_vasculaire',
-      'bryophyte',
+      'espece_menacee',
+      'espece_exotique',
     ] as const
 
     for (const category of categories) {

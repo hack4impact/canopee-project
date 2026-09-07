@@ -32,8 +32,9 @@ describe('POST /api/patrol-points', () => {
       throw new ForbiddenError()
     })
 
-    await expect(POST(new Request('http://localhost', { method: 'POST' })))
-      .rejects.toBeInstanceOf(ForbiddenError)
+    await expect(
+      POST(new Request('http://localhost', { method: 'POST' })),
+    ).rejects.toBeInstanceOf(ForbiddenError)
     expect(getActivePatrol).not.toHaveBeenCalled()
   })
 })

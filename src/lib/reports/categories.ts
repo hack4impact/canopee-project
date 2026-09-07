@@ -37,8 +37,8 @@ export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
   invertebre: 'Invertébrés',
   mollusque: 'Mollusques',
   poisson: 'Poissons',
-  plante_vasculaire: 'Plantes vasculaires',
-  bryophyte: 'Bryophytes',
+  espece_menacee: 'Espèce menacée',
+  espece_exotique: 'Espèce exotique',
   faune_flore_other: 'Autres',
 }
 
@@ -53,7 +53,7 @@ export type ReportGroup = (typeof REPORT_GROUPS)[number]
 
 export const REPORT_GROUP_LABELS: Record<ReportGroup, string> = {
   entretien: 'Entretien',
-  citoyen: 'Citoyen',
+  citoyen: 'Intervention',
   faune_flore: 'Faune / flore',
 }
 
@@ -98,8 +98,8 @@ export const REPORT_GROUP_CATEGORIES: Record<
     'invertebre',
     'mollusque',
     'poisson',
-    'plante_vasculaire',
-    'bryophyte',
+    'espece_menacee',
+    'espece_exotique',
     'faune_flore_other',
   ],
 }
@@ -116,8 +116,8 @@ export const REPORT_FAUNE_CATEGORIES = [
 ] as const satisfies readonly ReportCategory[]
 
 export const REPORT_FLORE_CATEGORIES = [
-  'plante_vasculaire',
-  'bryophyte',
+  'espece_menacee',
+  'espece_exotique',
 ] as const satisfies readonly ReportCategory[]
 
 export function isReportCategory(value: unknown): value is ReportCategory {

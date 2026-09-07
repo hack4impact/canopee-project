@@ -53,8 +53,7 @@ export default async function ResetPasswordPage() {
           ) : (
             <div className="mt-6 flex flex-col gap-4">
               <p className="text-center text-sm text-canopee-forest/80">
-                Ce lien de réinitialisation n’est plus valide. Chaque lien ne
-                sert qu’une fois.
+                Chaque lien ne sert qu’une fois.
               </p>
 
               <Link
