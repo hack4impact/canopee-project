@@ -141,6 +141,53 @@ describe('validateReport', () => {
     ).toBeDefined()
   })
 
+  it.each(['individus', 'nids', 'taniere', 'ruche', 'trace', 'autre'])(
+    'accepts the "%s" unit for Faune/flore',
+    (unit) => {
+      expect(
+        isValidReport(
+          validateReport(
+            input({
+              category: 'oiseau',
+              typology: undefined,
+              species: 'Oiseau',
+              quantity: '3',
+              unit,
+            }),
+          ),
+        ),
+      ).toBe(true)
+    },
+  )
+
+  it('rejects a Faune/flore count without a unit', () => {
+    expect(
+      validateReport(
+        input({
+          category: 'oiseau',
+          typology: undefined,
+          species: 'Oiseau',
+          quantity: '3',
+          unit: '',
+        }),
+      ).unit,
+    ).toBeDefined()
+  })
+
+  it('accepts a Faune/flore report with neither count nor unit', () => {
+    expect(
+      isValidReport(
+        validateReport(
+          input({
+            category: 'oiseau',
+            typology: undefined,
+            species: 'Oiseau',
+          }),
+        ),
+      ),
+    ).toBe(true)
+  })
+
   it('rejects an unknown unit for Faune/flore', () => {
     expect(
       validateReport(
