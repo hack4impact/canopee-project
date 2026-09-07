@@ -51,8 +51,8 @@ export const reportCategoryEnum = pgEnum('report_category', [
   'invertebre',
   'mollusque',
   'poisson',
-  'plante_vasculaire',
-  'bryophyte',
+  'espece_menacee',
+  'espece_exotique',
   'faune_flore_other',
 ])
 

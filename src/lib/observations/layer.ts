@@ -26,11 +26,15 @@ export const OBSERVATION_LEGEND: readonly LegendEntry[] = [
   { category: 'mollusque', label: 'Mollusques', color: OBSERVATION_COLOR },
   { category: 'poisson', label: 'Poissons', color: OBSERVATION_COLOR },
   {
-    category: 'plante_vasculaire',
-    label: 'Plantes vasculaires',
+    category: 'espece_menacee',
+    label: 'Espèce menacée',
     color: OBSERVATION_COLOR,
   },
-  { category: 'bryophyte', label: 'Bryophytes', color: OBSERVATION_COLOR },
+  {
+    category: 'espece_exotique',
+    label: 'Espèce exotique',
+    color: OBSERVATION_COLOR,
+  },
   { category: 'faune_flore_other', label: 'Autres', color: OBSERVATION_COLOR },
 ]
 
