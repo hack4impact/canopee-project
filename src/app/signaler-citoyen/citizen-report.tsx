@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ReportFlow } from '@/app/(map)/signaler/report-flow'
+import { ForestBackground } from '@/components/forest-background'
 
 export function CitizenReport() {
   const router = useRouter()
@@ -28,11 +29,7 @@ export function CitizenReport() {
 
   return (
     <div className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-canopee-forest p-4 font-sans sm:p-6">
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-canopee-lime/20 blur-3xl" />
-        <div className="absolute -right-32 -bottom-32 h-[28rem] w-[28rem] rounded-full bg-canopee-sky/20 blur-3xl" />
-        <div className="absolute top-1/3 right-[12%] h-44 w-44 rounded-full bg-canopee-green/25 blur-2xl" />
-      </div>
+      <ForestBackground />
 
       <div
         className={`relative z-10 flex max-h-[calc(100dvh-2rem)] w-full flex-col gap-2 rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 transition-[max-width] duration-300 ease-out motion-reduce:transition-none sm:px-5 sm:py-5 ${
