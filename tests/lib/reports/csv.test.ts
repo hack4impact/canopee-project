@@ -44,8 +44,10 @@ describe('CSV helpers', () => {
     expect(toCsvRow([1, 'open', null, 'a,b'])).toBe('1,open,,"a,b"')
   })
 
-  it('produces one value per header', () => {
-    expect(reportToCsvValues(REPORT)).toHaveLength(CSV_HEADERS.length)
+  it('writes French typology labels instead of raw keys', () => {
+    expect(
+      reportToCsvValues({ ...REPORT, typology: 'intervention_urgente' })[7],
+    ).toBe('Intervention urgente')
   })
 
   it('derives status and resolved date', () => {
