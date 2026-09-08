@@ -31,7 +31,10 @@ describe('POST /api/public/reports', () => {
     createCitizenReport.mockResolvedValue({ submittedId: 'new-id' })
 
     const response = await POST(
-      formRequest({ reporterEmail: 'citoyen@example.org' }),
+      formRequest({
+        reporterEmail: 'citoyen@example.org',
+        reporterConsent: 'true',
+      }),
     )
 
     expect(response.status).toBe(200)
@@ -46,9 +49,21 @@ describe('POST /api/public/reports', () => {
     })
 
     const response = await POST(
-      formRequest({ reporterEmail: 'citoyen@example.org' }),
+      formRequest({
+        reporterEmail: 'citoyen@example.org',
+        reporterConsent: 'true',
+      }),
     )
 
     expect(response.status).toBe(409)
+  })
+
+  it('rejects a citizen report without Law 25 consent', async () => {
+    const response = await POST(
+      formRequest({ reporterEmail: 'citoyen@example.org' }),
+    )
+
+    expect(response.status).toBe(422)
+    expect(createCitizenReport).not.toHaveBeenCalled()
   })
 })

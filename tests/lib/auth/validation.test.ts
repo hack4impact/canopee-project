@@ -15,6 +15,7 @@ function goodInput(overrides: Partial<SignupInput> = {}): SignupInput {
     email: 'volunteer@canopee.org',
     password: 'longenough',
     confirmPassword: 'longenough',
+    law25Consent: true,
     ...overrides,
   }
 }
@@ -76,6 +77,7 @@ describe('validateSignup', () => {
       email: '',
       password: '',
       confirmPassword: '',
+      law25Consent: false,
     })
 
     expect(errors.firstName).toBeDefined()
@@ -83,6 +85,13 @@ describe('validateSignup', () => {
     expect(errors.email).toBeDefined()
     expect(errors.password).toBeDefined()
     expect(errors.confirmPassword).toBeDefined()
+    expect(errors.law25Consent).toBeDefined()
+  })
+
+  it('rejects signup without Law 25 consent', () => {
+    const errors = validateSignup(goodInput({ law25Consent: false }))
+
+    expect(errors.law25Consent).toBeDefined()
   })
 })
 

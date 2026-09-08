@@ -3,6 +3,7 @@ import {
   citizenWindowStart,
   isRateLimited,
   normalizeReporterEmail,
+  validateReporterConsent,
   validateReporterEmail,
 } from '@/lib/reports/citizen'
 import { countRecentCitizenReports } from '@/lib/reports/queries'
@@ -21,10 +22,18 @@ export async function POST(request: NextRequest) {
 
   const submitted = String(formData.get('reporterEmail') ?? '')
   const emailError = validateReporterEmail(submitted)
+  const consentError = validateReporterConsent(
+    formData.get('reporterConsent') === 'true',
+  )
 
-  if (emailError) {
+  if (emailError || consentError) {
     return Response.json(
-      { errors: { reporterEmail: emailError } },
+      {
+        errors: {
+          ...(emailError ? { reporterEmail: emailError } : {}),
+          ...(consentError ? { reporterConsent: consentError } : {}),
+        },
+      },
       { status: 422 },
     )
   }

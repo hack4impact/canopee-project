@@ -39,7 +39,10 @@ export type ReportPhotoInput = {
 }
 
 export type ReportErrors = Partial<
-  Record<keyof ReportInput | 'photo' | 'reporterEmail', string>
+  Record<
+    keyof ReportInput | 'photo' | 'reporterEmail' | 'reporterConsent',
+    string
+  >
 >
 
 export function validateReport(input: ReportInput): ReportErrors {

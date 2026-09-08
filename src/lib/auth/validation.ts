@@ -6,6 +6,7 @@ export type SignupInput = {
   email: string
   password: string
   confirmPassword: string
+  law25Consent: boolean
 }
 
 export type LoginInput = {
@@ -67,6 +68,11 @@ export function validateSignup(input: SignupInput): SignupErrors {
     errors.confirmPassword = 'Confirmez votre mot de passe.'
   } else if (input.password !== input.confirmPassword) {
     errors.confirmPassword = 'Les mots de passe ne correspondent pas.'
+  }
+
+  if (!input.law25Consent) {
+    errors.law25Consent =
+      'Vous devez accepter la conservation de vos renseignements pour créer un compte.'
   }
 
   return errors

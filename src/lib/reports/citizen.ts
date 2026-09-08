@@ -28,6 +28,14 @@ export function normalizeReporterEmail(value: string): string {
   return value.trim().toLowerCase()
 }
 
+export function validateReporterConsent(consented: boolean): string | null {
+  if (!consented) {
+    return 'Vous devez accepter la conservation de votre courriel pour envoyer un signalement.'
+  }
+
+  return null
+}
+
 export function citizenWindowStart(now: Date): Date {
   return new Date(now.getTime() - CITIZEN_WINDOW_MS)
 }

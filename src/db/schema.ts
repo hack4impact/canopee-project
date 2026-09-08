@@ -65,6 +65,7 @@ export const users = pgTable('users', {
   role: roleEnum('role').notNull().default('volunteer'),
   status: statusEnum('status').notNull().default('pending'),
   rejectionReason: text('rejection_reason'),
+  law25ConsentedAt: timestamp('law25_consented_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -93,6 +94,9 @@ export const reports = pgTable(
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),
     userId: uuid('user_id').references(() => users.id),
     reporterEmail: text('reporter_email'),
+    reporterLaw25ConsentedAt: timestamp('reporter_law25_consented_at', {
+      withTimezone: true,
+    }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
