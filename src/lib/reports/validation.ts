@@ -83,7 +83,7 @@ export function validateReport(input: ReportInput): ReportErrors {
     }
 
     if (group === 'faune_flore') {
-      validateUnit(input.unit, errors)
+      validateUnit(input.unit, input.quantity, errors)
       validateHabitat(input.habitat, errors)
     }
   }
@@ -121,12 +121,22 @@ function validateQuantity(value: string | undefined, errors: ReportErrors) {
   }
 }
 
-function validateUnit(value: string | undefined, errors: ReportErrors) {
-  if (!value || value.trim() === '') {
+function validateUnit(
+  value: string | undefined,
+  quantity: string | undefined,
+  errors: ReportErrors,
+) {
+  const unit = value?.trim() ?? ''
+
+  if (unit === '') {
+    if (quantity?.trim()) {
+      errors.unit = 'Choisissez l’unité qui accompagne le nombre.'
+    }
+
     return
   }
 
-  if (!(REPORT_UNITS as readonly string[]).includes(value.trim())) {
+  if (!(REPORT_UNITS as readonly string[]).includes(unit)) {
     errors.unit = 'Cette unité n’existe pas.'
   }
 }

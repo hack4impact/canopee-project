@@ -2,6 +2,7 @@ import type { Role } from '@/lib/auth/roles'
 import {
   FAUNE_FLORE_STATUTS,
   REPORT_CATEGORY_LABELS,
+  reportUnitLabel,
 } from '@/lib/reports/categories'
 import type { ObservationCategory } from '@/lib/observations/collection'
 import { findWoodedArea } from '@/lib/patrols/woods'
@@ -148,7 +149,7 @@ export function toMinistryRow(row: ObservationExportRow): string[] {
   const { year, month, day, time } = dateParts(row.createdAt)
   const bois = woodedAreaName(row.latitude, row.longitude)
   const metadata = speciesMetadata(row.species)
- 
+
   return [
     REPORT_CATEGORY_LABELS[row.category],
     metadata?.scientificName ?? row.species ?? '',
@@ -163,7 +164,7 @@ export function toMinistryRow(row: ObservationExportRow): string[] {
     row.description ?? '',
     row.habitat ?? '',
     row.quantity === null ? '' : String(row.quantity),
-    row.unit ?? '',
+    reportUnitLabel(row.unit),
     photoFileName(row.photoUrl),
     provincialStatusLabel(row.statut, row.species),
     observerStatusLabel(row.observerRole),

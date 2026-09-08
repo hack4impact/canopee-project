@@ -205,6 +205,34 @@ export const FLORE_SUBCATEGORIES = [
 export type FauneSubcategory = (typeof FAUNE_SUBCATEGORIES)[number]['value']
 export type FloreSubcategory = (typeof FLORE_SUBCATEGORIES)[number]['value']
 
-export const REPORT_UNITS = ['individus', 'nids'] as const
+export const REPORT_UNITS = [
+  'individus',
+  'nids',
+  'taniere',
+  'ruche',
+  'trace',
+  'autre',
+] as const
 
 export type ReportUnit = (typeof REPORT_UNITS)[number]
+
+export const REPORT_UNIT_LABELS: Record<ReportUnit, string> = {
+  individus: 'individus',
+  nids: 'nids',
+  taniere: 'tanière',
+  ruche: 'ruche',
+  trace: 'trace',
+  autre: 'autre',
+}
+
+export function isReportUnit(value: unknown): value is ReportUnit {
+  return typeof value === 'string' && Object.hasOwn(REPORT_UNIT_LABELS, value)
+}
+
+export function reportUnitLabel(value: string | null | undefined): string {
+  if (!value) {
+    return ''
+  }
+
+  return isReportUnit(value) ? REPORT_UNIT_LABELS[value] : value
+}

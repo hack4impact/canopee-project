@@ -1,5 +1,6 @@
 import {
   REPORT_CATEGORY_LABELS,
+  reportUnitLabel,
   type ReportCategory,
 } from '@/lib/reports/categories'
 
@@ -167,7 +168,7 @@ export function reportToCsvValues(report: ReportExportRow): CsvValue[] {
     report.description,
     report.typology,
     report.quantity,
-    report.unit,
+    report.unit === null ? null : reportUnitLabel(report.unit),
     report.species,
     report.habitat,
     report.statut,

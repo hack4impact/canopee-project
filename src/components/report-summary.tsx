@@ -9,6 +9,7 @@ import {
   REPORT_CATEGORY_LABELS,
   REPORT_GROUP_LABELS,
   reportGroupOfCategory,
+  reportUnitLabel,
 } from '@/lib/reports/categories'
 import { formatEventNumber } from '@/lib/reports/format'
 import { reportGroupColor } from '@/lib/reports/group-style'
@@ -57,7 +58,7 @@ export function ReportSummary({
       ['Espèce', report.species],
       ['Typologie', report.typology],
       ['Quantité', report.quantity === null ? null : String(report.quantity)],
-      ['Unité', report.unit],
+      ['Unité', reportUnitLabel(report.unit)],
       ['Habitat', report.habitat],
       ['Statut relevé', report.statut],
     ].filter((entry) => Boolean(entry[1])) as [string, string][]),

@@ -23,6 +23,7 @@ import {
   REPORT_TYPOLOGIES,
   REPORT_TYPOLOGY_LABELS,
   REPORT_UNITS,
+  REPORT_UNIT_LABELS,
   REPORT_FAUNE_CATEGORIES,
   REPORT_FLORE_CATEGORIES,
   isReportCategory,
@@ -34,6 +35,7 @@ import { type ReportPosition } from '@/lib/reports/location'
 import {
   isValidReport,
   MAX_DESCRIPTION_LENGTH,
+  MAX_QUANTITY,
   validatePhoto,
   validateReport,
   type ReportErrors,
@@ -442,6 +444,18 @@ function ReportWizard({
     setPreview(URL.createObjectURL(prepared))
   }
 
+  function quantityIsValid(): boolean {
+    const value = quantity.trim()
+
+    if (value === '') {
+      return true
+    }
+
+    const parsed = Number(value)
+
+    return Number.isInteger(parsed) && parsed >= 1 && parsed <= MAX_QUANTITY
+  }
+
   function stepIsComplete(key: StepKey): boolean {
     switch (key) {
       case 'courriel':
@@ -459,7 +473,11 @@ function ReportWizard({
       case 'espece':
         return speciesMatch !== undefined
       case 'details':
-        return description.trim() !== ''
+        return (
+          description.trim() !== '' &&
+          quantityIsValid() &&
+          (quantity.trim() === '' || unit !== '')
+        )
       case 'commentaire':
         return description.trim() !== ''
       case 'position':
@@ -876,28 +894,60 @@ function ReportWizard({
         {step === 'details' && (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="unit" className={LABEL}>
-                Unité
-              </label>
-              <select
-                id="unit"
-                name="unit"
-                value={unit}
-                onChange={(event) => setUnit(event.target.value)}
-                className={FIELD}
-              >
-                <option value="">—</option>
-                {REPORT_UNITS.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="quantity" className={LABEL}>
+                    Quantité
+                  </label>
+                  <input
+                    id="quantity"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    value={quantity}
+                    onChange={(event) => setQuantity(event.target.value)}
+                    placeholder="1, 2, 3…"
+                    aria-describedby={
+                      errors.quantity ? 'quantity-error' : undefined
+                    }
+                    className={`${FIELD} w-full`}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="unit" className={LABEL}>
+                    Unité
+                  </label>
+                  <select
+                    id="unit"
+                    value={unit}
+                    onChange={(event) => setUnit(event.target.value)}
+                    aria-describedby={errors.unit ? 'unit-error' : undefined}
+                    className={`${FIELD} w-full`}
+                  >
+                    <option value="">—</option>
+                    {REPORT_UNITS.map((value) => (
+                      <option key={value} value={value}>
+                        {REPORT_UNIT_LABELS[value]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {errors.quantity && (
+                <p id="quantity-error" className={ERROR}>
+                  {errors.quantity}
+                </p>
+              )}
+
               {errors.unit && (
                 <p id="unit-error" className={ERROR}>
                   {errors.unit}
                 </p>
               )}
+
+              
             </div>
 
             <div className="flex flex-col gap-1.5">
