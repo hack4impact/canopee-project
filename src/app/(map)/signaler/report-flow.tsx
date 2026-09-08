@@ -129,7 +129,7 @@ export function ReportFlow({
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-right-4 duration-250 motion-reduce:animate-none">
+    <div className="flex min-h-0 flex-1 flex-col animate-in fade-in slide-in-from-right-4 duration-250 motion-reduce:animate-none">
       <ReportForm
         group={group}
         onBack={() => {

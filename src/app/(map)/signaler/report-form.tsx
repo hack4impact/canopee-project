@@ -588,7 +588,7 @@ function ReportWizard({
     <form
       action={submit}
       noValidate
-      className="flex flex-col gap-2 overflow-visible"
+      className="flex min-h-[min(32rem,calc(100dvh-10rem))] flex-col gap-2 overflow-visible"
     >
       <div className="flex shrink-0 flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
@@ -1098,7 +1098,7 @@ function ReportWizard({
         )}
       </div>
 
-      <div className="flex shrink-0 flex-col gap-2">
+      <div className="mt-auto flex shrink-0 flex-col gap-2 pt-3">
         <div className="flex items-center justify-end gap-3">
           {isLastStep ? (
             <button
