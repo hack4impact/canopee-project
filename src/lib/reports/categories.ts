@@ -236,3 +236,11 @@ export function reportUnitLabel(value: string | null | undefined): string {
 
   return isReportUnit(value) ? REPORT_UNIT_LABELS[value] : value
 }
+
+export function reportTypologyLabel(value: string | null | undefined): string {
+  if (!value) {
+    return ''
+  }
+
+  return isReportTypology(value) ? REPORT_TYPOLOGY_LABELS[value] : value
+}

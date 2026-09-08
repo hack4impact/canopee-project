@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { drainQueuedReports, pendingReportCount } from '@/lib/reports/send'
 import { ReportFlow } from './report-flow'
@@ -8,29 +8,11 @@ import { ReportFlow } from './report-flow'
 export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
   const router = useRouter()
   const [pendingReports, setPendingReports] = useState(0)
-  const [contentHeight, setContentHeight] = useState<number | null>(null)
   const [filling, setFilling] = useState(false)
   const [back, setBack] = useState<{ run: () => void } | null>(null)
-  const contentRef = useRef<HTMLDivElement>(null)
 
   const handleBackChange = useCallback((handler: (() => void) | null) => {
     setBack(handler ? { run: handler } : null)
-  }, [])
-
-  useEffect(() => {
-    const element = contentRef.current
-
-    if (!element) {
-      return
-    }
-
-    const observer = new ResizeObserver(([entry]) => {
-      setContentHeight(entry.contentRect.height)
-    })
-
-    observer.observe(element)
-
-    return () => observer.disconnect()
   }, [])
 
   const drain = useCallback(() => {
@@ -69,7 +51,7 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
         role="dialog"
         aria-modal="true"
         aria-label="Signaler"
-        className={`relative flex max-h-[calc(100dvh-2rem)] w-full animate-dock-in flex-col gap-1.5 rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 transition-[max-width] duration-300 ease-out motion-reduce:animate-none motion-reduce:transition-none sm:px-5 sm:py-5 ${
+        className={`relative flex w-full animate-dock-in flex-col gap-1.5 overflow-visible rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 transition-[max-width] duration-300 ease-out motion-reduce:animate-none motion-reduce:transition-none sm:px-5 sm:py-5 ${
           filling
             ? 'max-w-[min(36rem,calc(100dvh_-_6rem))]'
             : 'max-w-[min(24rem,calc(100dvh_-_6rem))]'
@@ -138,18 +120,11 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
           </p>
         )}
 
-        <div
-          style={{ height: contentHeight ?? undefined }}
-          className="scroll-visible max-h-[min(38rem,calc(100dvh-9rem))] overflow-y-auto transition-[height] duration-300 ease-out motion-reduce:transition-none"
-        >
-          <div ref={contentRef}>
-            <ReportFlow
-              photoRequired={photoRequired}
-              onFillingChange={setFilling}
-              onBackChange={handleBackChange}
-            />
-          </div>
-        </div>
+        <ReportFlow
+          photoRequired={photoRequired}
+          onFillingChange={setFilling}
+          onBackChange={handleBackChange}
+        />
       </div>
     </div>
   )

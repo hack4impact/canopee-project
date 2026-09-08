@@ -588,7 +588,7 @@ function ReportWizard({
     <form
       action={submit}
       noValidate
-      className="flex min-h-0 flex-1 flex-col gap-2"
+      className="flex min-h-[min(32rem,calc(100dvh-10rem))] flex-col gap-2 overflow-visible"
     >
       <div className="flex shrink-0 flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
@@ -612,9 +612,11 @@ function ReportWizard({
           </div>
         </div>
 
-        <p className="text-sm font-semibold text-canopee-forest">
-          {STEP_TITLES[step]}
-        </p>
+        {step !== 'details' && (
+          <p className="text-sm font-semibold text-canopee-forest">
+            {STEP_TITLES[step]}
+          </p>
+        )}
       </div>
 
       {citizen && (
@@ -994,8 +996,6 @@ function ReportWizard({
                   {errors.unit}
                 </p>
               )}
-
-              
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -1098,7 +1098,7 @@ function ReportWizard({
         )}
       </div>
 
-      <div className="flex shrink-0 flex-col gap-2">
+      <div className="mt-auto flex shrink-0 flex-col gap-2 pt-3">
         <div className="flex items-center justify-end gap-3">
           {isLastStep ? (
             <button

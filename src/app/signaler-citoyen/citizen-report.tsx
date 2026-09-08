@@ -32,7 +32,7 @@ export function CitizenReport() {
       <ForestBackground />
 
       <div
-        className={`relative z-10 flex max-h-[calc(100dvh-2rem)] w-full flex-col gap-2 rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 transition-[max-width] duration-300 ease-out motion-reduce:transition-none sm:px-5 sm:py-5 ${
+        className={`relative z-10 flex w-full flex-col gap-2 overflow-visible rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 transition-[max-width] duration-300 ease-out motion-reduce:transition-none sm:px-5 sm:py-5 ${
           filling
             ? 'max-w-[min(36rem,calc(100dvh_-_6rem))]'
             : 'max-w-[min(24rem,calc(100dvh_-_6rem))]'
@@ -89,14 +89,12 @@ export function CitizenReport() {
           </Link>
         </header>
 
-        <div className="scroll-visible flex min-h-0 flex-1 flex-col justify-center overflow-y-auto">
-          <ReportFlow
-            photoRequired={false}
-            citizen
-            onFillingChange={setFilling}
-            onBackChange={handleBackChange}
-          />
-        </div>
+        <ReportFlow
+          photoRequired={false}
+          citizen
+          onFillingChange={setFilling}
+          onBackChange={handleBackChange}
+        />
       </div>
     </div>
   )

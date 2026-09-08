@@ -23,7 +23,7 @@ const FIELD =
   'w-full rounded-lg border border-canopee-green/30 bg-white px-3 py-2.5 text-canopee-forest placeholder-zinc-500 transition-colors outline-none focus:border-canopee-green focus:ring-2 focus:ring-canopee-green/40'
 
 const SUGGESTIONS_CLASS =
-  'absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border border-canopee-green/30 bg-white shadow-lg'
+  'absolute top-full left-0 right-0 z-[80] mt-1 max-h-60 overflow-y-auto rounded-lg border border-canopee-green/30 bg-white shadow-lg'
 
 const SUGGESTION_ITEM =
   'px-3 py-2 cursor-pointer transition-colors hover:bg-canopee-green/10'
@@ -43,15 +43,18 @@ export function SpeciesCombobox({
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  const filterCategory =
+    category && getSpeciesByCategory(category).length > 0 ? category : undefined
+
   const suggestions = useMemo<Species[]>(() => {
     if (value.trim()) {
-      return searchSpecies(value, category, SUGGESTION_LIMIT)
+      return searchSpecies(value, filterCategory, SUGGESTION_LIMIT)
     }
 
-    return category
-      ? getSpeciesByCategory(category).slice(0, SUGGESTION_LIMIT)
+    return filterCategory
+      ? getSpeciesByCategory(filterCategory).slice(0, SUGGESTION_LIMIT)
       : []
-  }, [value, category])
+  }, [value, filterCategory])
 
   const expanded = isOpen && suggestions.length > 0
   const listboxId = `${id}-listbox`
