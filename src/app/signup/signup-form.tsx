@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
@@ -23,6 +24,7 @@ const emptyInput: SignupInput = {
   email: '',
   password: '',
   confirmPassword: '',
+  law25Consent: false,
 }
 
 export function SignupForm() {
@@ -34,6 +36,10 @@ export function SignupForm() {
 
   function update(field: keyof SignupInput, value: string) {
     setInput((current) => ({ ...current, [field]: value }))
+  }
+
+  function updateConsent(checked: boolean) {
+    setInput((current) => ({ ...current, law25Consent: checked }))
   }
 
   function submit(formData: FormData) {
@@ -154,6 +160,36 @@ export function SignupForm() {
             className="text-sm font-medium text-canopee-coral-dark"
           >
             {errors.confirmPassword}
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-start gap-2">
+          <Checkbox
+            id="law25Consent"
+            checked={input.law25Consent}
+            onCheckedChange={(checked) => updateConsent(checked === true)}
+            aria-describedby={
+              errors.law25Consent ? 'law25Consent-error' : undefined
+            }
+          />
+          <input
+            type="hidden"
+            name="law25Consent"
+            value={input.law25Consent ? 'true' : ''}
+          />
+          <Label htmlFor="law25Consent" className="font-normal">
+            J’accepte que Canopée utilise mon nom et mon courriel pour créer et
+            gérer mon compte.
+          </Label>
+        </div>
+        {errors.law25Consent && (
+          <p
+            id="law25Consent-error"
+            className="text-sm font-medium text-canopee-coral-dark"
+          >
+            {errors.law25Consent}
           </p>
         )}
       </div>

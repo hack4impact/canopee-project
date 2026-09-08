@@ -295,7 +295,10 @@ async function submitReport(
         ...(id ? { id } : {}),
         ...(reporter.kind === 'user'
           ? { userId: reporter.profile.id }
-          : { reporterEmail: reporter.email }),
+          : {
+              reporterEmail: reporter.email,
+              reporterLaw25ConsentedAt: new Date(),
+            }),
         category: input.category,
         description: input.description.trim(),
         typology: input.typology.trim() || null,

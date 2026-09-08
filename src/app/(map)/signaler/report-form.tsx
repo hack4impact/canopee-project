@@ -10,6 +10,7 @@ import {
 } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ReportLocationPicker } from '@/components/report-location-picker'
 import { CITIZEN_REPORT_ROUTE } from '@/lib/auth/routes'
 import { SpeciesPicto, type SpeciesPictoName } from '@/components/species-picto'
@@ -29,7 +30,10 @@ import {
   isReportCategory,
   type ReportGroup,
 } from '@/lib/reports/categories'
-import { validateReporterEmail } from '@/lib/reports/citizen'
+import {
+  validateReporterConsent,
+  validateReporterEmail,
+} from '@/lib/reports/citizen'
 import { downscalePhoto } from '@/lib/reports/downscale'
 import { type ReportPosition } from '@/lib/reports/location'
 import {
@@ -324,6 +328,7 @@ function ReportWizard({
   const [stepIndex, setStepIndex] = useState(0)
   const [direction, setDirection] = useState<'forward' | 'back'>('forward')
   const [reporterEmail, setReporterEmail] = useState('')
+  const [reporterConsent, setReporterConsent] = useState(false)
   const [category, setCategory] = useState('')
   const [typology, setTypology] = useState('')
   const [description, setDescription] = useState('')
@@ -459,7 +464,10 @@ function ReportWizard({
   function stepIsComplete(key: StepKey): boolean {
     switch (key) {
       case 'courriel':
-        return validateReporterEmail(reporterEmail) === null
+        return (
+          validateReporterEmail(reporterEmail) === null &&
+          validateReporterConsent(reporterConsent) === null
+        )
       case 'constate':
         return category !== ''
       case 'typologie':
@@ -489,6 +497,7 @@ function ReportWizard({
     setClientErrors((current) => {
       const cleared = { ...current }
       delete cleared.reporterEmail
+      delete cleared.reporterConsent
       delete cleared.category
       delete cleared.typology
       delete cleared.species
@@ -545,9 +554,16 @@ function ReportWizard({
     })
 
     const emailError = citizen ? validateReporterEmail(reporterEmail) : null
+    const consentError = citizen
+      ? validateReporterConsent(reporterConsent)
+      : null
 
     if (emailError) {
       found.reporterEmail = emailError
+    }
+
+    if (consentError) {
+      found.reporterConsent = consentError
     }
 
     setClientErrors(found)
@@ -602,7 +618,14 @@ function ReportWizard({
       </div>
 
       {citizen && (
-        <input type="hidden" name="reporterEmail" value={reporterEmail} />
+        <>
+          <input type="hidden" name="reporterEmail" value={reporterEmail} />
+          <input
+            type="hidden"
+            name="reporterConsent"
+            value={reporterConsent ? 'true' : ''}
+          />
+        </>
       )}
       <input type="hidden" name="category" value={category} />
       <input type="hidden" name="description" value={description} />
@@ -657,6 +680,31 @@ function ReportWizard({
             {errors.reporterEmail && (
               <p id="reporter-email-error" className={ERROR}>
                 {errors.reporterEmail}
+              </p>
+            )}
+
+            <div className="flex items-start gap-2 pt-2">
+              <Checkbox
+                id="reporterConsent"
+                checked={reporterConsent}
+                onCheckedChange={(checked) =>
+                  setReporterConsent(checked === true)
+                }
+                aria-describedby={
+                  errors.reporterConsent ? 'reporter-consent-error' : undefined
+                }
+              />
+              <label
+                htmlFor="reporterConsent"
+                className="text-xs text-canopee-forest/80"
+              >
+                J’accepte que Canopée utilise mon courriel pour m’informer du
+                suivi de mon signalement.
+              </label>
+            </div>
+            {errors.reporterConsent && (
+              <p id="reporter-consent-error" className={ERROR}>
+                {errors.reporterConsent}
               </p>
             )}
           </div>
