@@ -947,9 +947,7 @@ function ReportWizard({
                 </p>
               )}
 
-              <p className="text-xs text-canopee-forest/60">
-                Facultatif : précisez l’unité si vous indiquez une quantité.
-              </p>
+              
             </div>
 
             <div className="flex flex-col gap-1.5">
