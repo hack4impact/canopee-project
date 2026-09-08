@@ -4,7 +4,7 @@ export function ForestBackground() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0">
       <Image
-        src="/images/forest-canopy.jpg"
+        src="/images/forest-canopee.jpg"
         alt=""
         fill
         priority
