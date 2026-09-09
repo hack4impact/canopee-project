@@ -9,7 +9,6 @@ import {
   toCsvRow,
   CSV_BOM,
   CSV_HEADER_LABELS,
-  CSV_HEADERS,
   type ReportExportRow,
 } from '@/lib/reports/csv'
 

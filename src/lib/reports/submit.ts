@@ -102,6 +102,36 @@ function parseQuantity(value: string): number | null {
 export type Reporter =
   { kind: 'user'; profile: UserProfile } | { kind: 'citizen'; email: string }
 
+const DEBUG = '[photo-debug]'
+
+function keyIdentity(key: string | undefined): Record<string, unknown> {
+  if (!key) {
+    return { present: false }
+  }
+
+  const identity: Record<string, unknown> = {
+    present: true,
+    length: key.length,
+    shape: key.startsWith('eyJ') ? 'jwt' : key.slice(0, 3),
+  }
+
+  if (key.startsWith('eyJ')) {
+    try {
+      const payload = JSON.parse(
+        Buffer.from(key.split('.')[1], 'base64').toString('utf8'),
+      ) as { ref?: string; role?: string; exp?: number }
+
+      identity.ref = payload.ref
+      identity.role = payload.role
+      identity.expired = payload.exp ? payload.exp * 1000 < Date.now() : null
+    } catch {
+      identity.decodable = false
+    }
+  }
+
+  return identity
+}
+
 async function uploadPhoto(
   reporter: Reporter,
   photo: File,
@@ -118,19 +148,35 @@ async function uploadPhoto(
     crypto.randomUUID(),
   )
 
-  if (!path) {
-    return null
-  }
-
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-  if (reporter.kind === 'citizen' && (!supabaseUrl || !serviceKey)) {
-    console.error(
-      'SUPABASE_SERVICE_ROLE_KEY is not configured: a citizen photo cannot be stored',
-    )
+  console.error(DEBUG, 'request', {
+    reporter: reporter.kind,
+    bucket: REPORT_PHOTO_BUCKET,
+    path,
+    photoName: photo.name,
+    photoType: photo.type,
+    photoSize: photo.size,
+    supabaseHost: supabaseUrl ? new URL(supabaseUrl).host : null,
+    serviceKey: keyIdentity(serviceKey),
+    nodeVersion: process.version,
+  })
+
+  if (!path) {
+    console.error(DEBUG, 'abort: unsupported photo type', photo.type)
     return null
   }
+
+  if (reporter.kind === 'citizen' && (!supabaseUrl || !serviceKey)) {
+    console.error(DEBUG, 'abort: missing supabase env', {
+      hasUrl: Boolean(supabaseUrl),
+      hasServiceKey: Boolean(serviceKey),
+    })
+    return null
+  }
+
+  const startedAt = Date.now()
 
   try {
     const supabase =
@@ -140,18 +186,35 @@ async function uploadPhoto(
             auth: { autoRefreshToken: false, persistSession: false },
           })
 
-    const { error } = await supabase.storage
+    const { data, error } = await supabase.storage
       .from(REPORT_PHOTO_BUCKET)
       .upload(path, photo, { contentType: photo.type, upsert: false })
 
     if (error) {
-      console.error('Report photo upload failed', error)
+      console.error(DEBUG, 'upload failed', {
+        elapsedMs: Date.now() - startedAt,
+        name: error.name,
+        message: error.message,
+        status: (error as { status?: number }).status,
+        statusCode: (error as { statusCode?: string }).statusCode,
+        raw: JSON.stringify(error),
+      })
       return null
     }
 
+    console.error(DEBUG, 'upload ok', {
+      elapsedMs: Date.now() - startedAt,
+      path: data?.path,
+    })
+
     return path
   } catch (cause) {
-    console.error('Report photo upload threw', cause)
+    console.error(DEBUG, 'upload threw', {
+      elapsedMs: Date.now() - startedAt,
+      name: cause instanceof Error ? cause.name : typeof cause,
+      message: cause instanceof Error ? cause.message : String(cause),
+      stack: cause instanceof Error ? cause.stack?.slice(0, 800) : undefined,
+    })
     return null
   }
 }

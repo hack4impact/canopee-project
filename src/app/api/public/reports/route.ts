@@ -12,13 +12,33 @@ import { createCitizenReport } from '@/lib/reports/submit'
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
+  const DEBUG = '[photo-debug]'
+
+  console.error(DEBUG, 'incoming', {
+    contentLength: request.headers?.get('content-length'),
+    contentType: request.headers?.get('content-type')?.slice(0, 60),
+    userAgent: request.headers?.get('user-agent')?.slice(0, 160),
+  })
+
   let formData: FormData
 
   try {
     formData = await request.formData()
-  } catch {
+  } catch (cause) {
+    console.error(DEBUG, 'formData parse failed', {
+      message: cause instanceof Error ? cause.message : String(cause),
+    })
     return Response.json({ error: 'Expected a form body.' }, { status: 400 })
   }
+
+  const rawPhoto = formData.get('photo')
+
+  console.error(DEBUG, 'photo field', {
+    isFile: rawPhoto instanceof File,
+    type: rawPhoto instanceof File ? rawPhoto.type : typeof rawPhoto,
+    size: rawPhoto instanceof File ? rawPhoto.size : null,
+    name: rawPhoto instanceof File ? rawPhoto.name : null,
+  })
 
   const submitted = String(formData.get('reporterEmail') ?? '')
   const emailError = validateReporterEmail(submitted)
@@ -56,6 +76,13 @@ export async function POST(request: NextRequest) {
   }
 
   const result = await createCitizenReport(email, formData)
+
+  console.error(DEBUG, 'result', {
+    submitted: Boolean(result.submittedId),
+    conflict: Boolean(result.conflict),
+    message: result.message ?? null,
+    errors: result.errors ? Object.keys(result.errors) : null,
+  })
 
   if (result.conflict) {
     return Response.json(result, { status: 409 })
