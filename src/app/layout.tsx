@@ -6,6 +6,7 @@ import { PatrolProvider } from '@/components/patrol-provider'
 import { PatrolSync } from '@/components/patrol-sync'
 import { ReportSync } from '@/components/report-sync'
 import { DeepLink } from '@/components/deep-link'
+import { PortraitLock } from '@/components/portrait-lock'
 import { getCurrentUserProfile } from '@/lib/auth/current-user'
 import { getActivePatrol } from '@/lib/patrols/queries'
 import './globals.css'
@@ -101,6 +102,7 @@ export default async function RootLayout({
           {children}
           <PatrolControls />
         </PatrolProvider>
+        <PortraitLock />
         <PatrolSync />
         <ReportSync />
         <DeepLink />

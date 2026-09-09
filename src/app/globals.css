@@ -232,3 +232,13 @@ html body[data-scroll-locked] {
     padding-left: calc(1.5rem + env(safe-area-inset-left));
   }
 }
+
+@media (orientation: landscape) and (height <= 600px) and (pointer: coarse) {
+  .portrait-lock {
+    display: flex;
+  }
+
+  body:has(.portrait-lock) {
+    overflow: hidden;
+  }
+}
