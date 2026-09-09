@@ -1,6 +1,5 @@
 'use server'
 
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { ensureUserProfile, type UserProfile } from '@/lib/auth/ensure-profile'
 import { isApproved } from '@/lib/auth/roles'
@@ -99,13 +98,13 @@ export async function requestPasswordReset(
   }
 
   const email = input.email.trim().toLowerCase()
-  const origin = (await headers()).get('origin')
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
   const supabase = await createClient()
 
   const { error } = await supabase.auth.resetPasswordForEmail(
     email,
-    origin
-      ? { redirectTo: `${origin}/auth/confirm?next=%2Flogin%2Freset` }
+    siteUrl
+      ? { redirectTo: `${siteUrl}/auth/confirm?next=%2Flogin%2Freset` }
       : undefined,
   )
 
