@@ -90,14 +90,15 @@ describe('plunk email helpers', () => {
     expect(consoleError).toHaveBeenCalled()
   })
 
-  it('falls back to a text wordmark when no site url is configured', async () => {
+  it('falls back to the default production logo when no site url is configured', async () => {
     delete process.env.NEXT_PUBLIC_SITE_URL
 
     await sendApprovalEmail('user@example.com')
 
     const [payload] = sendMock.mock.calls[0]
-    expect(payload.body).toContain('CANOPÉE')
-    expect(payload.body).not.toContain('<img')
+    expect(payload.body).toContain(
+      'src="https://canopee-project.vercel.app/canopee_blanc.png"',
+    )
   })
 
   it('links the logo absolutely when a site url is configured', async () => {

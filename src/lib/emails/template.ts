@@ -28,17 +28,20 @@ export type EmailContent = {
   logoUrl?: string
 }
 
-function logoUrl(): string | null {
-  const base = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '')
+const DEFAULT_SITE_URL = 'https://canopee-project.vercel.app'
 
-  return base ? `${base}/canopee_blanc.png` : null
+function logoUrl(): string {
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL).replace(
+    /\/+$/,
+    '',
+  )
+
+  return `${base}/canopee_blanc.png`
 }
 
 function renderHeader(override?: string): string {
   const logo = override ?? logoUrl()
-  const inner = logo
-    ? `<img src="${logo}" width="150" alt="Canopée" style="display:block;margin:0 auto;width:150px;max-width:150px;height:auto;border:0;" />`
-    : `<span style="font-size:24px;font-weight:bold;letter-spacing:0.08em;color:${CREAM};">CANOPÉE</span>`
+  const inner = `<img src="${logo}" width="150" alt="Canopée" style="display:block;margin:0 auto;width:150px;max-width:150px;height:auto;border:0;" />`
 
   return `
         <tr>
