@@ -120,7 +120,7 @@ export function ReportForm({
   }
 
   return (
-    <div className="flex min-h-[min(36rem,calc(100vw_-_2rem),calc(100dvh_-_9rem))] flex-1 flex-col gap-2">
+    <div className="flex min-h-[min(36rem,calc(100vw_-_2rem),calc(100dvh_-_9rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)))] flex-1 flex-col gap-2">
       <h2 className={`font-heading text-lg ${REPORT_THEMES[group].accent}`}>
         {REPORT_GROUP_LABELS[group]}
       </h2>
@@ -588,7 +588,7 @@ function ReportWizard({
     <form
       action={submit}
       noValidate
-      className="flex min-h-[min(32rem,calc(100dvh-10rem))] flex-col gap-2 overflow-visible"
+      className="flex min-h-[min(32rem,calc(100dvh_-_10rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)))] flex-1 flex-col gap-2 overflow-visible"
     >
       <div className="flex shrink-0 flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
@@ -646,7 +646,7 @@ function ReportWizard({
 
       <div
         key={step}
-        className={`flex min-h-0 flex-1 animate-in flex-col gap-2 fade-in duration-200 motion-reduce:animate-none ${
+        className={`flex min-h-0 flex-1 animate-in flex-col gap-2 overflow-y-auto overscroll-contain fade-in duration-200 motion-reduce:animate-none ${
           direction === 'forward'
             ? 'slide-in-from-right-3'
             : 'slide-in-from-left-3'

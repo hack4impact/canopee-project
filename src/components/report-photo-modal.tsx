@@ -57,9 +57,9 @@ export function ReportPhotoModal({
           width={1200}
           height={900}
           unoptimized
-          className="max-h-[85dvh] w-auto max-w-full rounded-2xl object-contain shadow-2xl"
+          className="max-h-[calc(85dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom))] w-auto max-w-full rounded-2xl object-contain shadow-2xl"
         />
-        <div className="absolute top-2 right-2 flex items-center gap-2">
+        <div className="absolute top-[calc(0.5rem_+_env(safe-area-inset-top))] right-[calc(0.5rem_+_env(safe-area-inset-right))] flex items-center gap-2">
           <a
             href={src}
             download={downloadFilename}

@@ -46,12 +46,12 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
   }, [router])
 
   return (
-    <div className="fixed inset-0 z-[70] flex animate-in items-center justify-center overflow-hidden bg-canopee-forest/40 fade-in p-4 backdrop-blur-sm duration-200 motion-reduce:animate-none sm:p-6">
+    <div className="safe-inset fixed inset-0 z-[70] flex animate-in items-center justify-center overflow-hidden bg-canopee-forest/40 fade-in backdrop-blur-sm duration-200 motion-reduce:animate-none">
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Signaler"
-        className={`relative flex w-full animate-dock-in flex-col gap-1.5 overflow-visible rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 transition-[max-width] duration-300 ease-out motion-reduce:animate-none motion-reduce:transition-none sm:px-5 sm:py-5 ${
+        className={`relative flex max-h-full w-full min-h-0 animate-dock-in flex-col gap-1.5 overflow-visible rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 transition-[max-width] duration-300 ease-out motion-reduce:animate-none motion-reduce:transition-none sm:px-5 sm:py-5 ${
           filling
             ? 'max-w-[min(36rem,calc(100dvh_-_6rem))]'
             : 'max-w-[min(24rem,calc(100dvh_-_6rem))]'

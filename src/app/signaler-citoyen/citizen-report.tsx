@@ -28,11 +28,11 @@ export function CitizenReport() {
   }, [router])
 
   return (
-    <div className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-canopee-forest p-4 font-sans sm:p-6">
+    <div className="safe-inset relative flex h-dvh w-full flex-col items-center justify-center overflow-hidden bg-canopee-forest font-sans">
       <ForestBackground />
 
       <div
-        className={`relative z-10 flex w-full flex-col gap-2 overflow-visible rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 transition-[max-width] duration-300 ease-out motion-reduce:transition-none sm:px-5 sm:py-5 ${
+        className={`relative z-10 flex max-h-full w-full min-h-0 flex-col gap-2 overflow-visible rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 transition-[max-width] duration-300 ease-out motion-reduce:transition-none sm:px-5 sm:py-5 ${
           filling
             ? 'max-w-[min(36rem,calc(100dvh_-_6rem))]'
             : 'max-w-[min(24rem,calc(100dvh_-_6rem))]'
