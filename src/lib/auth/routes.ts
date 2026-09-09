@@ -10,6 +10,7 @@ const PUBLIC_ROUTES = [
   '/',
   LOGIN_ROUTE,
   '/signup',
+  '/auth/confirm',
   CITIZEN_REPORT_ROUTE,
   '/api/cron',
   '/api/public',
