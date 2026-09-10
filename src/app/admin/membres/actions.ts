@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { db, users } from '@/db'
 import { requireAdmin } from '@/lib/auth/current-user'
 import { canDeleteAccounts, deleteAccount } from '@/lib/auth/delete-account'
-import { ROLES, type Role } from '@/lib/auth/roles'
+import { ROLES, type Role, type Status } from '@/lib/auth/roles'
 
 export type MemberActionState = {
   message?: string
@@ -18,6 +18,7 @@ export type Member = {
   firstName: string | null
   lastName: string | null
   role: Role
+  status: Status
 }
 
 const UUID_PATTERN =
@@ -37,9 +38,9 @@ export async function listMembers(): Promise<Member[]> {
       firstName: users.firstName,
       lastName: users.lastName,
       role: users.role,
+      status: users.status,
     })
     .from(users)
-    .where(eq(users.status, 'approved'))
     .orderBy(asc(users.email))
 }
 
@@ -77,7 +78,6 @@ export async function changeMemberRole(
   if (target.role === role) {
     return { done: true }
   }
-
 
   if (target.role === 'admin') {
     const [remaining] = await db

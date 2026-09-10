@@ -7,7 +7,7 @@ import {
   type Member,
   type MemberActionState,
 } from './actions'
-import { ROLES, type Role } from '@/lib/auth/roles'
+import { ROLES, type Role, type Status } from '@/lib/auth/roles'
 
 const initialState: MemberActionState = {}
 
@@ -17,8 +17,34 @@ const ROLE_LABELS: Record<Role, string> = {
   admin: 'Administrateur',
 }
 
+const STATUS_LABELS: Record<Status, string> = {
+  pending: 'En attente',
+  approved: 'Approuvé',
+  rejected: 'Rejeté',
+}
+
+const STATUS_STYLES: Record<Status, string> = {
+  pending: 'border-canopee-sky-dark/40 text-canopee-sky-dark',
+  approved: '',
+  rejected: 'border-canopee-coral/45 text-canopee-coral-dark',
+}
+
 /** Most privileged first, so the admin count is the first thing read. */
 const SECTIONS: Role[] = ['admin', 'pro', 'volunteer']
+
+function StatusBadge({ status }: { status: Status }) {
+  if (status === 'approved') {
+    return null
+  }
+
+  return (
+    <span
+      className={`shrink-0 rounded border px-1.5 py-0.5 text-[11px] font-extrabold ${STATUS_STYLES[status]}`}
+    >
+      {STATUS_LABELS[status]}
+    </span>
+  )
+}
 
 const CONTROL_WIDTH = 'w-[8.5rem]'
 
@@ -162,8 +188,11 @@ function MemberRow({
     <li className="border-t border-canopee-forest/10 first:border-t-0">
       <div className="flex items-center gap-3 px-3 py-2.5">
         <div className="min-w-0 flex-1">
-          <span className="block text-base font-bold break-words text-canopee-forest">
-            {name || member.email}
+          <span className="flex items-center gap-2">
+            <span className="min-w-0 text-base font-bold break-words text-canopee-forest">
+              {name || member.email}
+            </span>
+            <StatusBadge status={member.status} />
           </span>
           {name && (
             <span
@@ -192,7 +221,7 @@ export function MemberList({ members }: { members: Member[] }) {
     return (
       <div className="rounded-xl border border-canopee-forest/15 bg-white px-4 py-10 text-center">
         <p className="text-base font-bold text-canopee-forest">
-          Aucun autre compte approuvé
+          Aucun autre compte
         </p>
       </div>
     )
