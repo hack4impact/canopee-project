@@ -39,6 +39,15 @@
 
         </activity>
 
+        <receiver
+            android:name=".PatrolActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="org.reseaucanopee.app.PATROL_TOGGLE" />
+                <action android:name="org.reseaucanopee.app.PATROL_STOP" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -53,4 +62,9 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Lets Android 16+ promote the patrol notification to the lock screen and
+    always-on display. Normal protection, so it is granted at install; the user
+    can still revoke it via the app's "Live Updates" toggle. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 </manifest>
