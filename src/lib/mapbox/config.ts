@@ -11,6 +11,17 @@ export const LAVAL_BOUNDS: [[number, number], [number, number]] = [
   [-73.5, 45.69],
 ]
 
+export function isWithinLaval(latitude: number, longitude: number): boolean {
+  const [[west, south], [east, north]] = LAVAL_BOUNDS
+
+  return (
+    latitude >= south &&
+    latitude <= north &&
+    longitude >= west &&
+    longitude <= east
+  )
+}
+
 export const LAVAL_MIN_ZOOM = 10
 
 export type MapViewport = {

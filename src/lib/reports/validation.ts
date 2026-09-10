@@ -1,3 +1,4 @@
+import { isWithinLaval } from '@/lib/mapbox/config'
 import {
   isReportCategory,
   isReportTypology,
@@ -68,6 +69,9 @@ export function validateReport(input: ReportInput): ReportErrors {
   ) {
     errors.latitude =
       'Une position est nécessaire pour situer le signalement. Autorisez la localisation, ou placez le repère sur la carte.'
+  } else if (!isWithinLaval(input.latitude, input.longitude)) {
+    errors.latitude =
+      'Les signalements sont limités au territoire de Laval. Placez le repère à l’intérieur de la zone.'
   }
 
   if (isReportCategory(input.category)) {

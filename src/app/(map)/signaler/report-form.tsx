@@ -16,7 +16,7 @@ import { CITIZEN_REPORT_ROUTE } from '@/lib/auth/routes'
 import { SpeciesPicto, type SpeciesPictoName } from '@/components/species-picto'
 import { SpeciesCombobox } from '@/components/species-combobox'
 import { Spinner } from '@/components/spinner'
-import { isGeolocationAvailable } from '@/lib/mapbox'
+import { isGeolocationAvailable, isWithinLaval } from '@/lib/mapbox'
 import {
   REPORT_CATEGORY_LABELS,
   REPORT_GROUP_CATEGORIES,
@@ -358,6 +358,9 @@ function ReportWizard({
   const position: ReportPosition | null =
     override ?? (gpsFix.status === 'ready' ? gpsFix.position : null)
 
+  const positionInLaval =
+    position !== null && isWithinLaval(position.latitude, position.longitude)
+
   const errors = { ...serverErrors, ...clientErrors }
 
   const speciesMatch = useMemo(
@@ -489,7 +492,7 @@ function ReportWizard({
       case 'commentaire':
         return description.trim() !== ''
       case 'position':
-        return position !== null
+        return positionInLaval
     }
   }
 
@@ -1086,6 +1089,13 @@ function ReportWizard({
                 className={`text-sm ${position ? 'text-canopee-forest/70' : 'font-medium text-canopee-coral-dark'}`}
               >
                 {gpsFix.message}
+              </p>
+            )}
+
+            {position !== null && !positionInLaval && (
+              <p role="alert" className={ERROR}>
+                Les signalements sont limités au territoire de Laval. Placez le
+                repère à l’intérieur de la zone.
               </p>
             )}
 

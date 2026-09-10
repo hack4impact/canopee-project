@@ -3,6 +3,7 @@ export {
   LAVAL_WOODED_VIEW,
   LAVAL_BOUNDS,
   LAVAL_MIN_ZOOM,
+  isWithinLaval,
   MAPBOX_OUTDOORS_STYLE,
   type MapViewport,
 } from './config'

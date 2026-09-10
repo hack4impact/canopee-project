@@ -242,10 +242,21 @@ describe('validateReport', () => {
     ).toBeDefined()
   })
 
-  it('accepts the null island, which is a valid coordinate', () => {
-    const errors = validateReport(input({ latitude: 0, longitude: 0 }))
+  it('accepts a position inside Laval', () => {
+    expect(validateReport(input(LAVAL)).latitude).toBeUndefined()
+  })
 
-    expect(errors.latitude).toBeUndefined()
+  it('rejects a valid coordinate that sits outside Laval', () => {
+    expect(
+      validateReport(input({ latitude: 0, longitude: 0 })).latitude,
+    ).toBeDefined()
+    expect(
+      validateReport(input({ latitude: 48.8566, longitude: 2.3522 })).latitude,
+    ).toBeDefined()
+    expect(
+      validateReport(input({ latitude: 45.4537, longitude: -73.4773 }))
+        .latitude,
+    ).toBeDefined()
   })
 })
 
