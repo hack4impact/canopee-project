@@ -700,8 +700,16 @@ function ReportWizard({
                 htmlFor="reporterConsent"
                 className="text-xs text-canopee-forest/80"
               >
-                J’accepte que Canopée utilise mon courriel pour m’informer du
-                suivi de mon signalement.
+                J’accepte que Canopée utilise mon adresse courriel pour
+                m’informer du suivi de mon signalement, conformément à sa{' '}
+                <Link
+                  href="/politique-de-confidentialite"
+                  target="_blank"
+                  className="underline underline-offset-2 hover:text-canopee-forest"
+                >
+                  politique de confidentialité
+                </Link>
+                .
               </label>
             </div>
             {errors.reporterConsent && (
