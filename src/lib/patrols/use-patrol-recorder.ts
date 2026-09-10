@@ -17,6 +17,8 @@ import {
   installDebugBridge,
   startDebugFile,
 } from '@/lib/patrols/debug'
+import { updateLiveActivity } from '@/lib/patrols/live-activity'
+import { normalizeRoute } from '@/lib/patrols/route-trace'
 import {
   isNativeApp,
   startNativeWatch,
@@ -69,10 +71,18 @@ function isRecordingSupported(): boolean {
 export type RecordingStatus =
   'unsupported' | 'waiting' | 'recording' | 'signal-lost' | 'denied' | 'stopped'
 
+const MAX_ROUTE_POINTS = 500
+
 export type PatrolRecorder = {
   status: RecordingStatus
   /** Stops recording and delivers every queued point; awaited before ending. */
   flushAndStop: () => Promise<void>
+  /** Metres walked so far, for the lock screen card. */
+  getDistanceMetres: () => number
+  /** The walk so far, normalised for the lock screen trace. */
+  getRoute: () => number[]
+  /** Fills the trace from points already on the server, once. */
+  seedRoute: (points: { latitude: number; longitude: number }[]) => void
 }
 
 /**
@@ -100,6 +110,26 @@ export function usePatrolRecorder({
   const lastRecordedAtRef = useRef<number | null>(null)
   const lastAcceptedRef = useRef<RecordedPoint | null>(null)
   const lastDrainedAtRef = useRef<number>(0)
+  const distanceMetresRef = useRef<number>(0)
+  const routeRef = useRef<{ latitude: number; longitude: number }[]>([])
+
+  const getRoute = useCallback(() => normalizeRoute(routeRef.current), [])
+
+  const seedRoute = useCallback(
+    (points: { latitude: number; longitude: number }[]) => {
+      if (routeRef.current.length > 0 || points.length === 0) {
+        return
+      }
+
+      routeRef.current = points.slice(-MAX_ROUTE_POINTS)
+    },
+    [],
+  )
+
+  const getDistanceMetres = useCallback(
+    () => Math.round(distanceMetresRef.current),
+    [],
+  )
 
   useEffect(() => {
     if (!isSupported) {
@@ -324,9 +354,29 @@ export function usePatrolRecorder({
         return
       }
 
+      if (previous !== null) {
+        distanceMetresRef.current += distanceBetweenMetres(previous, point)
+      }
+
       lastRecordedAtRef.current = recordedAtMs
       lastAcceptedRef.current = point
       stored += 1
+
+      routeRef.current.push({
+        latitude: point.latitude,
+        longitude: point.longitude,
+      })
+
+      if (routeRef.current.length > MAX_ROUTE_POINTS) {
+        routeRef.current.shift()
+      }
+
+      void updateLiveActivity({
+        distanceMetres: Math.round(distanceMetresRef.current),
+        paused: false,
+        elapsedSeconds: 0,
+        route: normalizeRoute(routeRef.current),
+      })
 
       debugLog('point.stored', {
         n: stored,
@@ -488,5 +538,8 @@ export function usePatrolRecorder({
   return {
     status: isSupported ? status : 'unsupported',
     flushAndStop,
+    getDistanceMetres,
+    getRoute,
+    seedRoute,
   }
 }

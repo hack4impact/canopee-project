@@ -31,7 +31,7 @@ type UserLocationProps = {
  * on them and face north again. Used by the home, Carte and Patrouiller pages.
  */
 export function UserLocation({
-  compassClassName = 'absolute top-4 right-4 z-10',
+  compassClassName = 'absolute top-[calc(1rem+env(safe-area-inset-top))] right-4 z-10',
   flyToOnLocate = true,
 }: UserLocationProps) {
   const map = useSharedMap()
@@ -51,23 +51,31 @@ export function UserLocation({
     const targetMap = map
     let cancelled = false
     let marker: mapboxgl.Marker | null = null
+    let centred = false
+    let lastFixAt = 0
 
-    function placeMarker(position: GeolocationPosition, moveCamera: boolean) {
-      if (cancelled) {
+    function placeMarker(position: GeolocationPosition) {
+      if (cancelled || position.timestamp < lastFixAt) {
         return
       }
+
+      lastFixAt = position.timestamp
 
       const { longitude, latitude } = position.coords
       lastPositionRef.current = { longitude, latitude }
 
-      marker?.remove()
-      marker = new mapboxgl.Marker({
-        element: createUserLocationElement(),
-      })
-        .setLngLat([longitude, latitude])
-        .addTo(targetMap)
+      if (marker) {
+        marker.setLngLat([longitude, latitude])
+      } else {
+        marker = new mapboxgl.Marker({
+          element: createUserLocationElement(),
+        })
+          .setLngLat([longitude, latitude])
+          .addTo(targetMap)
+      }
 
-      if (moveCamera && flyToOnLocate) {
+      if (!centred && flyToOnLocate) {
+        centred = true
         targetMap.flyTo({
           center: [longitude, latitude],
           zoom: LOCATE_ZOOM,
@@ -76,28 +84,21 @@ export function UserLocation({
       }
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => placeMarker(position, true),
-      () => {},
-      {
-        enableHighAccuracy: false,
-        timeout: 3_000,
-        maximumAge: LOCATE_CACHE_MAX_AGE_MS,
-      },
-    )
+    navigator.geolocation.getCurrentPosition(placeMarker, () => {}, {
+      enableHighAccuracy: false,
+      timeout: 3_000,
+      maximumAge: LOCATE_CACHE_MAX_AGE_MS,
+    })
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => placeMarker(position, false),
-      () => {},
-      {
-        enableHighAccuracy: true,
-        timeout: LOCATE_TIMEOUT_MS,
-        maximumAge: 0,
-      },
-    )
+    const watchId = navigator.geolocation.watchPosition(placeMarker, () => {}, {
+      enableHighAccuracy: true,
+      timeout: LOCATE_TIMEOUT_MS,
+      maximumAge: 0,
+    })
 
     return () => {
       cancelled = true
+      navigator.geolocation.clearWatch(watchId)
       marker?.remove()
       marker = null
     }
@@ -148,7 +149,7 @@ function CompassButton({
       type="button"
       onClick={handleClick}
       aria-label="Ramener le nord en haut de l'écran"
-      className={`${className} flex h-12 w-12 touch-manipulation items-center justify-center rounded-full bg-canopee-forest/80 text-canopee-cream shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:scale-95 motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
+      className={`${className} flex h-12 w-12 touch-manipulation items-center justify-center rounded-2xl bg-canopee-forest/80 text-canopee-cream shadow-xl shadow-black/30 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none active:scale-95 motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
     >
       <CompassIcon className="h-6 w-6" />
     </button>

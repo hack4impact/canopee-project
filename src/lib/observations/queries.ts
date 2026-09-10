@@ -1,5 +1,5 @@
-import { and, desc, gte, inArray, isNull, or } from 'drizzle-orm'
-import { db, reports } from '@/db'
+import { and, asc, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm'
+import { db, reports, users } from '@/db'
 import {
   canViewObservations,
   type ObservationViewer,
@@ -9,10 +9,9 @@ import {
   type Observation,
   type ObservationCategory,
 } from '@/lib/observations/collection'
-import {
-  resolvedCutoff,
-  resolvedDelayHours,
-} from '@/lib/observations/visibility'
+import type { ObservationExportRow } from '@/lib/observations/export'
+import { resolvedCutoff } from '@/lib/observations/visibility'
+import type { DateRange } from '@/lib/reports/date-range'
 
 export async function listObservations(
   viewer: ObservationViewer,
@@ -22,14 +21,19 @@ export async function listObservations(
     return []
   }
 
-  const cutoff = resolvedCutoff(new Date(), resolvedDelayHours())
+  const cutoff = resolvedCutoff(new Date())
 
   const rows = await db
     .select({
       id: reports.id,
+      eventNumber: reports.eventNumber,
       category: reports.category,
       latitude: reports.latitude,
       longitude: reports.longitude,
+      species: reports.species,
+      photoUrl: reports.photoUrl,
+      createdAt: reports.createdAt,
+      resolvedAt: reports.resolvedAt,
     })
     .from(reports)
     .where(
@@ -42,8 +46,58 @@ export async function listObservations(
 
   return rows.map((row) => ({
     id: row.id,
+    eventNumber: row.eventNumber,
     category: row.category as ObservationCategory,
     latitude: Number(row.latitude),
     longitude: Number(row.longitude),
+    species: row.species,
+    hasPhoto: row.photoUrl !== null,
+    createdAt: row.createdAt.toISOString(),
+    resolvedAt: row.resolvedAt?.toISOString() ?? null,
+  }))
+}
+
+export async function listObservationsForExport(
+  viewer: ObservationViewer,
+  range?: DateRange,
+): Promise<ObservationExportRow[]> {
+  if (!canViewObservations(viewer)) {
+    console.debug('[observations] Unauthorized export attempt', { viewer })
+    return []
+  }
+
+  const rows = await db
+    .select({
+      eventNumber: reports.eventNumber,
+      category: reports.category,
+      species: reports.species,
+      latitude: reports.latitude,
+      longitude: reports.longitude,
+      description: reports.description,
+      habitat: reports.habitat,
+      quantity: reports.quantity,
+      unit: reports.unit,
+      statut: reports.statut,
+      photoUrl: reports.photoUrl,
+      createdAt: reports.createdAt,
+      observerFirstName: users.firstName,
+      observerLastName: users.lastName,
+      observerRole: users.role,
+      reporterEmail: reports.reporterEmail,
+    })
+    .from(reports)
+    .leftJoin(users, eq(reports.userId, users.id))
+    .where(
+      and(
+        inArray(reports.category, [...OBSERVATION_CATEGORIES]),
+        range?.start ? gte(reports.createdAt, range.start) : undefined,
+        range?.end ? lte(reports.createdAt, range.end) : undefined,
+      ),
+    )
+    .orderBy(asc(reports.eventNumber))
+
+  return rows.map((row) => ({
+    ...row,
+    category: row.category as ObservationCategory,
   }))
 }

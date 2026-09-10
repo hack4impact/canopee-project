@@ -8,6 +8,12 @@ import { ReportFlow } from './report-flow'
 export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
   const router = useRouter()
   const [pendingReports, setPendingReports] = useState(0)
+  const [filling, setFilling] = useState(false)
+  const [back, setBack] = useState<{ run: () => void } | null>(null)
+
+  const handleBackChange = useCallback((handler: (() => void) | null) => {
+    setBack(handler ? { run: handler } : null)
+  }, [])
 
   const drain = useCallback(() => {
     drainQueuedReports()
@@ -30,7 +36,7 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        router.push('/')
+        router.push('/carte')
       }
     }
 
@@ -40,34 +46,50 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
   }, [router])
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-hidden bg-canopee-forest/40 p-4 backdrop-blur-sm sm:p-6">
-      <button
-        type="button"
-        aria-label="Fermer le signalement"
-        onClick={() => router.push('/')}
-        className="fixed inset-0 cursor-default"
-      />
-
+    <div className="safe-inset fixed inset-0 z-[70] flex animate-in items-center justify-center overflow-hidden bg-canopee-forest/40 fade-in backdrop-blur-sm duration-200 motion-reduce:animate-none">
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Signaler"
-        className="relative flex h-[min(36rem,calc(100dvh-5rem))] w-full max-w-md flex-col gap-4 rounded-2xl bg-white px-5 py-5 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10"
+        className={`relative flex max-h-full w-full min-h-0 animate-dock-in flex-col gap-1.5 overflow-visible rounded-2xl bg-white px-4 py-4 shadow-2xl shadow-black/30 ring-1 ring-canopee-forest/10 transition-[max-width] duration-300 ease-out motion-reduce:animate-none motion-reduce:transition-none sm:px-5 sm:py-5 ${
+          filling
+            ? 'max-w-[min(36rem,calc(100dvh_-_6rem))]'
+            : 'max-w-[min(24rem,calc(100dvh_-_6rem))]'
+        }`}
       >
-        <header className="flex shrink-0 items-start justify-between gap-3">
-          <div className="flex flex-col gap-1">
-            <h1 className="font-heading text-xl text-canopee-forest sm:text-2xl">
+        <header className="flex shrink-0 items-start justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-1.5">
+            {back && (
+              <button
+                type="button"
+                onClick={back.run}
+                aria-label="Retour"
+                className="inline-flex touch-manipulation shrink-0 items-center justify-center rounded-lg p-1.5 text-canopee-forest/60 transition-colors hover:bg-canopee-green/10 hover:text-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                >
+                  <path d="m12 19-7-7 7-7" />
+                  <path d="M19 12H5" />
+                </svg>
+              </button>
+            )}
+
+            <h1 className="font-heading text-2xl leading-tight text-canopee-forest sm:text-3xl">
               Signaler
             </h1>
-            <p className="text-sm text-canopee-forest/70">
-              Le signalement est enregistré à l&apos;endroit où vous vous
-              trouvez. Vous pourrez ajuster le repère sur la carte.
-            </p>
           </div>
 
           <button
             type="button"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/carte')}
             aria-label="Fermer"
             className="inline-flex touch-manipulation shrink-0 items-center justify-center rounded-lg p-1.5 text-canopee-forest/60 transition-colors hover:bg-canopee-green/10 hover:text-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none"
           >
@@ -98,9 +120,11 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
           </p>
         )}
 
-        <div className="flex min-h-0 flex-1 flex-col justify-center">
-          <ReportFlow photoRequired={photoRequired} />
-        </div>
+        <ReportFlow
+          photoRequired={photoRequired}
+          onFillingChange={setFilling}
+          onBackChange={handleBackChange}
+        />
       </div>
     </div>
   )

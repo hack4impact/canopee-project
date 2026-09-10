@@ -15,6 +15,9 @@ schema.dbml
 android
 ios
 
+# Vendored Capacitor plugin
+plugins
+
 # Lockfiles
 package-lock.json
 

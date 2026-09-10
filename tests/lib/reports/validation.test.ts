@@ -45,7 +45,6 @@ describe('validateReport', () => {
           input({
             category: 'reptile',
             typology: undefined,
-            statut: 'menace',
             species: 'Salamandre sombre du Nord',
           }),
         ),
@@ -74,9 +73,8 @@ describe('validateReport', () => {
     expect(
       validateReport(
         input({
-          category: 'plante_vasculaire',
+          category: 'espece_menacee',
           typology: undefined,
-          statut: 'vulnerable',
         }),
       ).species,
     ).toBeDefined()
@@ -87,7 +85,6 @@ describe('validateReport', () => {
       input({
         category: 'reptile',
         typology: undefined,
-        statut: 'menace',
         species: 'a'.repeat(201),
       }),
     )
@@ -144,13 +141,59 @@ describe('validateReport', () => {
     ).toBeDefined()
   })
 
+  it.each(['individus', 'nids', 'taniere', 'ruche', 'trace', 'autre'])(
+    'accepts the "%s" unit for Faune/flore',
+    (unit) => {
+      expect(
+        isValidReport(
+          validateReport(
+            input({
+              category: 'oiseau',
+              typology: undefined,
+              species: 'Oiseau',
+              quantity: '3',
+              unit,
+            }),
+          ),
+        ),
+      ).toBe(true)
+    },
+  )
+
+  it('rejects a Faune/flore count without a unit', () => {
+    expect(
+      validateReport(
+        input({
+          category: 'oiseau',
+          typology: undefined,
+          species: 'Oiseau',
+          quantity: '3',
+          unit: '',
+        }),
+      ).unit,
+    ).toBeDefined()
+  })
+
+  it('accepts a Faune/flore report with neither count nor unit', () => {
+    expect(
+      isValidReport(
+        validateReport(
+          input({
+            category: 'oiseau',
+            typology: undefined,
+            species: 'Oiseau',
+          }),
+        ),
+      ),
+    ).toBe(true)
+  })
+
   it('rejects an unknown unit for Faune/flore', () => {
     expect(
       validateReport(
         input({
           category: 'oiseau',
           typology: undefined,
-          statut: 'non_menacee',
           species: 'Oiseau',
           unit: 'tonnes',
         }),

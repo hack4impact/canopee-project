@@ -13,8 +13,10 @@ export function photoExtension(type: string): string | null {
   return isAcceptedPhotoType(type) ? EXTENSIONS[type] : null
 }
 
+export const CITIZEN_PHOTO_FOLDER = 'citizen'
+
 export function reportPhotoPath(
-  authUserId: string,
+  folder: string,
   type: string,
   now: Date,
   random: string,
@@ -25,7 +27,7 @@ export function reportPhotoPath(
     return null
   }
 
-  return `${authUserId}/${now.getTime()}-${random}.${extension}`
+  return `${folder}/${now.getTime()}-${random}.${extension}`
 }
 
 const SIGNED_URL_TTL_SECONDS = 60 * 5

@@ -16,6 +16,7 @@ export async function GET() {
   const activePatrol = await getActivePatrol(profile.id)
 
   return Response.json({
+    id: activePatrol?.id ?? null,
     startedAt: activePatrol?.startedAt.toISOString() ?? null,
   })
 }

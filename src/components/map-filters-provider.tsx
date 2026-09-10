@@ -24,6 +24,7 @@ import {
 } from '@/lib/reports/filters'
 
 type MapFiltersValue = {
+  observations: boolean
   groups: readonly ReportGroup[]
   selection: CategorySelection
   onToggleCategory: (category: ReportCategory) => void
@@ -86,6 +87,7 @@ export function MapFiltersProvider({
 
   const value = useMemo<MapFiltersValue>(
     () => ({
+      observations,
       groups: observations
         ? REPORT_GROUPS
         : REPORT_GROUPS.filter((group) => group !== 'faune_flore'),

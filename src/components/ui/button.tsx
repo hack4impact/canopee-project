@@ -11,6 +11,8 @@ const buttonVariants = cva(
       variant: {
         default:
           'bg-canopee-green font-bold text-white shadow-sm hover:bg-canopee-forest',
+        forest:
+          'bg-canopee-forest font-bold text-canopee-cream shadow-sm hover:bg-canopee-green',
         outline:
           'border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
         secondary:

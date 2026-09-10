@@ -51,8 +51,9 @@ export const reportCategoryEnum = pgEnum('report_category', [
   'invertebre',
   'mollusque',
   'poisson',
-  'plante_vasculaire',
-  'bryophyte',
+  'espece_menacee',
+  'espece_exotique',
+  'faune_flore_other',
 ])
 
 export const users = pgTable('users', {
@@ -64,10 +65,11 @@ export const users = pgTable('users', {
   role: roleEnum('role').notNull().default('volunteer'),
   status: statusEnum('status').notNull().default('pending'),
   rejectionReason: text('rejection_reason'),
+  law25ConsentedAt: timestamp('law25_consented_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
-})
+}).enableRLS()
 
 export const reports = pgTable(
   'reports',
@@ -88,9 +90,13 @@ export const reports = pgTable(
     habitat: text('habitat'),
     statut: text('statut'),
     photoUrl: text('photo_url'),
+    drivePhotoUrl: text('drive_photo_url'),
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),
     userId: uuid('user_id').references(() => users.id),
     reporterEmail: text('reporter_email'),
+    reporterLaw25ConsentedAt: timestamp('reporter_law25_consented_at', {
+      withTimezone: true,
+    }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -103,7 +109,7 @@ export const reports = pgTable(
     index('reports_resolved_at_idx').on(table.resolvedAt),
     index('reports_category_idx').on(table.category),
   ],
-)
+).enableRLS()
 
 export const patrols = pgTable(
   'patrols',
@@ -129,7 +135,7 @@ export const patrols = pgTable(
     index('patrols_started_at_idx').on(table.startedAt),
     index('patrols_ended_at_idx').on(table.endedAt),
   ],
-)
+).enableRLS()
 
 export const patrolPoints = pgTable(
   'patrol_points',
@@ -148,7 +154,7 @@ export const patrolPoints = pgTable(
       table.recordedAt,
     ),
   ],
-)
+).enableRLS()
 
 export const mapLoadCounters = pgTable('map_load_counters', {
   month: text('month').primaryKey(),
@@ -156,4 +162,4 @@ export const mapLoadCounters = pgTable('map_load_counters', {
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
-})
+}).enableRLS()

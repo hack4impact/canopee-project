@@ -1,24 +1,22 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import mapboxgl, { type GeoJSONSource } from 'mapbox-gl'
+import { useRouter } from 'next/navigation'
 import { useMapFilters } from '@/components/map-filters-provider'
 import { useSharedMap } from '@/components/map-provider'
 import { ReportFilters } from '@/components/report-filters'
-import {
-  REPORT_CATEGORY_LABELS,
-  REPORT_GROUPS,
-  type ReportGroup,
-} from '@/lib/reports/categories'
+import { REPORT_GROUPS, type ReportGroup } from '@/lib/reports/categories'
 import { selectionToParam } from '@/lib/reports/filters'
-import { formatEventNumber } from '@/lib/reports/format'
-import { reportPinSvg } from '@/lib/reports/group-style'
+import { reportPinSvg, REPORT_GROUP_COLORS } from '@/lib/reports/group-style'
+import { pinPopupContent, prefersHover } from '@/lib/reports/pin-popup'
 import {
   clusterCountLayout,
   clusterCountPaint,
   clusterPaint,
   pinImageId,
   pinLayout,
+  pinPaint,
   toFeatureCollection,
   CLUSTER_MAX_ZOOM,
   CLUSTER_RADIUS_PX,
@@ -59,43 +57,31 @@ async function loadPinImages(): Promise<PinImages> {
   ) as PinImages
 }
 
-function prefersHover(): boolean {
-  return window.matchMedia('(hover: hover) and (pointer: fine)').matches
-}
-
 type ReportPinsPayload = {
   status: ReportStatus
   reports: ReportPin[]
 }
 
-function popupContent(properties: ReportPinProperties): HTMLElement {
-  const root = document.createElement('div')
-  root.className = 'flex flex-col gap-1'
-
-  const category = document.createElement('p')
-  category.className = 'font-heading text-sm text-canopee-forest'
-  category.textContent =
-    REPORT_CATEGORY_LABELS[properties.category] ?? properties.category
-
-  const eventNumber = document.createElement('p')
-  eventNumber.className = 'text-xs font-medium text-canopee-forest/70'
-  eventNumber.textContent = formatEventNumber(Number(properties.eventNumber))
-
-  root.append(category, eventNumber)
-
-  return root
-}
-
 export function ReportPinsLayer({
   status = 'open',
+  canOpenDetail = false,
 }: {
   status?: ReportStatus
+  canOpenDetail?: boolean
 }) {
   const map = useSharedMap()
+  const router = useRouter()
+  const openDetail = useRef<((id: string) => void) | null>(null)
   const [pins, setPins] = useState<ReportPin[] | null>(null)
   const [failed, setFailed] = useState(false)
   const [images, setImages] = useState<PinImages | null>(null)
   const { selection } = useMapFilters()
+
+  useEffect(() => {
+    openDetail.current = canOpenDetail
+      ? (id) => router.push(`/admin/issues/${id}`)
+      : null
+  }, [canOpenDetail, router])
 
   useEffect(() => {
     let cancelled = false
@@ -217,16 +203,36 @@ export function ReportPinsLayer({
       source: REPORT_PINS_SOURCE_ID,
       filter: ['!', ['has', 'point_count']],
       layout: pinLayout(),
+      paint: pinPaint(),
     })
 
     const hoverOpens = prefersHover()
 
     const popup = new mapboxgl.Popup({
       className: 'canopee-popup',
-      closeButton: !hoverOpens,
+      closeButton: false,
       closeOnClick: !hoverOpens,
       offset: [0, -40],
-      maxWidth: '260px',
+      maxWidth: '17rem',
+    })
+
+    let openId: string | null = null
+    let closeTimer: ReturnType<typeof setTimeout> | null = null
+
+    const cancelClose = () => {
+      if (closeTimer) {
+        clearTimeout(closeTimer)
+        closeTimer = null
+      }
+    }
+
+    const scheduleClose = () => {
+      cancelClose()
+      closeTimer = setTimeout(() => popup.remove(), 160)
+    }
+
+    popup.on('close', () => {
+      openId = null
     })
 
     const handleClusterClick = (
@@ -271,15 +277,35 @@ export function ReportPinsLayer({
         return
       }
 
+      const properties = feature.properties as unknown as ReportPinProperties
+
+      if (openId === properties.id && popup.isOpen()) {
+        return
+      }
+
+      cancelClose()
+      openId = properties.id
+
       popup
         .setLngLat(feature.geometry.coordinates as [number, number])
-        .setDOMContent(
-          popupContent(feature.properties as unknown as ReportPinProperties),
-        )
+        .setDOMContent(pinPopupContent(properties, openDetail.current))
         .addTo(map)
+
+      const element = popup.getElement()
+
+      element?.style.setProperty(
+        '--canopee-tip',
+        REPORT_GROUP_COLORS[properties.group],
+      )
+
+      if (hoverOpens) {
+        element?.addEventListener('mouseenter', cancelClose)
+        element?.addEventListener('mouseleave', hidePopup)
+      }
     }
 
     const hidePopup = () => {
+      cancelClose()
       popup.remove()
     }
 
@@ -299,13 +325,14 @@ export function ReportPinsLayer({
 
     if (hoverOpens) {
       map.on('mousemove', REPORT_PINS_LAYER_ID, showPopup)
-      map.on('mouseleave', REPORT_PINS_LAYER_ID, hidePopup)
+      map.on('mouseleave', REPORT_PINS_LAYER_ID, scheduleClose)
     } else {
       map.on('click', REPORT_PINS_LAYER_ID, showPopup)
     }
 
     return () => {
       map.off('remove', handleRemove)
+      cancelClose()
 
       if (mapRemoved) {
         return
@@ -319,7 +346,7 @@ export function ReportPinsLayer({
       map.off('mouseenter', REPORT_PINS_LAYER_ID, showPointer)
       map.off('mouseleave', REPORT_PINS_LAYER_ID, clearPointer)
       map.off('mousemove', REPORT_PINS_LAYER_ID, showPopup)
-      map.off('mouseleave', REPORT_PINS_LAYER_ID, hidePopup)
+      map.off('mouseleave', REPORT_PINS_LAYER_ID, scheduleClose)
       map.off('click', REPORT_PINS_LAYER_ID, showPopup)
 
       for (const layerId of [

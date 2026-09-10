@@ -1,10 +1,10 @@
 import { db, patrolPoints } from '@/db'
 import {
-  isAccurateEnough,
-  parseNativeLocation,
+  groupPointsByPatrol,
+  parseNativeLocationBatch,
   parsePatrolPointBatch,
 } from '@/lib/patrols/points'
-import { getActivePatrol } from '@/lib/patrols/queries'
+import { listPatrolsCovering } from '@/lib/patrols/queries'
 import { readUploadToken } from '@/lib/patrols/upload-token'
 
 export async function POST(request: Request) {
@@ -17,12 +17,6 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Unauthorized.' }, { status: 401 })
   }
 
-  const patrol = await getActivePatrol(session.userId)
-
-  if (!patrol) {
-    return Response.json({ error: 'No active patrol.' }, { status: 409 })
-  }
-
   let payload: unknown
 
   try {
@@ -31,34 +25,61 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Expected a JSON body.' }, { status: 400 })
   }
 
-  const location = parseNativeLocation(payload)
+  const parsed = parseNativeLocationBatch(payload)
 
-  if (!location) {
-    return Response.json({ error: 'Expected a location.' }, { status: 400 })
+  if ('error' in parsed) {
+    return Response.json({ error: parsed.error }, { status: 400 })
   }
 
-  if (!isAccurateEnough(location.accuracy)) {
-    return Response.json({ accepted: 0, dropped: 1 })
+  if (parsed.locations.length === 0) {
+    return Response.json({ accepted: 0, dropped: parsed.dropped })
   }
 
-  const batch = parsePatrolPointBatch([location.point], {
-    patrolStartedAt: patrol.startedAt,
-    now: new Date(),
-  })
+  const points = parsed.locations.map((location) => location.point)
+  const recordedAt = points.map((point) => Date.parse(point.recordedAt))
+  const now = new Date()
 
-  if ('error' in batch) {
-    return Response.json({ error: batch.error }, { status: 400 })
+  const windows = await listPatrolsCovering(
+    session.userId,
+    new Date(Math.min(...recordedAt)),
+    new Date(Math.max(...recordedAt)),
+  )
+
+  if (windows.length === 0) {
+    return Response.json({ error: 'No matching patrol.' }, { status: 409 })
   }
 
-  if (batch.points.length > 0) {
+  const { groups, dropped } = groupPointsByPatrol(points, windows, now)
+
+  let accepted = 0
+  let unusable = parsed.dropped + dropped
+
+  for (const group of groups) {
+    const batch = parsePatrolPointBatch(group.points, {
+      patrolStartedAt: group.startedAt,
+      now,
+    })
+
+    if ('error' in batch) {
+      unusable += group.points.length
+      continue
+    }
+
+    unusable += batch.dropped
+
+    if (batch.points.length === 0) {
+      continue
+    }
+
     await db
       .insert(patrolPoints)
-      .values(batch.points.map((point) => ({ ...point, patrolId: patrol.id })))
+      .values(
+        batch.points.map((point) => ({ ...point, patrolId: group.patrolId })),
+      )
       .onConflictDoNothing()
+
+    accepted += batch.points.length
   }
 
-  return Response.json({
-    accepted: batch.points.length,
-    dropped: batch.dropped,
-  })
+  return Response.json({ accepted, dropped: unusable })
 }

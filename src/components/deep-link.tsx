@@ -4,6 +4,8 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Capacitor } from '@capacitor/core'
 
+const APP_SCHEME = 'canopee:'
+
 export function DeepLink() {
   const router = useRouter()
 
@@ -23,6 +25,16 @@ export function DeepLink() {
         try {
           target = new URL(url)
         } catch {
+          return
+        }
+
+        if (target.protocol === APP_SCHEME) {
+          const path = `${target.hostname}${target.pathname}`.replace(
+            /^\/*/,
+            '/',
+          )
+
+          router.replace(`${path}${target.search}`)
           return
         }
 

@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import type { Map as MapboxMap } from 'mapbox-gl'
 import { BaseMap } from '@/components/base-map'
+import { WoodedAreasLayer } from '@/components/wooded-areas-layer'
 
 /**
  * The camera survives a page reload: the last centre and zoom are saved here
@@ -94,7 +95,10 @@ export function MapProvider({ accessToken, children }: MapProviderProps) {
         className="h-full w-full"
       />
 
-      <MapContext value={map}>{children}</MapContext>
+      <MapContext value={map}>
+        <WoodedAreasLayer />
+        {children}
+      </MapContext>
     </div>
   )
 }

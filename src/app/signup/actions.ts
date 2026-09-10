@@ -38,6 +38,7 @@ export async function signup(
     email: String(formData.get('email') ?? ''),
     password: String(formData.get('password') ?? ''),
     confirmPassword: String(formData.get('confirmPassword') ?? ''),
+    law25Consent: formData.get('law25Consent') === 'true',
   }
 
   const errors = validateSignup(input)
@@ -73,9 +74,13 @@ export async function signup(
   }
 
   try {
-    await db
-      .insert(users)
-      .values({ authUserId: data.user.id, email, firstName, lastName })
+    await db.insert(users).values({
+      authUserId: data.user.id,
+      email,
+      firstName,
+      lastName,
+      law25ConsentedAt: new Date(),
+    })
   } catch (cause) {
     if (isUniqueViolation(cause)) {
       return { errors: { email: EMAIL_TAKEN } }

@@ -10,10 +10,10 @@ export function MapAccessFallback() {
               Carte de Laval
             </h1>
             <Link
-              href="/"
+              href="/carte"
               className="shrink-0 text-sm text-zinc-600 underline underline-offset-4 dark:text-zinc-400"
             >
-              Accueil
+              Carte
             </Link>
           </div>
         </header>

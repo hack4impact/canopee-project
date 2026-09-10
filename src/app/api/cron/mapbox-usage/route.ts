@@ -4,11 +4,10 @@ import { mapLoadCounters } from '@/db/schema'
 import { computeMapboxUsageStatus, getMonthKey } from '@/lib/mapbox'
 
 export async function GET(request: Request) {
-  if (process.env.CRON_SECRET) {
-    const authHeader = request.headers.get('authorization')
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return new Response('Unauthorized', { status: 401 })
-    }
+  const secret = process.env.CRON_SECRET
+
+  if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
+    return new Response('Unauthorized', { status: 401 })
   }
 
   const now = new Date()

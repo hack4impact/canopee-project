@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { REPORT_GROUP_LABELS, type ReportGroup } from '@/lib/reports/categories'
 import { ReportForm } from './report-form'
 import { REPORT_THEMES } from './report-theme'
@@ -64,25 +64,49 @@ const GROUPS: GroupOption[] = [
   },
 ]
 
-export function ReportFlow({ photoRequired }: { photoRequired: boolean }) {
+export function ReportFlow({
+  photoRequired,
+  citizen = false,
+  onFillingChange,
+  onBackChange,
+}: {
+  photoRequired: boolean
+  citizen?: boolean
+  onFillingChange?: (filling: boolean) => void
+  onBackChange?: (handler: (() => void) | null) => void
+}) {
   const [group, setGroup] = useState<ReportGroup | null>(null)
+  const [returning, setReturning] = useState(false)
+  const groups = citizen
+    ? GROUPS.filter(({ group: value }) => value !== 'faune_flore')
+    : GROUPS
+
+  useEffect(() => {
+    if (group === null) {
+      onBackChange?.(null)
+    }
+  }, [group, onBackChange])
 
   if (group === null) {
     return (
-      <div className="flex flex-col gap-3">
-        <p className="text-sm text-canopee-forest/70">
-          Choisissez le type de signalement :
-        </p>
-
-        {GROUPS.map(({ group: value, title, description, icon }) => {
+      <div
+        className={`mx-auto flex w-full animate-in flex-col gap-3 fade-in duration-250 motion-reduce:animate-none ${
+          returning ? 'slide-in-from-left-4' : ''
+        }`}
+      >
+        {groups.map(({ group: value, title, description, icon }, index) => {
           const theme = REPORT_THEMES[value]
 
           return (
             <button
               key={value}
               type="button"
-              onClick={() => setGroup(value)}
-              className={`group flex touch-manipulation items-center gap-4 rounded-2xl border border-canopee-forest/15 bg-white px-4 py-4 text-left shadow-sm transition-[border-color,background-color,transform] duration-150 ease-out focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99] motion-reduce:transition-none motion-reduce:active:scale-100 ${theme.cardHover} ${theme.ring}`}
+              onClick={() => {
+                setGroup(value)
+                onFillingChange?.(true)
+              }}
+              style={{ animationDelay: `${index * 70}ms` }}
+              className={`group flex w-full touch-manipulation animate-in items-center gap-4 rounded-2xl border border-transparent px-4 py-4 text-left shadow-sm transition-[border-color,background-color,transform] duration-150 ease-out fill-mode-backwards fade-in slide-in-from-bottom-3 focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99] motion-reduce:animate-none motion-reduce:transition-none motion-reduce:active:scale-100 sm:px-5 sm:py-5 ${theme.card} ${theme.cardHover} ${theme.ring}`}
             >
               <span
                 className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl transition-colors duration-150 ${theme.chip} ${theme.chipActive}`}
@@ -90,7 +114,7 @@ export function ReportFlow({ photoRequired }: { photoRequired: boolean }) {
                 {icon}
               </span>
               <span className="min-w-0">
-                <span className="block font-heading text-lg text-canopee-forest">
+                <span className="block font-heading text-xl text-canopee-forest sm:text-2xl">
                   {title}
                 </span>
                 <span className="block text-sm text-canopee-forest/70">
@@ -105,10 +129,18 @@ export function ReportFlow({ photoRequired }: { photoRequired: boolean }) {
   }
 
   return (
-    <ReportForm
-      group={group}
-      onBack={() => setGroup(null)}
-      photoRequired={photoRequired}
-    />
+    <div className="flex min-h-0 flex-1 flex-col animate-in fade-in slide-in-from-right-4 duration-250 motion-reduce:animate-none">
+      <ReportForm
+        group={group}
+        onBack={() => {
+          setReturning(true)
+          setGroup(null)
+          onFillingChange?.(false)
+        }}
+        onBackChange={onBackChange}
+        photoRequired={photoRequired}
+        citizen={citizen}
+      />
+    </div>
   )
 }

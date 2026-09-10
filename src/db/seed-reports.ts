@@ -27,7 +27,7 @@ const MOCK_REPORTS = [
   {
     latitude: '45.583400',
     longitude: '-73.726800',
-    category: 'plante_vasculaire' as const,
+    category: 'espece_menacee' as const,
     resolvedAt: new Date('2026-06-20T09:00:00Z'),
     reporterEmail: 'botaniste@example.com',
   },
@@ -104,7 +104,7 @@ async function seedReports() {
     userReports.push({
       latitude: '45.588200',
       longitude: '-73.720700',
-      category: 'bryophyte' as const,
+      category: 'espece_exotique' as const,
       resolvedAt: new Date('2026-07-10T08:00:00Z'),
       userId: pro.id,
     })

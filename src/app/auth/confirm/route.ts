@@ -19,21 +19,34 @@ function parseType(value: string | null): EmailOtpType | null {
 export async function GET(request: NextRequest) {
   const tokenHash = request.nextUrl.searchParams.get('token_hash')
   const type = parseType(request.nextUrl.searchParams.get('type'))
+  const code = request.nextUrl.searchParams.get('code')
   const next = request.nextUrl.searchParams.get('next')
-
-  if (!tokenHash || !type) {
-    redirect('/login?erreur=lien-invalide')
-  }
+  const target = next?.startsWith('/') ? next : '/'
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.verifyOtp({
-    type,
-    token_hash: tokenHash,
-  })
 
-  if (error) {
-    redirect('/login?erreur=lien-expire')
+  if (tokenHash && type) {
+    const { error } = await supabase.auth.verifyOtp({
+      type,
+      token_hash: tokenHash,
+    })
+
+    if (error) {
+      redirect('/login?erreur=lien-expire')
+    }
+
+    redirect(target)
   }
 
-  redirect(next?.startsWith('/') ? next : '/')
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (error) {
+      redirect('/login?erreur=lien-expire')
+    }
+
+    redirect(target)
+  }
+
+  redirect('/login?erreur=lien-invalide')
 }

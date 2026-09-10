@@ -1,0 +1,47 @@
+import Image from 'next/image'
+import type { Metadata, Viewport } from 'next'
+import { ViewTransition } from 'react'
+import { ForestBackground } from '@/components/forest-background'
+import { ForgotForm } from './forgot-form'
+
+export const metadata: Metadata = {
+  title: 'Mot de passe oublié | Canopée',
+}
+
+export const viewport: Viewport = {
+  themeColor: '#004523',
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <div className="relative flex min-h-full flex-1 flex-col items-center justify-center overflow-hidden bg-canopee-forest px-6 py-16 font-sans">
+      <ForestBackground />
+
+      <ViewTransition name="auth-card" share="morph">
+        <main className="relative z-10 w-full max-w-sm rounded-3xl bg-canopee-cream p-8 shadow-2xl shadow-black/40 sm:p-10">
+          <header className="flex flex-col items-center gap-3">
+            <Image
+              src="/logos/canopee-logo.png"
+              alt="Canopée"
+              width={260}
+              height={140}
+              priority
+              className="h-auto w-64"
+            />
+            <h1 className="font-heading text-3xl font-bold tracking-tight text-canopee-forest">
+              Mot de passe oublié
+            </h1>
+            <p className="text-center text-sm text-canopee-forest/80">
+              Si un compte est associé à cette adresse, vous recevrez un lien
+              pour choisir un nouveau mot de passe.
+            </p>
+          </header>
+
+          <div className="mt-8">
+            <ForgotForm />
+          </div>
+        </main>
+      </ViewTransition>
+    </div>
+  )
+}

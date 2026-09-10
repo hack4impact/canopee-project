@@ -1,7 +1,18 @@
+import { eq } from 'drizzle-orm'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { after } from 'next/server'
 import { db, reports } from '@/db'
 import type { UserProfile } from '@/lib/auth/current-user'
-import { isReportCategory } from '@/lib/reports/categories'
-import { REPORT_PHOTO_BUCKET, reportPhotoPath } from '@/lib/reports/photo'
+import {
+  isReportCategory,
+  reportGroupOfCategory,
+} from '@/lib/reports/categories'
+import { uploadReportPhotoToDrive } from '@/lib/reports/google-drive'
+import {
+  CITIZEN_PHOTO_FOLDER,
+  REPORT_PHOTO_BUCKET,
+  reportPhotoPath,
+} from '@/lib/reports/photo'
 import {
   isValidReport,
   validatePhoto,
@@ -17,6 +28,32 @@ export type ReportFormState = {
   errors?: ReportErrors
   submittedId?: string
   queued?: boolean
+  conflict?: boolean
+}
+
+type ExistingReportIdentity = {
+  userId: string | null
+  reporterEmail: string | null
+  category: string
+  latitude: string
+  longitude: string
+}
+
+export function isSameReportRetry(
+  existing: ExistingReportIdentity,
+  candidate: ExistingReportIdentity,
+): boolean {
+  const sameAuthor =
+    (candidate.userId !== null && existing.userId === candidate.userId) ||
+    (candidate.reporterEmail !== null &&
+      existing.reporterEmail === candidate.reporterEmail)
+
+  return (
+    sameAuthor &&
+    existing.category === candidate.category &&
+    existing.latitude === candidate.latitude &&
+    existing.longitude === candidate.longitude
+  )
 }
 
 const UUID =
@@ -62,12 +99,20 @@ function parseQuantity(value: string): number | null {
   return Number.isInteger(parsed) && parsed >= 1 ? parsed : null
 }
 
+export type Reporter =
+  { kind: 'user'; profile: UserProfile } | { kind: 'citizen'; email: string }
+
 async function uploadPhoto(
-  authUserId: string,
+  reporter: Reporter,
   photo: File,
 ): Promise<string | null> {
+  const folder =
+    reporter.kind === 'user'
+      ? reporter.profile.authUserId
+      : CITIZEN_PHOTO_FOLDER
+
   const path = reportPhotoPath(
-    authUserId,
+    folder,
     photo.type,
     new Date(),
     crypto.randomUUID(),
@@ -77,8 +122,23 @@ async function uploadPhoto(
     return null
   }
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (reporter.kind === 'citizen' && (!supabaseUrl || !serviceKey)) {
+    console.error(
+      'SUPABASE_SERVICE_ROLE_KEY is not configured: a citizen photo cannot be stored',
+    )
+    return null
+  }
+
   try {
-    const supabase = await createClient()
+    const supabase =
+      reporter.kind === 'user'
+        ? await createClient()
+        : createAdminClient(supabaseUrl as string, serviceKey as string, {
+            auth: { autoRefreshToken: false, persistSession: false },
+          })
 
     const { error } = await supabase.storage
       .from(REPORT_PHOTO_BUCKET)
@@ -96,8 +156,63 @@ async function uploadPhoto(
   }
 }
 
+function copyPhotoToDrive(
+  reportId: string,
+  eventNumber: number,
+  photoPath: string,
+): void {
+  after(async () => {
+    try {
+      const link = await uploadReportPhotoToDrive(
+        photoPath,
+        eventNumber,
+        new Date(),
+      )
+
+      await db
+        .update(reports)
+        .set({ drivePhotoUrl: link })
+        .where(eq(reports.id, reportId))
+    } catch (cause) {
+      console.error('Failed to copy a report photo to Google Drive', cause)
+    }
+  })
+}
+
+async function findReportIdentity(
+  id: string,
+): Promise<ExistingReportIdentity | null> {
+  const [row] = await db
+    .select({
+      userId: reports.userId,
+      reporterEmail: reports.reporterEmail,
+      category: reports.category,
+      latitude: reports.latitude,
+      longitude: reports.longitude,
+    })
+    .from(reports)
+    .where(eq(reports.id, id))
+    .limit(1)
+
+  return row ?? null
+}
+
 export async function createReport(
   profile: UserProfile,
+  formData: FormData,
+): Promise<ReportFormState> {
+  return submitReport({ kind: 'user', profile }, formData)
+}
+
+export async function createCitizenReport(
+  email: string,
+  formData: FormData,
+): Promise<ReportFormState> {
+  return submitReport({ kind: 'citizen', email }, formData)
+}
+
+async function submitReport(
+  reporter: Reporter,
   formData: FormData,
 ): Promise<ReportFormState> {
   const input = {
@@ -119,7 +234,11 @@ export async function createReport(
 
   if (photoError) {
     errors.photo = photoError
-  } else if (!photo && profile.role !== 'admin') {
+  } else if (
+    !photo &&
+    reporter.kind === 'user' &&
+    reporter.profile.role !== 'admin'
+  ) {
     errors.photo =
       'Une photo est requise pour ce type de signalement. Ajoutez-la, puis réessayez.'
   }
@@ -136,10 +255,21 @@ export async function createReport(
     return { errors }
   }
 
+  if (
+    reporter.kind === 'citizen' &&
+    reportGroupOfCategory(input.category) === 'faune_flore'
+  ) {
+    return {
+      errors: {
+        category: 'Ce type de signalement est réservé aux patrouilleurs.',
+      },
+    }
+  }
+
   let photoPath: string | null = null
 
   if (photo) {
-    photoPath = await uploadPhoto(profile.authUserId, photo)
+    photoPath = await uploadPhoto(reporter, photo)
 
     if (!photoPath) {
       return {
@@ -150,13 +280,25 @@ export async function createReport(
   }
 
   const id = readReportId(formData)
+  const candidate: ExistingReportIdentity = {
+    userId: reporter.kind === 'user' ? reporter.profile.id : null,
+    reporterEmail: reporter.kind === 'citizen' ? reporter.email : null,
+    category: input.category,
+    latitude: input.latitude.toFixed(COORDINATE_SCALE),
+    longitude: input.longitude.toFixed(COORDINATE_SCALE),
+  }
 
   try {
     const [created] = await db
       .insert(reports)
       .values({
         ...(id ? { id } : {}),
-        userId: profile.id,
+        ...(reporter.kind === 'user'
+          ? { userId: reporter.profile.id }
+          : {
+              reporterEmail: reporter.email,
+              reporterLaw25ConsentedAt: new Date(),
+            }),
         category: input.category,
         description: input.description.trim(),
         typology: input.typology.trim() || null,
@@ -166,13 +308,36 @@ export async function createReport(
         habitat: input.habitat.trim() || null,
         statut: input.statut.trim() || null,
         photoUrl: photoPath,
-        latitude: input.latitude.toFixed(COORDINATE_SCALE),
-        longitude: input.longitude.toFixed(COORDINATE_SCALE),
+        latitude: candidate.latitude,
+        longitude: candidate.longitude,
       })
       .onConflictDoNothing()
-      .returning({ id: reports.id })
+      .returning({ id: reports.id, eventNumber: reports.eventNumber })
 
-    return { submittedId: created?.id ?? id ?? undefined }
+    if (created && photoPath) {
+      copyPhotoToDrive(created.id, created.eventNumber, photoPath)
+    }
+
+    if (created) {
+      return { submittedId: created.id }
+    }
+
+    if (!id) {
+      return {
+        message: 'Impossible d’enregistrer le signalement. Réessayez.',
+      }
+    }
+
+    const existing = await findReportIdentity(id)
+
+    if (existing && isSameReportRetry(existing, candidate)) {
+      return { submittedId: id }
+    }
+
+    return {
+      conflict: true,
+      message: 'Ce signalement n’a pas pu être enregistré. Réessayez.',
+    }
   } catch (cause) {
     console.error('Failed to insert a report row', cause)
 

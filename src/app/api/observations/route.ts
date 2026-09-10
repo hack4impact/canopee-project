@@ -6,10 +6,6 @@ import { listObservations } from '@/lib/observations/queries'
 export async function GET() {
   const profile = await getCurrentUserProfile()
 
-  if (!profile) {
-    return Response.json({ error: 'Not signed in.' }, { status: 401 })
-  }
-
   if (!canViewObservations(profile)) {
     return Response.json({ error: 'Insufficient role.' }, { status: 403 })
   }

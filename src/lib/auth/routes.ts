@@ -2,9 +2,21 @@ export const LOGIN_ROUTE = '/login'
 
 export const REDIRECT_PARAM = 'next'
 
-export const DEFAULT_REDIRECT = '/'
+export const DEFAULT_REDIRECT = '/carte'
 
-const PUBLIC_ROUTES = [LOGIN_ROUTE, '/signup', '/api/cron'] as const
+export const CITIZEN_REPORT_ROUTE = '/signaler-citoyen'
+
+const PUBLIC_ROUTES = [
+  '/',
+  LOGIN_ROUTE,
+  '/signup',
+  '/auth/confirm',
+  '/politique-de-confidentialite',
+  CITIZEN_REPORT_ROUTE,
+  '/api/cron',
+  '/api/public',
+  '/.well-known',
+] as const
 
 export function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTES.some(

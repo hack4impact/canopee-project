@@ -9,7 +9,9 @@ import {
   isPermissionDenied,
   MAX_BATCH_POINTS,
   MAX_BUFFERED_POINTS,
+  groupPointsByPatrol,
   parseNativeLocation,
+  parseNativeLocationBatch,
   parsePatrolPointBatch,
   POINT_INTERVAL_MS,
   shouldRecordPoint,
@@ -419,5 +421,145 @@ describe('parseNativeLocation', () => {
   it('rejects anything that is not an object', () => {
     expect(parseNativeLocation(null)).toBeNull()
     expect(parseNativeLocation('nope')).toBeNull()
+  })
+})
+
+describe('parseNativeLocationBatch', () => {
+  const body = {
+    latitude: 45.5885,
+    longitude: -73.723,
+    accuracy: 8,
+    time: Date.parse('2026-08-27T12:00:00.000Z'),
+    source: 'native',
+  }
+
+  it('reads a single body, so an older build keeps working', () => {
+    const parsed = parseNativeLocationBatch(body)
+
+    expect('error' in parsed).toBe(false)
+    expect(!('error' in parsed) && parsed.locations).toHaveLength(1)
+  })
+
+  it('reads an array of bodies', () => {
+    const parsed = parseNativeLocationBatch([
+      body,
+      { ...body, time: body.time + 12_000 },
+    ])
+
+    expect(!('error' in parsed) && parsed.locations).toHaveLength(2)
+    expect(!('error' in parsed) && parsed.dropped).toBe(0)
+  })
+
+  it('drops only the unusable points, so one bad point cannot block the queue', () => {
+    const parsed = parseNativeLocationBatch([
+      body,
+      { ...body, latitude: 91 },
+      { ...body, time: null },
+    ])
+
+    expect(!('error' in parsed) && parsed.locations).toHaveLength(1)
+    expect(!('error' in parsed) && parsed.dropped).toBe(2)
+  })
+
+  it('drops points the GPS was too unsure of', () => {
+    const parsed = parseNativeLocationBatch([body, { ...body, accuracy: 500 }])
+
+    expect(!('error' in parsed) && parsed.locations).toHaveLength(1)
+    expect(!('error' in parsed) && parsed.dropped).toBe(1)
+  })
+
+  it('refuses a batch larger than the server accepts', () => {
+    const parsed = parseNativeLocationBatch(
+      Array.from({ length: MAX_BATCH_POINTS + 1 }, () => body),
+    )
+
+    expect('error' in parsed).toBe(true)
+  })
+
+  it('accepts an empty array', () => {
+    const parsed = parseNativeLocationBatch([])
+
+    expect(!('error' in parsed) && parsed.locations).toHaveLength(0)
+  })
+})
+
+describe('groupPointsByPatrol', () => {
+  const now = new Date('2026-08-27T18:00:00.000Z')
+
+  const finished = {
+    id: 'finished',
+    startedAt: new Date('2026-08-27T09:00:00.000Z'),
+    endedAt: new Date('2026-08-27T10:00:00.000Z'),
+  }
+
+  const running = {
+    id: 'running',
+    startedAt: new Date('2026-08-27T17:00:00.000Z'),
+    endedAt: null,
+  }
+
+  function pointAt(at: string): RecordedPoint {
+    return { latitude: 45.5885, longitude: -73.723, recordedAt: at }
+  }
+
+  it('sends a late point back to the patrol it was walked on', () => {
+    const { groups, dropped } = groupPointsByPatrol(
+      [pointAt('2026-08-27T09:30:00.000Z')],
+      [running, finished],
+      now,
+    )
+
+    expect(dropped).toBe(0)
+    expect(groups).toHaveLength(1)
+    expect(groups[0].patrolId).toBe('finished')
+  })
+
+  it('splits a batch that spans two patrols', () => {
+    const { groups } = groupPointsByPatrol(
+      [
+        pointAt('2026-08-27T09:30:00.000Z'),
+        pointAt('2026-08-27T17:30:00.000Z'),
+        pointAt('2026-08-27T09:45:00.000Z'),
+      ],
+      [running, finished],
+      now,
+    )
+
+    const byId = Object.fromEntries(groups.map((g) => [g.patrolId, g.points]))
+
+    expect(byId.finished).toHaveLength(2)
+    expect(byId.running).toHaveLength(1)
+  })
+
+  it('keeps a point captured just before the patrol row existed', () => {
+    const { groups, dropped } = groupPointsByPatrol(
+      [pointAt('2026-08-27T08:59:30.000Z')],
+      [finished],
+      now,
+    )
+
+    expect(dropped).toBe(0)
+    expect(groups[0].patrolId).toBe('finished')
+  })
+
+  it('drops a point that belongs to no patrol', () => {
+    const { groups, dropped } = groupPointsByPatrol(
+      [pointAt('2026-08-27T13:00:00.000Z')],
+      [running, finished],
+      now,
+    )
+
+    expect(groups).toHaveLength(0)
+    expect(dropped).toBe(1)
+  })
+
+  it('does not accept a point recorded after a patrol ended', () => {
+    const { dropped } = groupPointsByPatrol(
+      [pointAt('2026-08-27T10:30:00.000Z')],
+      [finished],
+      now,
+    )
+
+    expect(dropped).toBe(1)
   })
 })

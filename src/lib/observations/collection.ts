@@ -1,5 +1,9 @@
 import type { FeatureCollection, Point } from 'geojson'
-import type { ReportCategory } from '@/lib/reports/categories'
+import {
+  reportGroupOfCategory,
+  type ReportCategory,
+  type ReportGroup,
+} from '@/lib/reports/categories'
 
 export const OBSERVATION_CATEGORIES = [
   'reptile',
@@ -10,22 +14,34 @@ export const OBSERVATION_CATEGORIES = [
   'invertebre',
   'mollusque',
   'poisson',
-  'plante_vasculaire',
-  'bryophyte',
+  'espece_menacee',
+  'espece_exotique',
+  'faune_flore_other',
 ] as const satisfies readonly ReportCategory[]
 
 export type ObservationCategory = (typeof OBSERVATION_CATEGORIES)[number]
 
 export type Observation = {
   id: string
+  eventNumber: number
   category: ObservationCategory
   latitude: number
   longitude: number
+  species: string | null
+  hasPhoto: boolean
+  createdAt: string
+  resolvedAt: string | null
 }
 
 type ObservationProperties = {
   id: string
+  eventNumber: number
   category: ObservationCategory
+  group: ReportGroup
+  species: string | null
+  hasPhoto: boolean
+  createdAt: string
+  resolved: boolean
 }
 
 export type ObservationCollection = FeatureCollection<
@@ -46,7 +62,13 @@ export function toFeatureCollection(
       },
       properties: {
         id: observation.id,
+        eventNumber: observation.eventNumber,
         category: observation.category,
+        group: reportGroupOfCategory(observation.category),
+        species: observation.species,
+        hasPhoto: observation.hasPhoto,
+        createdAt: observation.createdAt,
+        resolved: observation.resolvedAt !== null,
       },
     })),
   }

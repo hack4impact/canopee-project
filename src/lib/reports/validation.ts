@@ -1,5 +1,4 @@
 import {
-  FAUNE_FLORE_STATUTS,
   isReportCategory,
   isReportTypology,
   reportGroupOfCategory,
@@ -32,7 +31,6 @@ export type ReportInput = {
   species?: string
   unit?: string
   habitat?: string
-  statut?: string
 }
 
 export type ReportPhotoInput = {
@@ -40,7 +38,12 @@ export type ReportPhotoInput = {
   type: string
 }
 
-export type ReportErrors = Partial<Record<keyof ReportInput | 'photo', string>>
+export type ReportErrors = Partial<
+  Record<
+    keyof ReportInput | 'photo' | 'reporterEmail' | 'reporterConsent',
+    string
+  >
+>
 
 export function validateReport(input: ReportInput): ReportErrors {
   const errors: ReportErrors = {}
@@ -75,7 +78,6 @@ export function validateReport(input: ReportInput): ReportErrors {
     }
 
     if (group === 'faune_flore') {
-      validateStatut(input.statut, errors)
       validateSpecies(input.species, errors)
     }
 
@@ -84,7 +86,7 @@ export function validateReport(input: ReportInput): ReportErrors {
     }
 
     if (group === 'faune_flore') {
-      validateUnit(input.unit, errors)
+      validateUnit(input.unit, input.quantity, errors)
       validateHabitat(input.habitat, errors)
     }
   }
@@ -97,18 +99,6 @@ function validateTypology(value: string | undefined, errors: ReportErrors) {
     errors.typology = 'Choisissez la typologie.'
   } else if (!isReportTypology(value)) {
     errors.typology = 'Cette typologie n’existe pas.'
-  }
-}
-
-function validateStatut(value: string | undefined, errors: ReportErrors) {
-  if (!value) {
-    errors.statut = "Indiquez le statut de l'espèce."
-  } else if (
-    !(FAUNE_FLORE_STATUTS as readonly { value: string }[])
-      .map((s) => s.value)
-      .includes(value)
-  ) {
-    errors.statut = "Ce statut n'existe pas."
   }
 }
 
@@ -134,12 +124,22 @@ function validateQuantity(value: string | undefined, errors: ReportErrors) {
   }
 }
 
-function validateUnit(value: string | undefined, errors: ReportErrors) {
-  if (!value || value.trim() === '') {
+function validateUnit(
+  value: string | undefined,
+  quantity: string | undefined,
+  errors: ReportErrors,
+) {
+  const unit = value?.trim() ?? ''
+
+  if (unit === '') {
+    if (quantity?.trim()) {
+      errors.unit = 'Choisissez l’unité qui accompagne le nombre.'
+    }
+
     return
   }
 
-  if (!(REPORT_UNITS as readonly string[]).includes(value.trim())) {
+  if (!(REPORT_UNITS as readonly string[]).includes(unit)) {
     errors.unit = 'Cette unité n’existe pas.'
   }
 }

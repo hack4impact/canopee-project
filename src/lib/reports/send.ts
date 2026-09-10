@@ -11,6 +11,8 @@ import type { ReportFormState } from '@/lib/reports/submit'
 
 const ENDPOINT = '/api/reports'
 
+const CITIZEN_ENDPOINT = '/api/public/reports'
+
 async function post(formData: FormData): Promise<Response> {
   return fetch(ENDPOINT, {
     method: 'POST',
@@ -49,6 +51,36 @@ export async function sendReport(
   }
 }
 
+export async function sendCitizenReport(
+  _prevState: ReportFormState,
+  formData: FormData,
+): Promise<ReportFormState> {
+  const id = crypto.randomUUID()
+
+  formData.set('id', id)
+
+  try {
+    const response = await fetch(CITIZEN_ENDPOINT, {
+      method: 'POST',
+      body: formData,
+      redirect: 'manual',
+    })
+
+    const state = (await response.json()) as ReportFormState
+
+    if (!response.ok) {
+      return state
+    }
+
+    return { submittedId: state.submittedId ?? id }
+  } catch {
+    return {
+      message:
+        'Impossible d’envoyer le signalement. Vérifiez votre connexion, puis réessayez.',
+    }
+  }
+}
+
 export async function drainQueuedReports(): Promise<number> {
   if (!isReportQueueAvailable()) {
     return 0
@@ -74,7 +106,7 @@ export async function drainQueuedReports(): Promise<number> {
       .json()
       .catch(() => null)) as ReportFormState | null
 
-    if (response.status === 422 && state?.errors) {
+    if (response.status === 409 || (response.status === 422 && state?.errors)) {
       await deleteQueuedReport(report.id)
       continue
     }

@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 
 :root {
   --background: #f6f4df;
@@ -22,6 +23,50 @@
   --color-canopee-sky: #77d0ec;
   --color-canopee-sky-dark: #3f9bc0;
   --color-canopee-lime: #c7de35;
+
+  --color-primary: #17aa55;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #ffffff;
+  --color-secondary-foreground: #004523;
+  --color-muted: #ece9d6;
+  --color-muted-foreground: #4a6b57;
+  --color-accent: #ece9d6;
+  --color-accent-foreground: #004523;
+  --color-destructive: #f06053;
+  --color-destructive-foreground: #ffffff;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #171717;
+  --color-border: rgba(0, 69, 35, 0.14);
+  --color-input: rgba(23, 170, 85, 0.3);
+  --color-ring: #17aa55;
+
+  --animate-dock-in: dock-in 0.28s ease-out;
+  --animate-pop-in: pop-in 0.22s ease-out;
+  --animate-breathe: breathe 1.8s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes dock-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.94);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -33,6 +78,10 @@
 
 html {
   scrollbar-gutter: stable;
+}
+
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
 }
 
 @layer base {
@@ -62,6 +111,18 @@ html {
   }
 }
 
+.photo-skeleton {
+  background-color: rgba(0, 69, 35, 0.5);
+  animation: var(--animate-breathe);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-skeleton {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
 .mapbox-map {
   position: relative;
   min-height: 12rem;
@@ -70,6 +131,15 @@ html {
 .mapbox-map .mapboxgl-canvas {
   width: 100% !important;
   height: 100% !important;
+}
+
+.mapbox-map .mapboxgl-ctrl-bottom-left {
+  bottom: 0.3rem;
+}
+
+.hero-map .mapboxgl-ctrl-bottom-left,
+.hero-map .mapboxgl-ctrl-bottom-right {
+  bottom: 4.25rem;
 }
 
 .scroll-visible {
@@ -110,27 +180,65 @@ html {
 .canopee-popup .mapboxgl-popup-content {
   border-radius: 0.9rem;
   background: #f6f4df;
-  padding: 0.7rem 0.9rem;
+  padding: 0;
+  overflow: hidden;
   box-shadow:
     0 10px 24px -8px rgba(0, 69, 35, 0.45),
     0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
-.canopee-popup .mapboxgl-popup-tip {
+.canopee-popup .mapboxgl-popup-close-button {
+  display: none;
+}
+
+.canopee-popup.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
+.canopee-popup.mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
+.canopee-popup.mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip {
   border-top-color: #f6f4df;
-  border-bottom-color: #f6f4df;
-  border-left-color: #f6f4df;
+}
+
+.canopee-popup.mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
+.canopee-popup.mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip,
+.canopee-popup.mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip {
+  border-bottom-color: var(--canopee-tip, #f6f4df);
+}
+
+.canopee-popup.mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
   border-right-color: #f6f4df;
 }
 
-.canopee-popup .mapboxgl-popup-close-button {
-  padding: 0 0.35rem;
-  color: rgba(0, 69, 35, 0.55);
-  font-size: 1rem;
-  border-radius: 9999px;
+.canopee-popup.mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+  border-left-color: #f6f4df;
 }
 
-.canopee-popup .mapboxgl-popup-close-button:hover {
-  background: rgba(0, 69, 35, 0.1);
-  color: #004523;
+/*
+ * The viewport is `viewport-fit=cover`, so a full-screen overlay runs edge to
+ * edge — under the notch and the home indicator. These pad it back inside the
+ * safe area; the base values match the `p-4` / `sm:p-6` the overlays used
+ * before, so nothing moves on a screen without insets.
+ */
+.safe-inset {
+  padding-top: calc(1rem + env(safe-area-inset-top));
+  padding-right: calc(1rem + env(safe-area-inset-right));
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  padding-left: calc(1rem + env(safe-area-inset-left));
+}
+
+@media (width >= 40rem) {
+  .safe-inset {
+    padding-top: calc(1.5rem + env(safe-area-inset-top));
+    padding-right: calc(1.5rem + env(safe-area-inset-right));
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+    padding-left: calc(1.5rem + env(safe-area-inset-left));
+  }
+}
+
+@media (orientation: landscape) and (height <= 600px) and (pointer: coarse) {
+  .portrait-lock {
+    display: flex;
+  }
+
+  body:has(.portrait-lock) {
+    overflow: hidden;
+  }
 }

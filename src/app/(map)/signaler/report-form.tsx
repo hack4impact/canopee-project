@@ -3,35 +3,49 @@
 import {
   useActionState,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
 } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ReportLocationPicker } from '@/components/report-location-picker'
-import { SpeciesPicto } from '@/components/species-picto'
+import { CITIZEN_REPORT_ROUTE } from '@/lib/auth/routes'
+import { SpeciesPicto, type SpeciesPictoName } from '@/components/species-picto'
+import { SpeciesCombobox } from '@/components/species-combobox'
 import { Spinner } from '@/components/spinner'
 import { isGeolocationAvailable } from '@/lib/mapbox'
 import {
-  FAUNE_FLORE_STATUTS,
   REPORT_CATEGORY_LABELS,
   REPORT_GROUP_CATEGORIES,
   REPORT_GROUP_LABELS,
   REPORT_TYPOLOGIES,
   REPORT_TYPOLOGY_LABELS,
   REPORT_UNITS,
+  REPORT_UNIT_LABELS,
+  REPORT_FAUNE_CATEGORIES,
+  REPORT_FLORE_CATEGORIES,
+  isReportCategory,
   type ReportGroup,
 } from '@/lib/reports/categories'
+import {
+  validateReporterConsent,
+  validateReporterEmail,
+} from '@/lib/reports/citizen'
 import { downscalePhoto } from '@/lib/reports/downscale'
 import { type ReportPosition } from '@/lib/reports/location'
 import {
   isValidReport,
   MAX_DESCRIPTION_LENGTH,
+  MAX_QUANTITY,
   validatePhoto,
   validateReport,
   type ReportErrors,
 } from '@/lib/reports/validation'
-import { sendReport } from '@/lib/reports/send'
+import { findSpecies } from '@/lib/reports/species'
+import { sendCitizenReport, sendReport } from '@/lib/reports/send'
 import type { ReportFormState } from '@/lib/reports/submit'
 import { REPORT_THEMES } from './report-theme'
 
@@ -43,6 +57,14 @@ const FIELD =
   'rounded-lg border border-canopee-green/30 bg-white px-3 py-2.5 text-canopee-forest placeholder-zinc-500 transition-colors outline-none focus:border-canopee-green focus:ring-2 focus:ring-canopee-green/40'
 
 const LABEL = 'text-sm font-medium text-canopee-forest'
+
+const FLORE_PICTOS: Record<
+  (typeof REPORT_FLORE_CATEGORIES)[number],
+  SpeciesPictoName
+> = {
+  espece_menacee: 'menacee_vulnerable',
+  espece_exotique: 'exotique_envahissante',
+}
 
 const ERROR = 'text-sm font-medium text-canopee-coral-dark'
 
@@ -74,37 +96,31 @@ function isSupportedOnServer(): boolean {
 export function ReportForm({
   group,
   onBack,
+  onBackChange,
   photoRequired,
+  citizen = false,
 }: {
   group: ReportGroup
   onBack: () => void
+  onBackChange?: (handler: (() => void) | null) => void
   photoRequired: boolean
+  citizen?: boolean
 }) {
-  const [state, formAction, pending] = useActionState(sendReport, initialState)
+  const [state, formAction, pending] = useActionState(
+    citizen ? sendCitizenReport : sendReport,
+    initialState,
+  )
+
+  if (citizen && state.submittedId) {
+    return <CitizenConfirmation />
+  }
+
+  if (state.submittedId) {
+    return <ReportConfirmation queued={state.queued} onAgain={onBack} />
+  }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <button
-        type="button"
-        onClick={onBack}
-        className="inline-flex touch-manipulation items-center gap-1.5 self-start rounded-lg px-2 py-1.5 text-sm font-semibold text-canopee-forest/70 transition-colors hover:bg-canopee-green/10 hover:text-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-4 w-4"
-          aria-hidden="true"
-        >
-          <path d="m12 19-7-7 7-7" />
-          <path d="M19 12H5" />
-        </svg>
-        Changer de type
-      </button>
-
+    <div className="flex min-h-[min(36rem,calc(100vw_-_2rem),calc(100dvh_-_9rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)))] flex-1 flex-col gap-2">
       <h2 className={`font-heading text-lg ${REPORT_THEMES[group].accent}`}>
         {REPORT_GROUP_LABELS[group]}
       </h2>
@@ -115,21 +131,12 @@ export function ReportForm({
         </p>
       )}
 
-      {state.submittedId && (
-        <p
-          aria-live="polite"
-          className="rounded-lg bg-canopee-green/10 px-3 py-2.5 text-sm font-medium text-canopee-forest"
-        >
-          {state.queued
-            ? 'Signalement enregistré. Il partira au retour du réseau.'
-            : 'Signalement envoyé. Merci!'}
-        </p>
-      )}
-
       <ReportWizard
-        key={state.submittedId ?? 'new'}
         group={group}
+        onExit={onBack}
+        onBackChange={onBackChange}
         photoRequired={photoRequired}
+        citizen={citizen}
         formAction={formAction}
         pending={pending}
         serverErrors={state.errors}
@@ -138,19 +145,129 @@ export function ReportForm({
   )
 }
 
+function ReportConfirmation({
+  queued,
+  onAgain,
+}: {
+  queued?: boolean
+  onAgain: () => void
+}) {
+  return (
+    <div
+      aria-live="polite"
+      className="flex min-h-72 flex-1 animate-in flex-col items-center justify-center gap-4 text-center fade-in zoom-in-95 duration-300 motion-reduce:animate-none"
+    >
+      <span
+        aria-hidden
+        className="flex h-16 w-16 items-center justify-center rounded-2xl bg-canopee-green/15 text-canopee-green"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-8 w-8"
+        >
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </span>
+
+      <div className="flex flex-col gap-1.5">
+        <h2 className="font-heading text-2xl text-canopee-forest">
+          {queued ? 'Signalement enregistré' : 'Signalement envoyé'}
+        </h2>
+        <p className="text-sm text-canopee-forest/70">
+          {queued
+            ? 'Il partira automatiquement dès que le réseau reviendra.'
+            : 'Il apparaît maintenant sur la carte.'}
+        </p>
+      </div>
+
+      <div className="flex w-full flex-col gap-2">
+        <button
+          type="button"
+          onClick={onAgain}
+          className="inline-flex touch-manipulation items-center justify-center rounded-lg bg-canopee-green px-4 py-2.5 font-bold text-white shadow-sm transition-colors duration-150 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/50 focus-visible:outline-none"
+        >
+          Faire un autre signalement
+        </button>
+        <Link
+          href="/carte"
+          className="inline-flex touch-manipulation items-center justify-center rounded-lg border border-canopee-green/30 bg-white px-4 py-2.5 text-sm font-semibold text-canopee-forest transition-colors hover:bg-canopee-green/10 focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none"
+        >
+          Retour à la carte
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+function CitizenConfirmation() {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 text-center">
+      <span
+        aria-hidden
+        className="flex h-16 w-16 items-center justify-center rounded-full bg-canopee-green/15 text-canopee-green"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-8 w-8"
+        >
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </span>
+
+      <div className="flex flex-col gap-1.5">
+        <h2 className="font-heading text-2xl text-canopee-forest">
+          Signalement envoyé
+        </h2>
+        <p className="text-sm text-canopee-forest/70">
+          Vous recevrez un courriel à l’adresse indiquée lorsque votre
+          signalement aura été traité.
+        </p>
+      </div>
+
+      <div className="flex w-full flex-col gap-2">
+        <a
+          href={CITIZEN_REPORT_ROUTE}
+          className="inline-flex touch-manipulation items-center justify-center rounded-lg bg-canopee-green px-4 py-2.5 font-bold text-white shadow-sm transition-colors duration-150 hover:bg-canopee-forest focus-visible:ring-2 focus-visible:ring-canopee-green/50 focus-visible:outline-none"
+        >
+          Faire un autre signalement
+        </a>
+        <Link
+          href="/"
+          className="inline-flex touch-manipulation items-center justify-center rounded-lg border border-canopee-green/30 bg-white px-4 py-2.5 text-sm font-semibold text-canopee-forest transition-colors hover:bg-canopee-green/10 focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none"
+        >
+          Retour à l’accueil
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 type ReportWizardProps = {
   group: ReportGroup
+  onExit: () => void
+  onBackChange?: (handler: (() => void) | null) => void
   photoRequired: boolean
+  citizen: boolean
   formAction: (formData: FormData) => void
   pending: boolean
   serverErrors?: ReportErrors
 }
 
 type StepKey =
+  | 'courriel'
   | 'constate'
   | 'typologie'
   | 'categorie'
-  | 'statut'
   | 'photo'
   | 'nombre'
   | 'espece'
@@ -159,10 +276,10 @@ type StepKey =
   | 'position'
 
 const STEP_TITLES: Record<StepKey, string> = {
+  courriel: 'Comment vous joindre ?',
   constate: 'Qu’avez-vous constaté ?',
   typologie: 'Typologie',
-  categorie: 'Sélectionnez la catégorie observée',
-  statut: "Quel est le statut de l'espèce ?",
+  categorie: 'Catégorie',
   photo: 'Photo',
   nombre: 'Combien ?',
   espece: 'Quelle espèce avez-vous observé ?',
@@ -175,14 +292,7 @@ const STEP_TITLES: Record<StepKey, string> = {
 const GROUP_STEPS: Record<ReportGroup, readonly StepKey[]> = {
   entretien: ['constate', 'typologie', 'photo', 'commentaire', 'position'],
   citoyen: ['constate', 'photo', 'nombre', 'commentaire', 'position'],
-  faune_flore: [
-    'categorie',
-    'statut',
-    'photo',
-    'espece',
-    'details',
-    'position',
-  ],
+  faune_flore: ['categorie', 'photo', 'espece', 'details', 'position'],
 }
 
 function UploadIcon({ className }: { className?: string }) {
@@ -206,14 +316,20 @@ function UploadIcon({ className }: { className?: string }) {
 
 function ReportWizard({
   group,
+  onExit,
+  onBackChange,
   photoRequired,
+  citizen,
   formAction,
   pending,
   serverErrors,
 }: ReportWizardProps) {
+  const theme = REPORT_THEMES[group]
   const [stepIndex, setStepIndex] = useState(0)
+  const [direction, setDirection] = useState<'forward' | 'back'>('forward')
+  const [reporterEmail, setReporterEmail] = useState('')
+  const [reporterConsent, setReporterConsent] = useState(false)
   const [category, setCategory] = useState('')
-  const [statut, setStatut] = useState('')
   const [typology, setTypology] = useState('')
   const [description, setDescription] = useState('')
   const [quantity, setQuantity] = useState('')
@@ -244,8 +360,17 @@ function ReportWizard({
 
   const errors = { ...serverErrors, ...clientErrors }
 
-  const steps = GROUP_STEPS[group]
+  const speciesMatch = useMemo(
+    () =>
+      findSpecies(species, isReportCategory(category) ? category : undefined),
+    [species, category],
+  )
+
+  const steps = citizen
+    ? (['courriel', ...GROUP_STEPS[group]] as readonly StepKey[])
+    : GROUP_STEPS[group]
   const step = steps[stepIndex]
+  const isFauneFlore = group === 'faune_flore'
 
   useEffect(() => {
     if (!isSupported) {
@@ -324,24 +449,43 @@ function ReportWizard({
     setPreview(URL.createObjectURL(prepared))
   }
 
+  function quantityIsValid(): boolean {
+    const value = quantity.trim()
+
+    if (value === '') {
+      return true
+    }
+
+    const parsed = Number(value)
+
+    return Number.isInteger(parsed) && parsed >= 1 && parsed <= MAX_QUANTITY
+  }
+
   function stepIsComplete(key: StepKey): boolean {
     switch (key) {
+      case 'courriel':
+        return (
+          validateReporterEmail(reporterEmail) === null &&
+          validateReporterConsent(reporterConsent) === null
+        )
       case 'constate':
         return category !== ''
       case 'typologie':
         return typology !== ''
       case 'categorie':
         return category !== ''
-      case 'statut':
-        return statut !== ''
       case 'photo':
         return photo !== null || !photoRequired
       case 'nombre':
         return quantity === '' || Number.isInteger(Number(quantity))
       case 'espece':
-        return species.trim() !== ''
+        return speciesMatch !== undefined
       case 'details':
-        return description.trim() !== ''
+        return (
+          description.trim() !== '' &&
+          quantityIsValid() &&
+          (quantity.trim() === '' || unit !== '')
+        )
       case 'commentaire':
         return description.trim() !== ''
       case 'position':
@@ -352,8 +496,9 @@ function ReportWizard({
   function next() {
     setClientErrors((current) => {
       const cleared = { ...current }
+      delete cleared.reporterEmail
+      delete cleared.reporterConsent
       delete cleared.category
-      delete cleared.statut
       delete cleared.typology
       delete cleared.species
       delete cleared.photo
@@ -363,16 +508,37 @@ function ReportWizard({
       return cleared
     })
 
+    if (step === 'espece' && speciesMatch) {
+      setSpecies(speciesMatch.commonName)
+    }
+
     if (stepIndex < steps.length - 1) {
+      setDirection('forward')
       setStepIndex(stepIndex + 1)
     }
   }
 
   function back() {
-    if (stepIndex > 0) {
-      setStepIndex(stepIndex - 1)
+    if (stepIndex === 0) {
+      onExit()
+      return
     }
+
+    setDirection('back')
+    setStepIndex(stepIndex - 1)
   }
+
+  const backRef = useRef(back)
+
+  useEffect(() => {
+    backRef.current = back
+  })
+
+  useEffect(() => {
+    onBackChange?.(() => backRef.current())
+
+    return () => onBackChange?.(null)
+  }, [onBackChange])
 
   function submit(formData: FormData) {
     const found = validateReport({
@@ -385,8 +551,20 @@ function ReportWizard({
       species,
       unit,
       habitat,
-      statut,
     })
+
+    const emailError = citizen ? validateReporterEmail(reporterEmail) : null
+    const consentError = citizen
+      ? validateReporterConsent(reporterConsent)
+      : null
+
+    if (emailError) {
+      found.reporterEmail = emailError
+    }
+
+    if (consentError) {
+      found.reporterConsent = consentError
+    }
 
     setClientErrors(found)
 
@@ -410,9 +588,9 @@ function ReportWizard({
     <form
       action={submit}
       noValidate
-      className="flex min-h-0 flex-1 flex-col gap-4"
+      className="flex min-h-[min(32rem,calc(100dvh_-_10rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)))] flex-1 flex-col gap-2 overflow-visible"
     >
-      <div className="flex shrink-0 flex-col gap-3">
+      <div className="flex shrink-0 flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
             Étape {stepIndex + 1} / {steps.length}
@@ -423,10 +601,10 @@ function ReportWizard({
                 key={key}
                 className={`h-1.5 rounded-full transition-all duration-200 ${
                   index === stepIndex
-                    ? `w-6 ${REPORT_THEMES[group].bar}`
+                    ? `w-6 ${theme.bar}`
                     : index < stepIndex
-                      ? 'w-3 bg-canopee-green/50'
-                      : 'w-3 bg-canopee-green/15'
+                      ? `w-3 ${theme.barPast}`
+                      : `w-3 ${theme.barIdle}`
                 }`}
                 aria-hidden="true"
               />
@@ -434,11 +612,23 @@ function ReportWizard({
           </div>
         </div>
 
-        <p className="text-sm font-semibold text-canopee-forest">
-          {STEP_TITLES[step]}
-        </p>
+        {step !== 'details' && (
+          <p className="text-sm font-semibold text-canopee-forest">
+            {STEP_TITLES[step]}
+          </p>
+        )}
       </div>
 
+      {citizen && (
+        <>
+          <input type="hidden" name="reporterEmail" value={reporterEmail} />
+          <input
+            type="hidden"
+            name="reporterConsent"
+            value={reporterConsent ? 'true' : ''}
+          />
+        </>
+      )}
       <input type="hidden" name="category" value={category} />
       <input type="hidden" name="description" value={description} />
       <input type="hidden" name="typology" value={typology} />
@@ -446,7 +636,6 @@ function ReportWizard({
       <input type="hidden" name="species" value={species} />
       <input type="hidden" name="unit" value={unit} />
       <input type="hidden" name="habitat" value={habitat} />
-      <input type="hidden" name="statut" value={statut} />
 
       {position && (
         <>
@@ -455,26 +644,99 @@ function ReportWizard({
         </>
       )}
 
-      <div className="scroll-visible flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain pr-3">
+      <div
+        key={step}
+        className={`flex min-h-0 flex-1 animate-in flex-col gap-2 overflow-y-auto overscroll-contain fade-in duration-200 motion-reduce:animate-none ${
+          direction === 'forward'
+            ? 'slide-in-from-right-3'
+            : 'slide-in-from-left-3'
+        }`}
+      >
+        {step === 'courriel' && (
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="reporterEmail" className={LABEL}>
+              Adresse courriel
+            </label>
+            <input
+              id="reporterEmail"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={reporterEmail}
+              onChange={(event) => setReporterEmail(event.target.value)}
+              placeholder="vous@exemple.com"
+              aria-describedby={
+                errors.reporterEmail
+                  ? 'reporter-email-error'
+                  : 'reporter-email-hint'
+              }
+              className={FIELD}
+            />
+            <p
+              id="reporter-email-hint"
+              className="text-xs text-canopee-forest/60"
+            >
+              Elle sert uniquement à vous prévenir quand votre signalement est
+              traité.
+            </p>
+            {errors.reporterEmail && (
+              <p id="reporter-email-error" className={ERROR}>
+                {errors.reporterEmail}
+              </p>
+            )}
+
+            <div className="flex items-start gap-2 pt-2">
+              <Checkbox
+                id="reporterConsent"
+                checked={reporterConsent}
+                onCheckedChange={(checked) =>
+                  setReporterConsent(checked === true)
+                }
+                aria-describedby={
+                  errors.reporterConsent ? 'reporter-consent-error' : undefined
+                }
+              />
+              <label
+                htmlFor="reporterConsent"
+                className="text-xs text-canopee-forest/80"
+              >
+                J’accepte que Canopée utilise mon adresse courriel pour
+                m’informer du suivi de mon signalement, conformément à sa{' '}
+                <Link
+                  href="/politique-de-confidentialite"
+                  target="_blank"
+                  className="underline underline-offset-2 hover:text-canopee-forest"
+                >
+                  politique de confidentialité
+                </Link>
+                .
+              </label>
+            </div>
+            {errors.reporterConsent && (
+              <p id="reporter-consent-error" className={ERROR}>
+                {errors.reporterConsent}
+              </p>
+            )}
+          </div>
+        )}
+
         {step === 'constate' && (
-          <div className="flex flex-col gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {REPORT_GROUP_CATEGORIES[group].map((value) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => setCategory(value)}
                 aria-pressed={category === value}
-                className={`rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                  category === value
-                    ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
-                    : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
+                className={`rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
+                  category === value ? theme.optionActive : theme.option
                 }`}
               >
                 {REPORT_CATEGORY_LABELS[value]}
               </button>
             ))}
             {errors.category && (
-              <p id="category-error" className={ERROR}>
+              <p id="category-error" className={`${ERROR} sm:col-span-2`}>
                 {errors.category}
               </p>
             )}
@@ -482,89 +744,97 @@ function ReportWizard({
         )}
 
         {step === 'typologie' && (
-          <div className="flex flex-col gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {REPORT_TYPOLOGIES.map((value) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => setTypology(value)}
                 aria-pressed={typology === value}
-                className={`rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                  typology === value
-                    ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
-                    : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
+                className={`rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
+                  typology === value ? theme.optionActive : theme.option
                 }`}
               >
                 {REPORT_TYPOLOGY_LABELS[value]}
               </button>
             ))}
             {errors.typology && (
-              <p id="typology-error" className={ERROR}>
+              <p id="typology-error" className={`${ERROR} sm:col-span-2`}>
                 {errors.typology}
               </p>
             )}
           </div>
         )}
 
-        {step === 'categorie' && group === 'faune_flore' && (
-          <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-3 gap-2">
-              {REPORT_GROUP_CATEGORIES.faune_flore.map((value) => (
+        {step === 'categorie' && isFauneFlore && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="mb-2 text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
+                Faune
+              </p>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {REPORT_FAUNE_CATEGORIES.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setCategory(value)}
+                    aria-pressed={category === value}
+                    className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
+                      category === value ? theme.optionActive : theme.option
+                    }`}
+                  >
+                    <SpeciesPicto
+                      name={value}
+                      className={`mx-auto mb-1 h-6 w-6 ${theme.accent}`}
+                    />
+                    {REPORT_CATEGORY_LABELS[value]}
+                  </button>
+                ))}
                 <button
-                  key={value}
                   type="button"
-                  onClick={() => setCategory(value)}
-                  aria-pressed={category === value}
-                  className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-3 text-center transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                    category === value
-                      ? 'border-canopee-green bg-canopee-green/10'
-                      : 'border-canopee-green/25 bg-white hover:border-canopee-green/60'
+                  onClick={() => setCategory('faune_flore_other')}
+                  aria-pressed={category === 'faune_flore_other'}
+                  className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
+                    category === 'faune_flore_other'
+                      ? theme.optionActive
+                      : theme.option
                   }`}
                 >
                   <SpeciesPicto
-                    name={value === 'plante_vasculaire' ? 'vasculaire' : value}
-                    className="h-6 w-6 text-canopee-green"
+                    name="autre"
+                    className={`mx-auto mb-1 h-6 w-6 ${theme.accent}`}
                   />
-                  <span className="text-xs font-medium text-canopee-forest">
-                    {REPORT_CATEGORY_LABELS[value]}
-                  </span>
+                  {REPORT_CATEGORY_LABELS.faune_flore_other}
                 </button>
-              ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
+                Flore
+              </p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {REPORT_FLORE_CATEGORIES.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setCategory(value)}
+                    aria-pressed={category === value}
+                    className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
+                      category === value ? theme.optionActive : theme.option
+                    }`}
+                  >
+                    <SpeciesPicto
+                      name={FLORE_PICTOS[value]}
+                      className={`mx-auto mb-1 h-6 w-6 ${theme.accent}`}
+                    />
+                    {REPORT_CATEGORY_LABELS[value]}
+                  </button>
+                ))}
+              </div>
             </div>
             {errors.category && (
               <p id="category-error" className={ERROR}>
                 {errors.category}
-              </p>
-            )}
-          </div>
-        )}
-
-        {step === 'statut' && group === 'faune_flore' && (
-          <div className="flex flex-col gap-2">
-            <p className="text-xs text-canopee-forest/60">Échelle de menace</p>
-            <div className="flex flex-col gap-1">
-              {FAUNE_FLORE_STATUTS.map(({ value, label }, index) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setStatut(value)}
-                  aria-pressed={statut === value}
-                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none ${
-                    statut === value
-                      ? 'border-canopee-green bg-canopee-green/10 text-canopee-forest'
-                      : 'border-canopee-green/25 bg-white text-canopee-forest hover:border-canopee-green/60'
-                  }`}
-                >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-canopee-green/15 text-xs font-bold text-canopee-green">
-                    {index + 1}
-                  </span>
-                  <span className="text-sm font-medium">{label}</span>
-                </button>
-              ))}
-            </div>
-            {errors.statut && (
-              <p id="statut-error" className={ERROR}>
-                {errors.statut}
               </p>
             )}
           </div>
@@ -575,27 +845,30 @@ function ReportWizard({
             <label htmlFor="species" className={LABEL}>
               Espèce observée
             </label>
-            <input
+            <SpeciesCombobox
               id="species"
-              name="species"
-              type="text"
               value={species}
-              onChange={(event) => setSpecies(event.target.value)}
-              placeholder="Nom commun ou scientifique, si vous le connaissez."
-              aria-describedby={errors.species ? 'species-error' : undefined}
-              className={FIELD}
+              onChange={setSpecies}
+              category={isReportCategory(category) ? category : undefined}
+              describedBy={errors.species ? 'species-error' : undefined}
             />
-            {errors.species && (
+            {errors.species ? (
               <p id="species-error" className={ERROR}>
                 {errors.species}
               </p>
+            ) : (
+              species.trim() !== '' &&
+              !speciesMatch && (
+                <p className="text-sm text-canopee-forest/60">
+                  Choisissez une espèce dans la liste.
+                </p>
+              )
             )}
           </div>
         )}
 
         {step === 'photo' && (
           <div className="flex flex-col gap-1.5">
-            <span className={LABEL}>Veuillez ajouter une photo</span>
             <input
               ref={photoInputRef}
               id="photo"
@@ -608,7 +881,9 @@ function ReportWizard({
               className="hidden"
             />
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className={LABEL}>Veuillez ajouter une photo</span>
+
               <button
                 type="button"
                 onClick={() => photoInputRef.current?.click()}
@@ -618,11 +893,11 @@ function ReportWizard({
                 <UploadIcon className="h-5 w-5" />
                 {photo ? 'Changer la photo' : 'Choisir une photo'}
               </button>
-
-              <span className="min-w-0 break-all text-sm text-canopee-forest/60">
-                {photo ? photo.name : 'Aucune photo choisie'}
-              </span>
             </div>
+
+            <span className="min-w-0 break-all text-sm text-canopee-forest/60">
+              {photo ? photo.name : 'Aucune photo choisie'}
+            </span>
 
             {preparingPhoto && (
               <p role="status" className="text-sm text-canopee-forest/70">
@@ -651,7 +926,7 @@ function ReportWizard({
 
         {step === 'nombre' && (
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="quantity" className={LABEL}>
+            <label htmlFor="quantity" className="sr-only">
               Combien ?
             </label>
             <input
@@ -671,32 +946,59 @@ function ReportWizard({
                 {errors.quantity}
               </p>
             )}
-            <p className="text-xs text-canopee-forest/60">
-              Facultatif — vous pouvez passer à l’étape suivante.
-            </p>
           </div>
         )}
 
         {step === 'details' && (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="unit" className={LABEL}>
-                Unité
-              </label>
-              <select
-                id="unit"
-                name="unit"
-                value={unit}
-                onChange={(event) => setUnit(event.target.value)}
-                className={FIELD}
-              >
-                <option value="">—</option>
-                {REPORT_UNITS.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="quantity" className={LABEL}>
+                    Quantité
+                  </label>
+                  <input
+                    id="quantity"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    value={quantity}
+                    onChange={(event) => setQuantity(event.target.value)}
+                    placeholder="1, 2, 3…"
+                    aria-describedby={
+                      errors.quantity ? 'quantity-error' : undefined
+                    }
+                    className={`${FIELD} w-full`}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="unit" className={LABEL}>
+                    Unité
+                  </label>
+                  <select
+                    id="unit"
+                    value={unit}
+                    onChange={(event) => setUnit(event.target.value)}
+                    aria-describedby={errors.unit ? 'unit-error' : undefined}
+                    className={`${FIELD} w-full`}
+                  >
+                    <option value="">—</option>
+                    {REPORT_UNITS.map((value) => (
+                      <option key={value} value={value}>
+                        {REPORT_UNIT_LABELS[value]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {errors.quantity && (
+                <p id="quantity-error" className={ERROR}>
+                  {errors.quantity}
+                </p>
+              )}
+
               {errors.unit && (
                 <p id="unit-error" className={ERROR}>
                   {errors.unit}
@@ -740,6 +1042,7 @@ function ReportWizard({
             setDescription={setDescription}
             errors={errors}
             remaining={remaining}
+            hideLabel
           />
         )}
 
@@ -779,14 +1082,6 @@ function ReportWizard({
               )}
             </div>
 
-            <p aria-live="polite" className="text-sm text-canopee-forest/70">
-              {!position
-                ? 'Touchez la carte pour placer le repère à l’endroit du problème.'
-                : override
-                  ? 'Repère placé à la main. Touchez la carte ou faites-le glisser pour l’ajuster.'
-                  : 'Position GPS. Touchez la carte ou faites glisser le repère pour la corriger.'}
-            </p>
-
             {gpsFix.status === 'locating' && !override && (
               <p role="status" className="text-sm text-canopee-forest/70">
                 Recherche de votre position…
@@ -811,17 +1106,8 @@ function ReportWizard({
         )}
       </div>
 
-      <div className="flex shrink-0 flex-col gap-2">
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={back}
-            disabled={stepIndex === 0}
-            className="inline-flex touch-manipulation items-center gap-1.5 rounded-lg border border-canopee-green/30 bg-white px-4 py-2.5 text-sm font-semibold text-canopee-forest transition-colors hover:bg-canopee-green/10 focus-visible:ring-2 focus-visible:ring-canopee-green/40 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Retour
-          </button>
-
+      <div className="mt-auto flex shrink-0 flex-col gap-2 pt-3">
+        <div className="flex items-center justify-end gap-3">
           {isLastStep ? (
             <button
               key="send"
@@ -867,15 +1153,17 @@ function CommentField({
   setDescription,
   errors,
   remaining,
+  hideLabel = false,
 }: {
   description: string
   setDescription: (value: string) => void
   errors: ReportErrors
   remaining: number
+  hideLabel?: boolean
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor="description" className={LABEL}>
+      <label htmlFor="description" className={hideLabel ? 'sr-only' : LABEL}>
         Commentaire
       </label>
       <textarea

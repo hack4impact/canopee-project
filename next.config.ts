@@ -31,6 +31,10 @@ const nextConfig: NextConfig = {
         source: '/.well-known/assetlinks.json',
         destination: '/api/assetlinks',
       },
+      {
+        source: '/.well-known/apple-app-site-association',
+        destination: '/api/apple-app-site-association',
+      },
     ]
   },
   async redirects() {

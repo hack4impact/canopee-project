@@ -37,8 +37,9 @@ export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
   invertebre: 'Invertébrés',
   mollusque: 'Mollusques',
   poisson: 'Poissons',
-  plante_vasculaire: 'Plantes vasculaires',
-  bryophyte: 'Bryophytes',
+  espece_menacee: 'Espèce menacée',
+  espece_exotique: 'Espèce exotique',
+  faune_flore_other: 'Autres',
 }
 
 export const REPORT_CATEGORIES = Object.keys(
@@ -52,7 +53,7 @@ export type ReportGroup = (typeof REPORT_GROUPS)[number]
 
 export const REPORT_GROUP_LABELS: Record<ReportGroup, string> = {
   entretien: 'Entretien',
-  citoyen: 'Citoyen',
+  citoyen: 'Intervention',
   faune_flore: 'Faune / flore',
 }
 
@@ -97,10 +98,27 @@ export const REPORT_GROUP_CATEGORIES: Record<
     'invertebre',
     'mollusque',
     'poisson',
-    'plante_vasculaire',
-    'bryophyte',
+    'espece_menacee',
+    'espece_exotique',
+    'faune_flore_other',
   ],
 }
+
+export const REPORT_FAUNE_CATEGORIES = [
+  'oiseau',
+  'mammifere',
+  'reptile',
+  'amphibien',
+  'poisson',
+  'insecte',
+  'invertebre',
+  'mollusque',
+] as const satisfies readonly ReportCategory[]
+
+export const REPORT_FLORE_CATEGORIES = [
+  'espece_menacee',
+  'espece_exotique',
+] as const satisfies readonly ReportCategory[]
 
 export function isReportCategory(value: unknown): value is ReportCategory {
   return (
@@ -187,6 +205,42 @@ export const FLORE_SUBCATEGORIES = [
 export type FauneSubcategory = (typeof FAUNE_SUBCATEGORIES)[number]['value']
 export type FloreSubcategory = (typeof FLORE_SUBCATEGORIES)[number]['value']
 
-export const REPORT_UNITS = ['individus', 'nids'] as const
+export const REPORT_UNITS = [
+  'individus',
+  'nids',
+  'taniere',
+  'ruche',
+  'trace',
+  'autre',
+] as const
 
 export type ReportUnit = (typeof REPORT_UNITS)[number]
+
+export const REPORT_UNIT_LABELS: Record<ReportUnit, string> = {
+  individus: 'individus',
+  nids: 'nids',
+  taniere: 'tanière',
+  ruche: 'ruche',
+  trace: 'trace',
+  autre: 'autre',
+}
+
+export function isReportUnit(value: unknown): value is ReportUnit {
+  return typeof value === 'string' && Object.hasOwn(REPORT_UNIT_LABELS, value)
+}
+
+export function reportUnitLabel(value: string | null | undefined): string {
+  if (!value) {
+    return ''
+  }
+
+  return isReportUnit(value) ? REPORT_UNIT_LABELS[value] : value
+}
+
+export function reportTypologyLabel(value: string | null | undefined): string {
+  if (!value) {
+    return ''
+  }
+
+  return isReportTypology(value) ? REPORT_TYPOLOGY_LABELS[value] : value
+}

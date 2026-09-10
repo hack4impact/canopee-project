@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+plugins/**/node_modules
+plugins/**/.swiftpm
 /.pnp
 .pnp.*
 .yarn/*
