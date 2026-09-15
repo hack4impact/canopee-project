@@ -22,6 +22,7 @@ type PatrolActivityPlugin = {
     route: number[]
   }): Promise<void>
   end(): Promise<void>
+  openSettings(): Promise<void>
   addListener(
     event: 'command',
     handler: (data: CommandEvent) => void,
@@ -29,6 +30,33 @@ type PatrolActivityPlugin = {
 }
 
 const PatrolActivity = registerPlugin<PatrolActivityPlugin>('PatrolActivity')
+
+export async function areNotificationsEnabled(): Promise<boolean> {
+  if (!isNativeApp()) {
+    return true
+  }
+
+  try {
+    const { supported } = await PatrolActivity.isSupported()
+    debugLog('activity.supported', { supported })
+    return supported
+  } catch (cause) {
+    debugLog('activity.supported.failed', describeError(cause))
+    return true
+  }
+}
+
+export async function openNotificationSettings(): Promise<void> {
+  if (!isNativeApp()) {
+    return
+  }
+
+  try {
+    await PatrolActivity.openSettings()
+  } catch (cause) {
+    debugLog('activity.settings.failed', describeError(cause))
+  }
+}
 
 export async function startLiveActivity(options: {
   startedAt: number
