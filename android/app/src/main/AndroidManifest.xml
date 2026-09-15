@@ -59,6 +59,14 @@
         </provider>
     </application>
 
+    <!-- Android 11+ hides other apps from resolveActivity, so without this the
+    camera intent never resolves and Capacitor falls back to the file picker. -->
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+    </queries>
+
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
