@@ -31,7 +31,6 @@ export const CSV_HEADERS = [
   'date_observation',
   'statut_signalement',
   'date_resolution',
-  'categorie',
   'libelle_categorie',
   'commentaires',
   'typologie',
@@ -54,8 +53,7 @@ export const CSV_HEADER_LABELS: Record<CsvColumn, string> = {
   date_observation: "Date de l'observation",
   statut_signalement: 'Statut du signalement',
   date_resolution: 'Date de résolution',
-  categorie: 'Catégorie',
-  libelle_categorie: 'Libellé de la catégorie',
+  libelle_categorie: 'Catégorie',
   commentaires: 'Commentaires',
   typologie: 'Typologie',
   nombre_observe: 'Nombre observé',
@@ -78,7 +76,6 @@ export const CSV_COLUMN_GROUPS: {
     label: 'Identification',
     columns: [
       'numero_signalement',
-      'categorie',
       'libelle_categorie',
       'typologie',
       'nombre_observe',
@@ -158,13 +155,16 @@ export function toCsvRow(values: readonly CsvValue[]): string {
   return values.map(toCell).join(',')
 }
 
+function toDateOnly(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
 export function reportToCsvValues(report: ReportExportRow): CsvValue[] {
   return [
     report.eventNumber,
-    report.createdAt.toISOString(),
+    toDateOnly(report.createdAt),
     report.resolvedAt ? 'Résolu' : 'En attente',
-    report.resolvedAt ? report.resolvedAt.toISOString() : null,
-    report.category,
+    report.resolvedAt ? toDateOnly(report.resolvedAt) : null,
     REPORT_CATEGORY_LABELS[report.category] ?? report.category,
     report.description,
     report.typology === null ? null : reportTypologyLabel(report.typology),
