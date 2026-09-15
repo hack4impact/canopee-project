@@ -433,7 +433,7 @@ function ActivePatrol({
       {showControls && notice && (
         <p
           role={endError ? 'alert' : 'status'}
-          className="max-w-64 rounded-full bg-canopee-cream/90 px-3 py-1 text-xs font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
+          className="w-max max-w-72 rounded-2xl bg-canopee-cream/90 px-3.5 py-1.5 text-center text-xs leading-snug font-medium whitespace-normal text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
         >
           {notice}
         </p>
@@ -442,9 +442,11 @@ function ActivePatrol({
       {showControls && promptForNotifications && (
         <div
           role="status"
-          className="flex max-w-72 items-center gap-2 rounded-2xl bg-canopee-cream/90 px-3 py-1.5 text-xs font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
+          className="flex w-max max-w-72 items-center gap-2 rounded-2xl bg-canopee-cream/90 px-3 py-1.5 text-xs font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
         >
-          <span className="min-w-0">{NOTIFICATION_PROMPT}</span>
+          <span className="min-w-0 whitespace-normal">
+            {NOTIFICATION_PROMPT}
+          </span>
 
           <button
             type="button"
