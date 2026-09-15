@@ -489,6 +489,10 @@ public class BackgroundGeolocationService extends Service {
             .setContentText(contentText)
             .setOngoing(true)
             .setPriority(Notification.PRIORITY_HIGH)
+            // Without this the notification defaults to VISIBILITY_PRIVATE, so a secure
+            // lock screen hides the timer, the distance and the buttons behind the app
+            // name. The channel leaves visibility at NO_OVERRIDE, so this governs.
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setWhen(startedAtMs)
             .setShowWhen(true)
             .setUsesChronometer(true);
