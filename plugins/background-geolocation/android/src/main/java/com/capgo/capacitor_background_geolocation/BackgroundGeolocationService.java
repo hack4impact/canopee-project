@@ -489,9 +489,6 @@ public class BackgroundGeolocationService extends Service {
             .setContentText(contentText)
             .setOngoing(true)
             .setPriority(Notification.PRIORITY_HIGH)
-            // Without this the notification defaults to VISIBILITY_PRIVATE, so a secure
-            // lock screen hides the timer, the distance and the buttons behind the app
-            // name. The channel leaves visibility at NO_OVERRIDE, so this governs.
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setWhen(startedAtMs)
             .setShowWhen(true)
@@ -545,9 +542,6 @@ public class BackgroundGeolocationService extends Service {
         return builder.build();
     }
 
-    // Driven by the app's PatrolActivity plugin, which mirrors the iOS Live
-    // Activity. Only the button label depends on this; pausing itself stays with
-    // the JavaScript layer that owns the patrol's state.
     public static void setPatrolPaused(android.content.Context context, boolean paused) {
         patrolPaused = paused;
 
@@ -557,8 +551,6 @@ public class BackgroundGeolocationService extends Service {
         }
     }
 
-    // Targeted by action string plus package rather than by class: this module is
-    // a library and cannot see the app's receiver.
     private Notification.Action buildAction(String title, String action) {
         Intent intent = new Intent(action).setPackage(getPackageName());
 
@@ -572,7 +564,6 @@ public class BackgroundGeolocationService extends Service {
         return new Notification.Action.Builder((Icon) null, title, pending).build();
     }
 
-    // Runs after the step filter, so GPS drift never inflates the walked total.
     private void accumulateDistance(android.location.Location location) {
         if (lastDistanceFix != null) {
             distanceMeters += lastDistanceFix.distanceTo(location);
@@ -587,8 +578,6 @@ public class BackgroundGeolocationService extends Service {
         refreshNotification();
     }
 
-    // 'startForeground' only runs when a watcher is added, so the distance would
-    // otherwise stay frozen at whatever it read when the patrol began.
     private void refreshNotification() {
         if (notificationTitle == null) {
             return;
@@ -611,17 +600,11 @@ public class BackgroundGeolocationService extends Service {
         return String.format(Locale.getDefault(), "%.1f km", meters / 1000.0);
     }
 
-    // Android 16 promotes qualifying ongoing notifications to the lock screen and always-on
-    // display. The system decides, so all we can do is satisfy every characteristic it checks:
-    // ongoing, titled, no custom views, not colorized, and a promotable (here, absent) style.
     private void applyPromotedOngoing(Notification.Builder builder, long startedAtMs) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.BAKLAVA) {
             return;
         }
 
-        // The opt-in only became a public setter in API 37, but it is just a bundle extra.
-        // Writing it directly is correct on both: API 36 ignores it, API 37 refuses to promote
-        // anything without it.
         Bundle promoted = new Bundle();
         promoted.putBoolean("android.requestPromotedOngoing", true);
         builder.addExtras(promoted);

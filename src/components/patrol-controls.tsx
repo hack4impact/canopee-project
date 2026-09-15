@@ -277,7 +277,6 @@ function ActivePatrol({
   const recordingNotice = pause.paused ? null : RECORDING_NOTICE[status]
   const notice = endError ?? recordingNotice
 
-  // Lowest priority: a recording problem matters more than a missing widget.
   const promptForNotifications = !notice && !notificationsEnabled
 
   useEffect(() => {

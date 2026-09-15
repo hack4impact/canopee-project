@@ -31,9 +31,6 @@ type PatrolActivityPlugin = {
 
 const PatrolActivity = registerPlugin<PatrolActivityPlugin>('PatrolActivity')
 
-// Reports whether the patrol notification can actually be shown. On Android this
-// is areNotificationsEnabled(), which stays false when the user denied the
-// permission or switched notifications off, and no permission dialog will help.
 export async function areNotificationsEnabled(): Promise<boolean> {
   if (!isNativeApp()) {
     return true

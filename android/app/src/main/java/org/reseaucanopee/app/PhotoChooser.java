@@ -15,10 +15,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-// Android's WebView ships no file picker of its own: it hands onShowFileChooser
-// to the app and the app builds the UI. Capacitor's is either/or, so an image
-// input reaches the gallery or the camera but never both. This offers the two
-// in one sheet, the way WKWebView already does on iOS.
 class PhotoChooser {
 
     private final ComponentActivity activity;
@@ -51,7 +47,6 @@ class PhotoChooser {
             }
         }
 
-        // Nothing to add, so let Capacitor's plain picker handle it.
         if (captureIntents.isEmpty()) {
             return false;
         }
@@ -88,7 +83,6 @@ class PhotoChooser {
     }
 
     private Uri[] resolve(Intent data, Uri captureUri) {
-        // A camera app returns no data: the photo went to the URI we handed it.
         if (data == null || (data.getData() == null && data.getClipData() == null)) {
             return captureUri == null ? null : new Uri[] { captureUri };
         }

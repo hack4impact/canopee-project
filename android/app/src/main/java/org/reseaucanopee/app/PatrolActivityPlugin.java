@@ -14,11 +14,6 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
-// Android half of the PatrolActivity contract that iOS implements with a Live
-// Activity. The notification's buttons cannot end a patrol on their own: ending
-// has to flush the queue first, and that queue lives in the WebView. So a button
-// only records which command was pressed and the JavaScript layer runs it, the
-// same way the iOS intents hand back to the app.
 @CapacitorPlugin(name = "PatrolActivity")
 public class PatrolActivityPlugin extends Plugin {
 
@@ -47,8 +42,6 @@ public class PatrolActivityPlugin extends Plugin {
         }
     }
 
-    // Survives process death: a button pressed while the app is gone still runs
-    // once the WebView is back, rather than being silently dropped.
     static void enqueue(Context context, String action) {
         prefs(context).edit().putString(KEY_PENDING, action).apply();
 
@@ -83,9 +76,6 @@ public class PatrolActivityPlugin extends Plugin {
         call.resolve(result);
     }
 
-    // Once notifications are denied twice, or switched off in settings, Android
-    // never shows the permission dialog again. Sending the user to the settings
-    // page is the only remaining way to get the patrol notification back.
     @PluginMethod
     public void openSettings(PluginCall call) {
         Context context = getContext();

@@ -4,13 +4,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { areNotificationsEnabled } from '@/lib/patrols/live-activity'
 import { isNativeApp } from '@/lib/patrols/native'
 
-/**
- * Whether the patrol notification can actually be shown. Re-checked whenever the
- * app comes back to the foreground, so the prompt disappears on its own once the
- * user returns from the settings page having enabled it.
- *
- * Starts optimistic: the notice should never flash before the first check lands.
- */
 export function useNotificationsEnabled(): boolean {
   const [enabled, setEnabled] = useState(true)
 

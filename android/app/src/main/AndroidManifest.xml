@@ -71,8 +71,5 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Lets Android 16+ promote the patrol notification to the lock screen and
-    always-on display. Normal protection, so it is granted at install; the user
-    can still revoke it via the app's "Live Updates" toggle. -->
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 </manifest>

@@ -8,8 +8,6 @@ import com.getcapacitor.BridgeWebChromeClient;
 import java.util.Arrays;
 import java.util.List;
 
-// Extends rather than replaces Capacitor's client so geolocation prompts, console
-// forwarding and JS dialogs keep working; only the image picker is taken over.
 class CanopeeWebChromeClient extends BridgeWebChromeClient {
 
     private final PhotoChooser photoChooser;
@@ -23,8 +21,6 @@ class CanopeeWebChromeClient extends BridgeWebChromeClient {
     public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams params) {
         List<String> acceptTypes = Arrays.asList(params.getAcceptTypes());
 
-        // An explicit capture attribute still means "camera now", which Capacitor
-        // already does correctly. Only the plain image input gets the joint sheet.
         boolean combinable =
             acceptTypes.contains("image/*") &&
             !params.isCaptureEnabled() &&

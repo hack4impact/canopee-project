@@ -5,8 +5,6 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
-    // Built with the activity: an ActivityResultLauncher has to be registered
-    // before the activity reaches STARTED.
     private final PhotoChooser photoChooser = new PhotoChooser(this);
 
     @Override

@@ -124,9 +124,6 @@ async function ensureNotificationPermission(): Promise<void> {
     const permissions = await BackgroundGeolocation.checkPermissions()
     debugLog('native.permissions', { ...permissions })
 
-    // The plugin only chains its notification prompt onto a location prompt, so a user
-    // who already granted location is never asked. Android 13+ silently drops the
-    // foreground-service notification without POST_NOTIFICATIONS.
     if (
       Capacitor.getPlatform() !== 'android' ||
       permissions.notification === 'granted'
