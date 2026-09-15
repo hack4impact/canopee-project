@@ -1,7 +1,11 @@
 package org.reseaucanopee.app;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
 import androidx.core.app.NotificationManagerCompat;
 import com.capgo.capacitor_background_geolocation.BackgroundGeolocationService;
 import com.getcapacitor.JSObject;
@@ -77,6 +81,43 @@ public class PatrolActivityPlugin extends Plugin {
         JSObject result = new JSObject();
         result.put("supported", NotificationManagerCompat.from(getContext()).areNotificationsEnabled());
         call.resolve(result);
+    }
+
+    // Once notifications are denied twice, or switched off in settings, Android
+    // never shows the permission dialog again. Sending the user to the settings
+    // page is the only remaining way to get the patrol notification back.
+    @PluginMethod
+    public void openSettings(PluginCall call) {
+        Context context = getContext();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && launch(notificationSettings(context))) {
+            call.resolve();
+            return;
+        }
+
+        launch(appDetails(context));
+        call.resolve();
+    }
+
+    private boolean launch(Intent intent) {
+        try {
+            getContext().startActivity(intent);
+            return true;
+        } catch (Exception exception) {
+            return false;
+        }
+    }
+
+    private Intent notificationSettings(Context context) {
+        return new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName())
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    }
+
+    private Intent appDetails(Context context) {
+        return new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+            .setData(Uri.fromParts("package", context.getPackageName(), null))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     }
 
     @PluginMethod

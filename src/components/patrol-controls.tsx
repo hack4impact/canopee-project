@@ -14,9 +14,11 @@ import { usePatrol } from '@/components/patrol-provider'
 import {
   endLiveActivity,
   listenForActivityCommands,
+  openNotificationSettings,
   startLiveActivity,
   updateLiveActivity,
 } from '@/lib/patrols/live-activity'
+import { useNotificationsEnabled } from '@/lib/patrols/use-notifications-enabled'
 import { isPublicRoute } from '@/lib/auth/routes'
 import { formatElapsed } from '@/lib/patrols/elapsed'
 import { usePatrolExitWarning } from '@/lib/patrols/use-patrol-exit-warning'
@@ -35,6 +37,9 @@ const HOME_ROUTE = '/carte'
 
 const TICK_MS = 1000
 const NO_READING_YET = '--:--:--'
+
+const NOTIFICATION_PROMPT =
+  'Activez les notifications pour suivre la patrouille sur l’écran verrouillé.'
 
 const RECORDING_NOTICE: Record<RecordingStatus, string | null> = {
   waiting: 'Recherche du signal GPS…',
@@ -268,8 +273,12 @@ function ActivePatrol({
   const commandRef = useRef<(command: 'toggle' | 'stop') => void>(() => {})
 
   const isHome = usePathname() === HOME_ROUTE
+  const notificationsEnabled = useNotificationsEnabled()
   const recordingNotice = pause.paused ? null : RECORDING_NOTICE[status]
   const notice = endError ?? recordingNotice
+
+  // Lowest priority: a recording problem matters more than a missing widget.
+  const promptForNotifications = !notice && !notificationsEnabled
 
   useEffect(() => {
     const stored = readStoredPause(startedAt)
@@ -428,6 +437,23 @@ function ActivePatrol({
         >
           {notice}
         </p>
+      )}
+
+      {showControls && promptForNotifications && (
+        <div
+          role="status"
+          className="flex max-w-72 items-center gap-2 rounded-2xl bg-canopee-cream/90 px-3 py-1.5 text-xs font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
+        >
+          <span className="min-w-0">{NOTIFICATION_PROMPT}</span>
+
+          <button
+            type="button"
+            onClick={() => void openNotificationSettings()}
+            className="shrink-0 touch-manipulation rounded-full bg-canopee-forest px-2.5 py-1 font-semibold text-canopee-cream transition-colors hover:bg-canopee-forest/90 focus-visible:ring-2 focus-visible:ring-canopee-lime focus-visible:outline-none"
+          >
+            Activer
+          </button>
+        </div>
       )}
 
       <div
