@@ -13,5 +13,6 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
 
         getBridge().getWebView().setWebChromeClient(new CanopeeWebChromeClient(getBridge(), photoChooser));
+        getBridge().setWebViewClient(new CanopeeWebViewClient(getBridge()));
     }
 }
