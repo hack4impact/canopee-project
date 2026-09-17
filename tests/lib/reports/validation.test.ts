@@ -211,10 +211,22 @@ describe('validateReport', () => {
     ).toBeDefined()
   })
 
-  it('rejects an empty description', () => {
+  it('accepts an empty comment, because comments are optional', () => {
     expect(
       validateReport(input({ description: '   ' })).description,
-    ).toBeDefined()
+    ).toBeUndefined()
+    expect(
+      isValidReport(
+        validateReport(
+          input({
+            category: 'oiseau',
+            typology: undefined,
+            species: 'Oiseau',
+            description: '',
+          }),
+        ),
+      ),
+    ).toBe(true)
   })
 
   it('measures the description after trimming', () => {
@@ -242,10 +254,73 @@ describe('validateReport', () => {
     ).toBeDefined()
   })
 
-  it('accepts the null island, which is a valid coordinate', () => {
-    const errors = validateReport(input({ latitude: 0, longitude: 0 }))
+  it('rejects a position outside Laval', () => {
+    expect(
+      validateReport(input({ latitude: 0, longitude: 0 })).latitude,
+    ).toBeDefined()
+    expect(
+      validateReport(input({ latitude: 45.5017, longitude: -73.4 })).latitude,
+    ).toBeDefined()
+  })
 
-    expect(errors.latitude).toBeUndefined()
+  it('accepts the Faune/flore Autre category with a free-text species', () => {
+    expect(
+      isValidReport(
+        validateReport(
+          input({
+            category: 'faune_flore_other',
+            typology: undefined,
+            species: 'Tortue à identifier',
+          }),
+        ),
+      ),
+    ).toBe(true)
+  })
+})
+
+describe('validateReport by audience', () => {
+  it('does not require a typology from citizens', () => {
+    expect(
+      isValidReport(validateReport(input({ typology: undefined }), 'citizen')),
+    ).toBe(true)
+  })
+
+  it('rejects categories hidden from citizens', () => {
+    expect(
+      validateReport(input({ category: 'signage_fix' }), 'citizen').category,
+    ).toBeDefined()
+    expect(
+      validateReport(
+        input({ category: 'foraging', typology: undefined }),
+        'citizen',
+      ).category,
+    ).toBeDefined()
+    expect(
+      validateReport(
+        input({ category: 'oiseau', typology: undefined, species: 'Oiseau' }),
+        'citizen',
+      ).category,
+    ).toBeDefined()
+  })
+
+  it('keeps every category open to patrollers', () => {
+    expect(
+      isValidReport(
+        validateReport(input({ category: 'signage_fix' }), 'volunteer'),
+      ),
+    ).toBe(true)
+  })
+
+  it('rejects Début de correction from volunteers only', () => {
+    const typology = 'debut_correction'
+
+    expect(
+      validateReport(input({ typology }), 'volunteer').typology,
+    ).toBeDefined()
+    expect(isValidReport(validateReport(input({ typology }), 'pro'))).toBe(true)
+    expect(isValidReport(validateReport(input({ typology }), 'admin'))).toBe(
+      true,
+    )
   })
 })
 

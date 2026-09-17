@@ -1,7 +1,12 @@
 'use client'
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { REPORT_GROUP_LABELS, type ReportGroup } from '@/lib/reports/categories'
+import {
+  CITIZEN_REPORT_GROUPS,
+  REPORT_GROUP_LABELS,
+  type ReportAudience,
+  type ReportGroup,
+} from '@/lib/reports/categories'
 import { ReportForm } from './report-form'
 import { REPORT_THEMES } from './report-theme'
 
@@ -65,21 +70,22 @@ const GROUPS: GroupOption[] = [
 ]
 
 export function ReportFlow({
-  photoRequired,
-  citizen = false,
+  audience,
   onFillingChange,
   onBackChange,
 }: {
-  photoRequired: boolean
-  citizen?: boolean
+  audience: ReportAudience
   onFillingChange?: (filling: boolean) => void
   onBackChange?: (handler: (() => void) | null) => void
 }) {
   const [group, setGroup] = useState<ReportGroup | null>(null)
   const [returning, setReturning] = useState(false)
-  const groups = citizen
-    ? GROUPS.filter(({ group: value }) => value !== 'faune_flore')
-    : GROUPS
+  const groups =
+    audience === 'citizen'
+      ? GROUPS.filter(({ group: value }) =>
+          (CITIZEN_REPORT_GROUPS as readonly ReportGroup[]).includes(value),
+        )
+      : GROUPS
 
   useEffect(() => {
     if (group === null) {
@@ -138,8 +144,7 @@ export function ReportFlow({
           onFillingChange?.(false)
         }}
         onBackChange={onBackChange}
-        photoRequired={photoRequired}
-        citizen={citizen}
+        audience={audience}
       />
     </div>
   )

@@ -1,4 +1,5 @@
 import type { reportCategoryEnum } from '@/db/schema'
+import type { Role } from '@/lib/auth/roles'
 
 export type ReportCategory = (typeof reportCategoryEnum.enumValues)[number]
 
@@ -22,7 +23,7 @@ export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
   off_trail: 'Hors sentier, piétinement',
   encroachment: 'Empiètement',
   unleashed_dog: 'Chien sans laisse',
-  dog_waste: 'Excrémements de chien',
+  dog_waste: 'Excréments de chien',
   campfire: 'Feux de camp',
   built_shelter: 'Abris construit',
   homeless_camp: 'Camp de personne en situation d’itinérance',
@@ -53,7 +54,7 @@ export type ReportGroup = (typeof REPORT_GROUPS)[number]
 
 export const REPORT_GROUP_LABELS: Record<ReportGroup, string> = {
   entretien: 'Entretien',
-  citoyen: 'Intervention',
+  citoyen: 'Activité humaine',
   faune_flore: 'Faune / flore',
 }
 
@@ -102,6 +103,60 @@ export const REPORT_GROUP_CATEGORIES: Record<
     'espece_exotique',
     'faune_flore_other',
   ],
+}
+
+export type ReportAudience = Role | 'citizen'
+
+export const CITIZEN_REPORT_GROUPS = [
+  'entretien',
+  'citoyen',
+] as const satisfies readonly ReportGroup[]
+
+const CITIZEN_GROUP_CATEGORIES: Record<
+  (typeof CITIZEN_REPORT_GROUPS)[number],
+  readonly ReportCategory[]
+> = {
+  entretien: [
+    'dangerous_tree',
+    'fallen_tree',
+    'littering',
+    'blocked_trail',
+    'damaged_trail',
+    'damaged_infrastructure',
+    'maintenance_other',
+  ],
+  citoyen: [
+    'bicycles',
+    'motor_vehicle',
+    'unleashed_dog',
+    'dog_waste',
+    'campfire',
+    'built_shelter',
+    'homeless_camp',
+    'illegal_dumping',
+    'citizen_other',
+  ],
+}
+
+export function reportGroupCategories(
+  group: ReportGroup,
+  audience: ReportAudience,
+): readonly ReportCategory[] {
+  if (audience !== 'citizen') {
+    return REPORT_GROUP_CATEGORIES[group]
+  }
+
+  return group === 'faune_flore' ? [] : CITIZEN_GROUP_CATEGORIES[group]
+}
+
+export function canReportCategory(
+  category: ReportCategory,
+  audience: ReportAudience,
+): boolean {
+  return reportGroupCategories(
+    reportGroupOfCategory(category),
+    audience,
+  ).includes(category)
 }
 
 export const REPORT_FAUNE_CATEGORIES = [
@@ -157,6 +212,19 @@ export const REPORT_TYPOLOGY_LABELS: Record<ReportTypology, string> = {
   debut_correction: 'Début de correction',
   probleme_corrige: 'Problème corrigé',
   intervention_urgente: 'Intervention urgente',
+}
+
+export function reportTypologies(
+  audience: ReportAudience,
+): readonly ReportTypology[] {
+  switch (audience) {
+    case 'citizen':
+      return []
+    case 'volunteer':
+      return REPORT_TYPOLOGIES.filter((value) => value !== 'debut_correction')
+    default:
+      return REPORT_TYPOLOGIES
+  }
 }
 
 export function isReportTypology(value: unknown): value is ReportTypology {
