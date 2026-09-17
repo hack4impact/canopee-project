@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LAVAL_BOUNDS } from '@/lib/mapbox/config'
-import { clampToLavalBounds } from '@/lib/reports/location'
+import { clampToLavalBounds, isWithinLavalBounds } from '@/lib/reports/location'
 
 const [[west, south], [east, north]] = LAVAL_BOUNDS
 
@@ -27,5 +27,27 @@ describe('clampToLavalBounds', () => {
     expect(
       clampToLavalBounds({ latitude: INSIDE.latitude, longitude: east + 5 }),
     ).toEqual({ latitude: INSIDE.latitude, longitude: east })
+  })
+})
+
+describe('isWithinLavalBounds', () => {
+  it('accepts a position inside Laval', () => {
+    expect(isWithinLavalBounds(INSIDE)).toBe(true)
+  })
+
+  it('accepts a position exactly on the bounds', () => {
+    expect(isWithinLavalBounds({ latitude: north, longitude: west })).toBe(true)
+  })
+
+  it('rejects a position outside Laval', () => {
+    expect(
+      isWithinLavalBounds({ latitude: south - 0.01, longitude: -73.723 }),
+    ).toBe(false)
+    expect(
+      isWithinLavalBounds({
+        latitude: INSIDE.latitude,
+        longitude: east + 0.01,
+      }),
+    ).toBe(false)
   })
 })

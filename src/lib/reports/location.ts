@@ -17,3 +17,12 @@ export function clampToLavalBounds(position: ReportPosition): ReportPosition {
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
 }
+
+export function isWithinLavalBounds(position: ReportPosition): boolean {
+  return (
+    position.latitude >= south &&
+    position.latitude <= north &&
+    position.longitude >= west &&
+    position.longitude <= east
+  )
+}

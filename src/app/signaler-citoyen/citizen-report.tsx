@@ -90,8 +90,7 @@ export function CitizenReport() {
         </header>
 
         <ReportFlow
-          photoRequired={false}
-          citizen
+          audience="citizen"
           onFillingChange={setFilling}
           onBackChange={handleBackChange}
         />
