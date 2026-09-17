@@ -21,7 +21,7 @@ export function TopPanel() {
           <path d="M12 9v4" />
           <path d="M12 17h.01" />
         </svg>
-        Effectuer un signalement
+        <span className="leading-none">Effectuer un signalement</span>
       </Link>
     </header>
   )
