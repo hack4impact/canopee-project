@@ -43,10 +43,10 @@ export default async function LoginPage(props: PageProps<'/login'>) {
 
           <header className="flex flex-col items-center gap-3 pt-8">
             <Image
-              src="/logos/canopee-logo.png"
+              src="/logos/canopee-logo-hd.png"
               alt="Canopée"
-              width={260}
-              height={140}
+              width={375}
+              height={102}
               priority
               className="h-auto w-64"
             />

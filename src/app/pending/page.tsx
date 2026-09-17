@@ -44,10 +44,10 @@ export default async function PendingPage() {
         <main className="relative z-10 w-full max-w-sm rounded-3xl bg-canopee-cream p-8 shadow-2xl shadow-black/40 sm:p-10">
           <header className="flex flex-col items-center gap-3 text-center">
             <Image
-              src="/logos/canopee-logo.png"
+              src="/logos/canopee-logo-hd.png"
               alt="Canopée"
-              width={260}
-              height={140}
+              width={375}
+              height={102}
               priority
               className="h-auto w-64"
             />

@@ -9,7 +9,7 @@ export function ForestBackground() {
         fill
         priority
         sizes="100vw"
-        className="object-cover"
+        className="scale-110 object-cover blur-sm"
       />
       <div className="absolute inset-0 bg-canopee-forest/40" />
     </div>
