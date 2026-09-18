@@ -4,6 +4,11 @@ import { useEffect, useRef } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { useSharedMap } from '@/components/map-provider'
 import { isGeolocationAvailable } from '@/lib/mapbox'
+import {
+  getLastNativeFix,
+  subscribeToNativeFixes,
+  type NativeFix,
+} from '@/lib/patrols/native'
 
 const LOCATE_ZOOM = 16
 const LOCATE_TIMEOUT_MS = 10_000
@@ -54,14 +59,20 @@ export function UserLocation({
     let centred = false
     let lastFixAt = 0
 
-    function placeMarker(position: GeolocationPosition) {
-      if (cancelled || position.timestamp < lastFixAt) {
+    function placeWebFix(position: GeolocationPosition) {
+      if (getLastNativeFix() || position.timestamp < lastFixAt) {
         return
       }
 
       lastFixAt = position.timestamp
+      placeMarker(position.coords)
+    }
 
-      const { longitude, latitude } = position.coords
+    function placeMarker({ longitude, latitude }: NativeFix) {
+      if (cancelled) {
+        return
+      }
+
       lastPositionRef.current = { longitude, latitude }
 
       if (marker) {
@@ -84,13 +95,21 @@ export function UserLocation({
       }
     }
 
-    navigator.geolocation.getCurrentPosition(placeMarker, () => {}, {
+    const nativeFix = getLastNativeFix()
+
+    if (nativeFix) {
+      placeMarker(nativeFix)
+    }
+
+    const unsubscribe = subscribeToNativeFixes(placeMarker)
+
+    navigator.geolocation.getCurrentPosition(placeWebFix, () => {}, {
       enableHighAccuracy: false,
       timeout: 3_000,
       maximumAge: LOCATE_CACHE_MAX_AGE_MS,
     })
 
-    const watchId = navigator.geolocation.watchPosition(placeMarker, () => {}, {
+    const watchId = navigator.geolocation.watchPosition(placeWebFix, () => {}, {
       enableHighAccuracy: true,
       timeout: LOCATE_TIMEOUT_MS,
       maximumAge: 0,
@@ -98,6 +117,7 @@ export function UserLocation({
 
     return () => {
       cancelled = true
+      unsubscribe()
       navigator.geolocation.clearWatch(watchId)
       marker?.remove()
       marker = null

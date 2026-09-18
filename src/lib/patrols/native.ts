@@ -4,7 +4,13 @@ import {
   type Location as NativeLocation,
 } from '@capgo/background-geolocation'
 import { debugLog, describeError } from '@/lib/patrols/debug'
-import { POINT_INTERVAL_MS, type RecordedPoint } from '@/lib/patrols/points'
+import {
+  isAccurateEnough,
+  POINT_INTERVAL_MS,
+  type RecordedPoint,
+} from '@/lib/patrols/points'
+
+export type NativeFix = { longitude: number; latitude: number }
 
 const START_OPTIONS = {
   backgroundTitle: 'Patrouille en cours',
@@ -26,6 +32,24 @@ let received = 0
 let lastReceivedAtMs: number | null = null
 
 let refreshTimer: ReturnType<typeof setInterval> | null = null
+
+let lastFix: NativeFix | null = null
+
+const fixListeners = new Set<(fix: NativeFix) => void>()
+
+export function getLastNativeFix(): NativeFix | null {
+  return lastFix
+}
+
+export function subscribeToNativeFixes(
+  listener: (fix: NativeFix) => void,
+): () => void {
+  fixListeners.add(listener)
+
+  return () => {
+    fixListeners.delete(listener)
+  }
+}
 
 async function fetchUploadToken(): Promise<string | null> {
   try {
@@ -148,6 +172,7 @@ export async function startNativeWatch(
 ): Promise<void> {
   received = 0
   lastReceivedAtMs = null
+  lastFix = null
 
   const token = await fetchUploadToken()
   const options = { ...START_OPTIONS, ...nativeUploadOptions(token) }
@@ -191,6 +216,15 @@ export async function startNativeWatch(
 
     lastReceivedAtMs = now
 
+    if (
+      Capacitor.getPlatform() === 'android' &&
+      isAccurateEnough(location.accuracy)
+    ) {
+      const fix = { longitude: location.longitude, latitude: location.latitude }
+      lastFix = fix
+      fixListeners.forEach((listener) => listener(fix))
+    }
+
     onPoint(toNativeRecordedPoint(location), location.accuracy)
   })
 
@@ -204,6 +238,7 @@ export async function startNativeWatch(
 export async function stopNativeWatch(): Promise<void> {
   debugLog('native.stop.requested', { received })
 
+  lastFix = null
   stopTokenRefresh()
 
   try {

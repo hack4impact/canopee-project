@@ -51,6 +51,7 @@ public class BackgroundGeolocationService extends Service {
     private static final int NOTIFICATION_ID = 28351;
     private static final long NOTIFICATION_REFRESH_MS = 10_000L;
     private static final float MAX_DISTANCE_ACCURACY_METRES = 50f;
+    private static final long LOCATION_INTERVAL_MS = 1000L;
 
     private String callbackId;
 
@@ -67,7 +68,6 @@ public class BackgroundGeolocationService extends Service {
     private Runnable watchdogRunnable;
     private Runnable restartRunnable;
     private float currentDistanceFilter;
-    private long currentMinIntervalMs;
     private long foregroundStartedAtMs = 0L;
     private double distanceMeters = 0.0;
     private android.location.Location lastDistanceFix;
@@ -138,7 +138,6 @@ public class BackgroundGeolocationService extends Service {
         if (!hasLocationClient()) {
             acquireWakeLock();
             currentDistanceFilter = LocationStore.getDistanceFilter(context);
-            currentMinIntervalMs = LocationStore.getMinIntervalMs(context);
             createLocationClient();
             requestLocationUpdates();
             startWatchdog();
@@ -333,10 +332,6 @@ public class BackgroundGeolocationService extends Service {
         };
     }
 
-    private long locationIntervalMs() {
-        return currentMinIntervalMs > 0 ? currentMinIntervalMs : 1000L;
-    }
-
     private boolean hasPlayServices() {
         return GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS;
     }
@@ -381,12 +376,12 @@ public class BackgroundGeolocationService extends Service {
     private void requestLocationUpdates() {
         try {
             if (fusedClient != null && fusedCallback != null) {
-                LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, locationIntervalMs())
+                LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, LOCATION_INTERVAL_MS)
                     .setMinUpdateDistanceMeters(currentDistanceFilter)
                     .build();
                 fusedClient.requestLocationUpdates(request, fusedCallback, Looper.getMainLooper());
             } else if (client != null && locationCallback != null) {
-                client.requestLocationUpdates(LocationManager.GPS_PROVIDER, locationIntervalMs(), currentDistanceFilter, locationCallback);
+                client.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_INTERVAL_MS, currentDistanceFilter, locationCallback);
             }
         } catch (SecurityException ignore) {
             // According to Android Studio, this method can throw a Security Exception if
@@ -443,7 +438,6 @@ public class BackgroundGeolocationService extends Service {
             acquireWakeLock();
             callbackId = id;
             currentDistanceFilter = distanceFilter;
-            currentMinIntervalMs = Math.max(0L, minIntervalMs);
 
             nativePostUrl = (url == null || url.isEmpty()) ? null : url;
             LocationStore.saveSetup(
@@ -453,7 +447,7 @@ public class BackgroundGeolocationService extends Service {
                 notificationMessage,
                 distanceFilter,
                 headers,
-                currentMinIntervalMs
+                Math.max(0L, minIntervalMs)
             );
 
             // The service may already be running (for example after a sticky
