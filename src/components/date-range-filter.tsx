@@ -37,12 +37,13 @@ function formatDateParam(value: string): string {
 export function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
   const [draft, setDraft] = useState<DateRangeValue>(value)
 
-  const isValidRange = draft.from <= draft.to
+  const isValidRange =
+    draft.from !== '' && draft.to !== '' && draft.from <= draft.to
 
   function commit(next: DateRangeValue) {
     setDraft(next)
 
-    if (next.from <= next.to) {
+    if (next.from !== '' && next.to !== '' && next.from <= next.to) {
       onChange(next)
     }
   }
