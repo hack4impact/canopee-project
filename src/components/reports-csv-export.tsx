@@ -9,11 +9,10 @@ import {
   type CsvColumn,
 } from '@/lib/reports/csv'
 import {
-  DateRangePicker,
-  currentYearRange,
-  toDateParam,
-  type DateRange,
-} from '@/components/date-range-picker'
+  DateRangeFilter,
+  type DateRangeValue,
+} from '@/components/date-range-filter'
+import { lastTwoMonthsRange, toDateParam } from '@/lib/reports/date-range'
 
 const EXPORT_URL = '/api/reports/export'
 
@@ -27,13 +26,24 @@ function fileNameFromResponse(response: Response): string {
   return match?.[1] ?? 'signalements-export.csv'
 }
 
-export function ReportsCsvExport() {
+function defaultRange(): DateRangeValue {
+  const { from, to } = lastTwoMonthsRange()
+  return { from: toDateParam(from), to: toDateParam(to) }
+}
+
+export function ReportsCsvExport({
+  initialRange,
+}: {
+  initialRange?: DateRangeValue
+}) {
   const [selected, setSelected] = useState<Set<CsvColumn>>(
     () => new Set(PICKER_COLUMNS),
   )
   const [open, setOpen] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [range, setRange] = useState<DateRange>(currentYearRange)
+  const [range, setRange] = useState<DateRangeValue>(
+    () => initialRange ?? defaultRange(),
+  )
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -75,8 +85,8 @@ export function ReportsCsvExport() {
     try {
       const params = new URLSearchParams({
         columns: CSV_HEADERS.filter((column) => selected.has(column)).join(','),
-        startDate: toDateParam(range.from),
-        endDate: toDateParam(range.to),
+        startDate: range.from,
+        endDate: range.to,
       })
 
       const response = await fetch(`${EXPORT_URL}?${params}`, {
@@ -104,7 +114,7 @@ export function ReportsCsvExport() {
   return (
     <div className="rounded-2xl border border-canopee-forest/10 bg-white/70 shadow-sm">
       <div className="border-b border-canopee-forest/10 px-3 py-2.5">
-        <DateRangePicker value={range} onChange={setRange} />
+        <DateRangeFilter value={range} onChange={setRange} />
       </div>
 
       <div className="flex items-center gap-2 p-2 pl-3">

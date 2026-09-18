@@ -45,3 +45,22 @@ export function parseDateRangeParams(
 
   return { ok: true, range: { start, end } }
 }
+
+/** Formats a Date as a "YYYY-MM-DD" query param / <input type="date"> value, in local time. */
+export function toDateParam(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/** The default admin report filter: the last two months, ending today. */
+export function lastTwoMonthsRange(now: Date = new Date()): {
+  from: Date
+  to: Date
+} {
+  const to = now
+  const from = new Date(now)
+  from.setMonth(from.getMonth() - 2)
+  return { from, to }
+}
