@@ -5,6 +5,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import {
+  DateRangeFilter,
+  type DateRangeValue,
+} from '@/components/date-range-filter'
 import { REPORT_CATEGORY_LABELS } from '@/lib/reports/categories'
 import { formatEventNumber } from '@/lib/reports/format'
 import { reportGroupColor } from '@/lib/reports/group-style'
@@ -32,11 +36,13 @@ export function IssueList({
   sortBy,
   statusFilter,
   counts,
+  dateRange,
 }: {
   reports: ReportListItem[]
   sortBy: ReportSortBy
   statusFilter: ReportStatusFilter
   counts: { all: number; open: number; resolved: number }
+  dateRange: DateRangeValue
 }) {
   const router = useRouter()
   const [collapsedSections, setCollapsedSections] = useState<
@@ -47,10 +53,14 @@ export function IssueList({
   function go(next: {
     sortBy?: ReportSortBy
     statusFilter?: ReportStatusFilter
+    dateRange?: DateRangeValue
   }) {
+    const nextDateRange = next.dateRange ?? dateRange
     const params = new URLSearchParams({
       sortBy: next.sortBy ?? sortBy,
       statusFilter: next.statusFilter ?? statusFilter,
+      startDate: nextDateRange.from,
+      endDate: nextDateRange.to,
     })
 
     router.replace(`/admin/issues?${params.toString()}`)
@@ -82,7 +92,7 @@ export function IssueList({
   return (
     <div className="flex flex-col gap-4">
       <Link
-        href="/admin/issues/export"
+        href={`/admin/issues/export?startDate=${dateRange.from}&endDate=${dateRange.to}`}
         className={cn(
           ADMIN_ROW,
           'border-canopee-green bg-canopee-green text-white hover:border-canopee-forest hover:bg-canopee-forest',
@@ -95,6 +105,11 @@ export function IssueList({
           className="size-3.5 shrink-0 opacity-70"
         />
       </Link>
+
+      <DateRangeFilter
+        value={dateRange}
+        onChange={(next) => go({ dateRange: next })}
+      />
 
       <div className="flex items-center gap-2">
         <div className="flex flex-1 gap-1 rounded-[10px] bg-canopee-forest/8 p-[3px]">
