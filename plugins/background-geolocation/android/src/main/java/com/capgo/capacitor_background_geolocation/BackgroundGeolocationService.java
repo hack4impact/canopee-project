@@ -23,6 +23,14 @@ import android.os.Looper;
 import android.os.PowerManager;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.getcapacitor.Logger;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -42,9 +50,12 @@ public class BackgroundGeolocationService extends Service {
     // Must be unique for this application.
     private static final int NOTIFICATION_ID = 28351;
     private static final long NOTIFICATION_REFRESH_MS = 10_000L;
+    private static final float MAX_DISTANCE_ACCURACY_METRES = 50f;
 
     private String callbackId;
 
+    private FusedLocationProviderClient fusedClient;
+    private LocationCallback fusedCallback;
     private LocationManager client;
     private LocationListener locationCallback;
     private MediaPlayer mediaPlayer;
@@ -92,9 +103,7 @@ public class BackgroundGeolocationService extends Service {
         if (LocationStore.isEnabled(getApplicationContext())) {
             return false;
         }
-        if (client != null && locationCallback != null) {
-            client.removeUpdates(locationCallback);
-        }
+        removeLocationUpdates();
         releaseMediaPlayer();
         releaseWakeLock();
         stopWatchdog();
@@ -126,12 +135,11 @@ public class BackgroundGeolocationService extends Service {
         }
         nativePostUrl = LocationStore.getUrl(context);
         promoteToForeground(LocationStore.getTitle(context), LocationStore.getMessage(context));
-        if (client == null || locationCallback == null) {
+        if (!hasLocationClient()) {
             acquireWakeLock();
-            client = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
             currentDistanceFilter = LocationStore.getDistanceFilter(context);
             currentMinIntervalMs = LocationStore.getMinIntervalMs(context);
-            locationCallback = createLocationListener(this);
+            createLocationClient();
             requestLocationUpdates();
             startWatchdog();
         }
@@ -140,9 +148,7 @@ public class BackgroundGeolocationService extends Service {
 
     @Override
     public void onDestroy() {
-        if (client != null && locationCallback != null) {
-            client.removeUpdates(locationCallback);
-        }
+        removeLocationUpdates();
         super.onDestroy();
         releaseMediaPlayer();
         releaseWakeLock();
@@ -202,22 +208,18 @@ public class BackgroundGeolocationService extends Service {
 
     private void restartLocationUpdates() {
         Logger.debug("Location watchdog timed out, restarting updates");
-        if (client == null || locationCallback == null) {
+        if (!hasLocationClient()) {
             return;
         }
-        client.removeUpdates(locationCallback);
+        removeLocationUpdates();
         if (restartRunnable != null) {
             watchdogHandler.removeCallbacks(restartRunnable);
         }
         restartRunnable = () -> {
-            if (client == null || locationCallback == null) {
+            if (!hasLocationClient()) {
                 return;
             }
-            try {
-                client.requestLocationUpdates(LocationManager.GPS_PROVIDER, locationIntervalMs(), currentDistanceFilter, locationCallback);
-            } catch (SecurityException ignore) {
-                // Permission issues are handled in the start() method
-            }
+            requestLocationUpdates();
             startWatchdog();
         };
         watchdogHandler.postDelayed(restartRunnable, 10000);
@@ -335,9 +337,57 @@ public class BackgroundGeolocationService extends Service {
         return currentMinIntervalMs > 0 ? currentMinIntervalMs : 1000L;
     }
 
+    private boolean hasPlayServices() {
+        return GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS;
+    }
+
+    private void createLocationClient() {
+        fusedClient = null;
+        fusedCallback = null;
+        client = null;
+        locationCallback = null;
+
+        if (hasPlayServices()) {
+            fusedClient = LocationServices.getFusedLocationProviderClient(this);
+            fusedCallback = new LocationCallback() {
+                @Override
+                public void onLocationResult(LocationResult result) {
+                    for (android.location.Location location : result.getLocations()) {
+                        handleLocationChanged(location);
+                    }
+                }
+            };
+            return;
+        }
+
+        Logger.info("Google Play services unavailable, using the GPS provider only");
+        client = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        locationCallback = createLocationListener(this);
+    }
+
+    private boolean hasLocationClient() {
+        return (fusedClient != null && fusedCallback != null) || (client != null && locationCallback != null);
+    }
+
+    private void removeLocationUpdates() {
+        if (fusedClient != null && fusedCallback != null) {
+            fusedClient.removeLocationUpdates(fusedCallback);
+        }
+        if (client != null && locationCallback != null) {
+            client.removeUpdates(locationCallback);
+        }
+    }
+
     private void requestLocationUpdates() {
         try {
-            client.requestLocationUpdates(LocationManager.GPS_PROVIDER, locationIntervalMs(), currentDistanceFilter, locationCallback);
+            if (fusedClient != null && fusedCallback != null) {
+                LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, locationIntervalMs())
+                    .setMinUpdateDistanceMeters(currentDistanceFilter)
+                    .build();
+                fusedClient.requestLocationUpdates(request, fusedCallback, Looper.getMainLooper());
+            } else if (client != null && locationCallback != null) {
+                client.requestLocationUpdates(LocationManager.GPS_PROVIDER, locationIntervalMs(), currentDistanceFilter, locationCallback);
+            }
         } catch (SecurityException ignore) {
             // According to Android Studio, this method can throw a Security Exception if
             // permissions are not yet granted. Rather than check the permissions, which is fiddly,
@@ -391,7 +441,6 @@ public class BackgroundGeolocationService extends Service {
         ) {
             releaseMediaPlayer();
             acquireWakeLock();
-            client = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
             callbackId = id;
             currentDistanceFilter = distanceFilter;
             currentMinIntervalMs = Math.max(0L, minIntervalMs);
@@ -409,15 +458,13 @@ public class BackgroundGeolocationService extends Service {
 
             // The service may already be running (for example after a sticky
             // restart), so drop any previous listener before registering a new one.
-            if (locationCallback != null) {
-                client.removeUpdates(locationCallback);
-            }
+            removeLocationUpdates();
             if (stepFilter == null) {
                 stepFilter = new PatrolStepFilter(getApplicationContext());
             }
             stepFilter.start();
 
-            locationCallback = createLocationListener(BackgroundGeolocationService.this);
+            createLocationClient();
             requestLocationUpdates();
             promoteToForeground(notificationTitle, notificationMessage);
         }
@@ -433,7 +480,7 @@ public class BackgroundGeolocationService extends Service {
             if (stepFilter != null) {
                 stepFilter.stop();
             }
-            client.removeUpdates(locationCallback);
+            removeLocationUpdates();
             stopForeground(true);
             foregroundStartedAtMs = 0L;
             distanceMeters = 0.0;
@@ -565,6 +612,9 @@ public class BackgroundGeolocationService extends Service {
     }
 
     private void accumulateDistance(android.location.Location location) {
+        if (location.hasAccuracy() && location.getAccuracy() > MAX_DISTANCE_ACCURACY_METRES) {
+            return;
+        }
         if (lastDistanceFix != null) {
             distanceMeters += lastDistanceFix.distanceTo(location);
         }
