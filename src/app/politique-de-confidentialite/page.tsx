@@ -13,7 +13,7 @@ export default function PrivacyPolicyPage() {
         </h1>
 
         <p className="text-sm text-canopee-forest/70">
-          Dernière mise à jour : 10 septembre 2026
+          Dernière mise à jour : 18 septembre 2026
         </p>
       </header>
 
