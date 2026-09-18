@@ -115,19 +115,10 @@ export default function PrivacyPolicyPage() {
             notre compte, notamment Supabase (authentification, base de données
             et stockage des photos), Plunk (envoi des courriels
             transactionnels), Mapbox (affichage des cartes et géocodage) et
-            Vercel (hébergement de la plateforme).
-          </p>
-
-          <p>
-            <span className="font-medium text-canopee-forest">
-              Transfert hors Québec :
-            </span>{' '}
-            ces fournisseurs peuvent héberger, stocker ou traiter vos
-            renseignements personnels à l’extérieur de la province de Québec
-            (notamment aux États-Unis ou dans d’autres provinces canadiennes).
-            Nous effectuons une évaluation des facteurs relatifs à la vie privée
-            afin de nous assurer que vos renseignements bénéficient d’une
-            protection adéquate et conforme à la Loi 25.
+            Vercel (hébergement de la plateforme). Ces fournisseurs peuvent
+            héberger vos renseignements à l’extérieur du Québec; voir la
+            politique générale de Canopée ci-dessous pour les modalités
+            applicables à un tel transfert.
           </p>
         </section>
 
@@ -148,16 +139,14 @@ export default function PrivacyPolicyPage() {
                 Données de compte :
               </span>{' '}
               les renseignements associés à un compte sont conservés tant que le
-              compte demeure actif, puis pendant une période de [TODO : delais]
-              après sa fermeture ou son inactivité prolongée.
+              compte demeure actif.
             </li>
             <li>
               <span className="font-medium text-canopee-forest">
                 Données de signalement :
               </span>{' '}
-              les renseignements associés à un signalement sont conservés
-              pendant [TODO : delais] après la fermeture ou la résolution du
-              dossier.
+              les renseignements associés à un signalement sont conservés le
+              temps nécessaire au traitement du dossier.
             </li>
           </ul>
 
@@ -169,20 +158,7 @@ export default function PrivacyPolicyPage() {
 
         <section className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold text-canopee-forest">
-            6. Mesures de sécurité
-          </h2>
-
-          <p>
-            Canopée applique des mesures de sécurité raisonnables afin de
-            protéger vos renseignements contre la perte, l’accès non autorisé,
-            l’utilisation abusive ou la divulgation. Toutefois, aucun système
-            informatique ne peut garantir une sécurité absolue.
-          </p>
-        </section>
-
-        <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold text-canopee-forest">
-            7. Témoins et technologies similaires
+            6. Témoins et technologies similaires
           </h2>
 
           <p>
@@ -196,37 +172,23 @@ export default function PrivacyPolicyPage() {
 
         <section className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold text-canopee-forest">
-            8. Vos droits
+            7. Vos droits
           </h2>
 
-          <p>Vous pouvez notamment demander :</p>
-
-          <ul className="list-disc space-y-2 pl-6">
-            <li>l’accès à vos renseignements personnels;</li>
-            <li>la correction de renseignements inexacts ou incomplets;</li>
-            <li>
-              le retrait de votre consentement, lorsque cela est applicable;
-            </li>
-            <li>
-              la suppression de vos renseignements, sous réserve de nos
-              obligations légales;
-            </li>
-            <li>
-              la portabilité de certains renseignements, lorsque la loi le
-              prévoit.
-            </li>
-          </ul>
-
           <p>
-            Le retrait de votre consentement pourrait empêcher l’utilisation de
-            certaines fonctionnalités nécessitant vos renseignements, comme la
-            création d’un compte ou le suivi d’un signalement.
+            Vos droits à l’égard de vos renseignements personnels (accès,
+            rectification, suppression, retrait du consentement, plainte auprès
+            d’une autorité de contrôle, etc.) sont décrits dans la politique
+            générale de Canopée ci-dessous. Notez que le retrait de votre
+            consentement pourrait empêcher l’utilisation de certaines
+            fonctionnalités nécessitant vos renseignements, comme la création
+            d’un compte ou le suivi d’un signalement.
           </p>
         </section>
 
         <section className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold text-canopee-forest">
-            9. Responsable de la protection des renseignements personnels
+            8. Responsable de la protection des renseignements personnels
           </h2>
 
           <p>
@@ -235,19 +197,50 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <address className="not-italic">
-            <p>[TODO : nom de la personne responsable]</p>
-            <p>[TODO : titre ou fonction]</p>
+            <p>Sandrine Gaudelet</p>
+            <p>Directrice générale</p>
             <p>
               Courriel :{' '}
               <a
-                href="mailto:[TODO: courriel du responsable]"
+                href="mailto:direction@reseaucanopee.org"
                 className="font-medium underline underline-offset-2"
               >
-                [TODO : courriel du responsable]
+                direction@reseaucanopee.org
               </a>
             </p>
-            <p>[TODO : adresse postale de Canopée]</p>
+            <p>Téléphone : 438 923-0582 poste 6-1</p>
+
+            <p className="mt-3">Sophie Léger</p>
+            <p>Agente vie associative et bénévolat</p>
+            <p>
+              Courriel :{' '}
+              <a
+                href="mailto:vie.associative@reseaucanopee.org"
+                className="font-medium underline underline-offset-2"
+              >
+                vie.associative@reseaucanopee.org
+              </a>
+            </p>
+            <p>Téléphone : 438 923-0582 poste 4-1</p>
           </address>
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <h2 className="text-lg font-semibold text-canopee-forest">
+            9. Politique de confidentialité générale de Canopée
+          </h2>
+
+          <p>
+            Pour consulter la politique de confidentialité générale de Canopée,
+            veuillez consulter :{' '}
+            <a
+              href="https://www.reseaucanopee.org/fr/politique-confidentialite/"
+              className="font-medium underline underline-offset-2"
+            >
+              https://www.reseaucanopee.org/fr/politique-confidentialite/
+            </a>
+            .
+          </p>
         </section>
 
         <section className="flex flex-col gap-3">
