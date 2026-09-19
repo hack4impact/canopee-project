@@ -48,7 +48,7 @@ export function ObservationsLayer({
   const openDetail = useRef<((id: string) => void) | null>(null)
   const [payload, setPayload] = useState<ObservationsPayload | null>(null)
   const [failed, setFailed] = useState(false)
-  const { selection } = useMapFilters()
+  const { selection, dateRange } = useMapFilters()
   const categoriesKey = observationCategoriesOf(selection).join(',')
   const [image, setImage] = useState<HTMLImageElement | null>(null)
 
@@ -84,9 +84,10 @@ export function ObservationsLayer({
 
     async function loadObservations() {
       try {
-        const response = await fetch('/api/observations', {
-          redirect: 'manual',
-        })
+        const response = await fetch(
+          `/api/observations?startDate=${dateRange.from}&endDate=${dateRange.to}`,
+          { redirect: 'manual' },
+        )
 
         if (!response.ok) {
           throw new Error(`Observations request failed (${response.status})`)
@@ -110,7 +111,7 @@ export function ObservationsLayer({
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [dateRange])
 
   useEffect(() => {
     if (

@@ -75,7 +75,7 @@ export function ReportPinsLayer({
   const [pins, setPins] = useState<ReportPin[] | null>(null)
   const [failed, setFailed] = useState(false)
   const [images, setImages] = useState<PinImages | null>(null)
-  const { selection } = useMapFilters()
+  const { selection, dateRange } = useMapFilters()
 
   useEffect(() => {
     openDetail.current = canOpenDetail
@@ -118,9 +118,10 @@ export function ReportPinsLayer({
         const suffix =
           categoriesParam === null ? '' : `&categories=${categoriesParam}`
 
-        const response = await fetch(`/api/reports?status=${status}${suffix}`, {
-          redirect: 'manual',
-        })
+        const response = await fetch(
+          `/api/reports?status=${status}&startDate=${dateRange.from}&endDate=${dateRange.to}${suffix}`,
+          { redirect: 'manual' },
+        )
 
         if (!response.ok) {
           throw new Error(`Reports request failed (${response.status})`)
@@ -144,7 +145,7 @@ export function ReportPinsLayer({
     return () => {
       cancelled = true
     }
-  }, [status, categoriesParam])
+  }, [status, categoriesParam, dateRange])
 
   const collection = useMemo(() => {
     if (categoriesParam === '') {

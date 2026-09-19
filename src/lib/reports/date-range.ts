@@ -64,3 +64,16 @@ export function lastTwoMonthsRange(now: Date = new Date()): {
   from.setMonth(from.getMonth() - 2)
   return { from, to }
 }
+
+export function mapDateRange(
+  startParam: string | null,
+  endParam: string | null,
+  canPickDates: boolean,
+): ParsedDateRange {
+  const { from, to } = lastTwoMonthsRange()
+
+  return parseDateRangeParams(
+    (canPickDates && startParam) || toDateParam(from),
+    (canPickDates && endParam) || toDateParam(to),
+  )
+}
