@@ -312,6 +312,24 @@
           }, 250)
         }
 
+        function blockZoom(event) {
+          event.preventDefault()
+        }
+
+        document.addEventListener('gesturestart', blockZoom, { passive: false })
+        document.addEventListener('gesturechange', blockZoom, { passive: false })
+        document.addEventListener('gestureend', blockZoom, { passive: false })
+
+        document.addEventListener(
+          'touchmove',
+          function (event) {
+            if (event.touches.length > 1) {
+              event.preventDefault()
+            }
+          },
+          { passive: false },
+        )
+
         button.addEventListener('click', retry)
         window.addEventListener('online', retry)
       })()
