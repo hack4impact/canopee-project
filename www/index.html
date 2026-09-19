@@ -67,6 +67,8 @@
           sans-serif;
         font-weight: 500;
         -webkit-font-smoothing: antialiased;
+        pointer-events: none;
+        touch-action: none;
         padding: calc(2rem + env(safe-area-inset-top)) 1.5rem
           calc(2rem + env(safe-area-inset-bottom));
       }
@@ -181,7 +183,8 @@
         font-size: 1rem;
         line-height: 1.5rem;
         cursor: pointer;
-        touch-action: manipulation;
+        pointer-events: auto;
+        touch-action: none;
         -webkit-tap-highlight-color: transparent;
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         transition: background-color 150ms ease-out;
@@ -320,15 +323,18 @@
         document.addEventListener('gesturechange', blockZoom, { passive: false })
         document.addEventListener('gestureend', blockZoom, { passive: false })
 
-        document.addEventListener(
-          'touchmove',
-          function (event) {
-            if (event.touches.length > 1) {
-              event.preventDefault()
-            }
-          },
-          { passive: false },
-        )
+        function blockTouchOutsideButton(event) {
+          if (!button.contains(event.target)) {
+            event.preventDefault()
+          }
+        }
+
+        document.addEventListener('touchstart', blockTouchOutsideButton, {
+          passive: false,
+        })
+        document.addEventListener('touchmove', blockTouchOutsideButton, {
+          passive: false,
+        })
 
         button.addEventListener('click', retry)
         window.addEventListener('online', retry)
