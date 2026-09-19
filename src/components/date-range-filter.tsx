@@ -72,7 +72,10 @@ export function DateRangeFilter({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className={cn('text-canopee-forest', className)}
+          className={cn(
+            'text-canopee-forest dark:border-border dark:bg-background dark:hover:bg-muted',
+            className,
+          )}
         >
           <CalendarIcon data-icon="inline-start" />
           {formatDateParam(value.from)} – {formatDateParam(value.to)}
@@ -82,6 +85,7 @@ export function DateRangeFilter({
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="date-range-from">Du</Label>
           <Input
+            className="dark:bg-white"
             id="date-range-from"
             type="date"
             value={draft.from}
@@ -92,6 +96,7 @@ export function DateRangeFilter({
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="date-range-to">Au</Label>
           <Input
+            className="dark:bg-white"
             id="date-range-to"
             type="date"
             value={draft.to}
