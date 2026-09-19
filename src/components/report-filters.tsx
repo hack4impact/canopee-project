@@ -167,7 +167,11 @@ export function ReportFilters() {
 
           {canPickDates && (
             <div className="mt-2 border-t border-white/10 pt-3">
-              <DateRangeFilter value={dateRange} onChange={onDateRangeChange} />
+              <DateRangeFilter
+                value={dateRange}
+                onChange={onDateRangeChange}
+                className="w-full px-2.5 text-xs"
+              />
             </div>
           )}
 
