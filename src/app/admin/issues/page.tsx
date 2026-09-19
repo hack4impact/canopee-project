@@ -42,12 +42,15 @@ export default async function AdminIssuesPage({
       : 'all'
 
   const defaultRange = lastTwoMonthsRange()
-  const startDateParam = params.startDate ?? toDateParam(defaultRange.from)
-  const endDateParam = params.endDate ?? toDateParam(defaultRange.to)
+  const startDateParam = params.startDate || toDateParam(defaultRange.from)
+  const endDateParam = params.endDate || toDateParam(defaultRange.to)
   const parsedRange = parseDateRangeParams(startDateParam, endDateParam)
   const dateRange = parsedRange.ok
     ? parsedRange.range
     : { start: defaultRange.from, end: defaultRange.to }
+  const dateRangeValue = parsedRange.ok
+    ? { from: startDateParam, to: endDateParam }
+    : { from: toDateParam(defaultRange.from), to: toDateParam(defaultRange.to) }
 
   const all = await listAllReports({ sortBy, dateRange })
 
@@ -89,7 +92,7 @@ export default async function AdminIssuesPage({
           sortBy={sortBy}
           statusFilter={statusFilter}
           counts={counts}
-          dateRange={{ from: startDateParam, to: endDateParam }}
+          dateRange={dateRangeValue}
         />
       </main>
 

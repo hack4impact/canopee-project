@@ -130,10 +130,18 @@ export function parseColumnsParam(
   }
 }
 
-/** Excel and LibreOffice need it to read the French labels as UTF-8. */
+/**
+ * Excel picks ',' or ';' as the field delimiter based on the OS regional
+ * settings (not the app language), so no fixed delimiter opens correctly
+ * for everyone \u2014 and the "sep=" directive trick turned out to break UTF-8
+ * BOM detection instead. A tab is never a decimal separator, and Excel
+ * auto-detects both a UTF-16 BOM and tab-delimited columns reliably on
+ * Mac and Windows regardless of locale, so we use that instead.
+ */
 export const CSV_BOM = '\uFEFF'
 const ROW_SEPARATOR = '\r\n'
-const NEEDS_QUOTING = /["\n\r,]/
+const CSV_DELIMITER = '\t'
+const NEEDS_QUOTING = /["\n\r\t]/
 const FORMULA_PREFIXES = ['=', '+', '-', '@', '\t', '\r']
 
 function defuse(value: string): string {
@@ -152,7 +160,7 @@ export function toCell(value: CsvValue): string {
 }
 
 export function toCsvRow(values: readonly CsvValue[]): string {
-  return values.map(toCell).join(',')
+  return values.map(toCell).join(CSV_DELIMITER)
 }
 
 function toDateOnly(date: Date): string {

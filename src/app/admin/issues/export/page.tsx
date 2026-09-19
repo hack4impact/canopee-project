@@ -55,7 +55,10 @@ export default async function AdminIssuesExportPage({
             Les observations partent avec les colonnes attendues par le
             ministère.
           </p>
-          <FaunaFloraExportButton columnCount={MINISTRY_COLUMNS.length} />
+          <FaunaFloraExportButton
+            columnCount={MINISTRY_COLUMNS.length}
+            initialRange={initialRange}
+          />
         </section>
       </main>
 

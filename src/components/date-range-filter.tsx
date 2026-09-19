@@ -11,6 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { lastTwoMonthsRange, toDateParam } from '@/lib/reports/date-range'
 
 const dateFormatter = new Intl.DateTimeFormat('fr-CA', {
   day: 'numeric',
@@ -34,17 +35,28 @@ function formatDateParam(value: string): string {
   return dateFormatter.format(new Date(`${value}T00:00:00Z`))
 }
 
+/** The default range: the last two months, ending today. */
+function defaultRange(): DateRangeValue {
+  const { from, to } = lastTwoMonthsRange()
+  return { from: toDateParam(from), to: toDateParam(to) }
+}
+
 export function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
   const [draft, setDraft] = useState<DateRangeValue>(value)
 
-  const isValidRange = draft.from <= draft.to
+  const isValidRange =
+    draft.from !== '' && draft.to !== '' && draft.from <= draft.to
 
   function commit(next: DateRangeValue) {
     setDraft(next)
 
-    if (next.from <= next.to) {
+    if (next.from !== '' && next.to !== '' && next.from <= next.to) {
       onChange(next)
     }
+  }
+
+  function reset() {
+    commit(defaultRange())
   }
 
   return (
@@ -81,6 +93,16 @@ export function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
             La date de fin doit être après la date de début.
           </p>
         )}
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="self-start text-canopee-forest/70"
+          onClick={reset}
+        >
+          Réinitialiser
+        </Button>
       </PopoverContent>
     </Popover>
   )

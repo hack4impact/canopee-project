@@ -45,9 +45,14 @@ export async function GET(request: NextRequest) {
 
   const reports = await listReportsForExport(dateRange.range)
 
-  return new Response(reportsToCsv(reports, parsed.columns), {
+  // Encoded as actual UTF-16LE bytes (not just UTF-8 text with a BOM
+  // character) so Excel reliably auto-detects the encoding on both Mac
+  // and Windows, regardless of locale. See CSV_BOM in lib/reports/csv.ts.
+  const csvBytes = Buffer.from(reportsToCsv(reports, parsed.columns), 'utf16le')
+
+  return new Response(csvBytes, {
     headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Type': 'text/csv; charset=utf-16le',
       'Content-Disposition': `attachment; filename="${csvFileName(new Date())}"`,
       'Cache-Control': 'no-store',
     },
