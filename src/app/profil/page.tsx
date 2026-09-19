@@ -64,7 +64,7 @@ export default async function ProfilPage() {
 
   return (
     <div className="flex min-h-dvh w-full flex-col bg-canopee-cream">
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-36 sm:px-6">
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-bottom-nav sm:px-6">
         <div className="flex flex-col gap-0.5">
           <h1 className="font-heading text-3xl text-canopee-forest">Profil</h1>
           <p className="text-lg font-bold text-canopee-forest">

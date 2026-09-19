@@ -6,7 +6,7 @@ export function PageSkeleton({ width, rows }: { width: string; rows: number }) {
   return (
     <div className="flex min-h-dvh w-full flex-col bg-canopee-cream">
       <main
-        className={`mx-auto flex w-full ${width} flex-1 flex-col gap-4 px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-32 sm:px-6`}
+        className={`mx-auto flex w-full ${width} flex-1 flex-col gap-4 px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-bottom-nav sm:px-6`}
       >
         <div className="flex items-center justify-between gap-4">
           <div
