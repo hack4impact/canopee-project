@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { ViewTransition } from 'react'
 import { redirect } from 'next/navigation'
 import { logout } from '@/app/login/actions'
+import { DeleteAccountForm } from '@/components/delete-account-form'
 import { ForestBackground } from '@/components/forest-background'
 import { getCurrentUserProfile } from '@/lib/auth/current-user'
 import { isApproved, isRejected } from '@/lib/auth/roles'
@@ -75,6 +76,14 @@ export default async function PendingPage() {
               Se déconnecter
             </button>
           </form>
+
+          <details className="mt-6">
+            <summary className="cursor-pointer list-none text-center text-xs font-semibold text-canopee-forest/60 underline underline-offset-4 [&::-webkit-details-marker]:hidden">
+              Supprimer mon compte
+            </summary>
+
+            <DeleteAccountForm className="mt-4 flex flex-col gap-2 rounded-xl border border-canopee-coral/30 p-3" />
+          </details>
         </main>
       </ViewTransition>
     </div>

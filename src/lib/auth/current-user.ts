@@ -44,6 +44,16 @@ export async function requireAdmin(): Promise<UserProfile> {
   return profile
 }
 
+export async function requireSignedInUser(): Promise<UserProfile> {
+  const profile = await getCurrentUserProfile()
+
+  if (!profile) {
+    redirect('/login')
+  }
+
+  return profile
+}
+
 export async function requireApprovedUser(
   requiredRole: Role = 'volunteer',
 ): Promise<UserProfile> {
