@@ -372,7 +372,8 @@ function ReportWizard({
     [species, category],
   )
   const speciesIsFreeText = category === 'faune_flore_other'
-  const outOfBounds = position !== null && !isWithinLavalBounds(position)
+  const outOfBounds =
+    citizen && position !== null && !isWithinLavalBounds(position)
 
   const groupSteps = GROUP_STEPS[group].filter(
     (key) => key !== 'typologie' || typologies.length > 0,

@@ -12,7 +12,7 @@ import { isWithinLavalBounds } from '@/lib/reports/location'
 export const MAX_DESCRIPTION_LENGTH = 500
 
 export const OUT_OF_BOUNDS_MESSAGE =
-  'Cette position est hors de Laval. Les signalements doivent être situés sur le territoire de Laval.'
+  'Le signalement ne peut pas être enregistré, vous êtes à l’extérieur de Laval.'
 
 export const MAX_PHOTO_BYTES = 2 * 1024 * 1024
 
@@ -79,6 +79,7 @@ export function validateReport(
     errors.latitude =
       'Une position est nécessaire pour situer le signalement. Autorisez la localisation, ou placez le repère sur la carte.'
   } else if (
+    audience === 'citizen' &&
     !isWithinLavalBounds({
       latitude: input.latitude,
       longitude: input.longitude,
