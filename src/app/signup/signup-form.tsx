@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useActionState, useState } from 'react'
+import { PrivacyPolicyLink } from '@/components/privacy-policy-link'
 import { Spinner } from '@/components/spinner'
 import {
   isValid,
@@ -183,13 +184,9 @@ export function SignupForm() {
             <span>
               J’accepte que Canopée utilise mon nom et mon adresse courriel pour
               créer et gérer mon compte, conformément à sa{' '}
-              <Link
-                href="/politique-de-confidentialite"
-                target="_blank"
-                className="underline underline-offset-2 hover:text-canopee-forest"
-              >
+              <PrivacyPolicyLink className="underline underline-offset-2 hover:text-canopee-forest">
                 politique de confidentialité
-              </Link>
+              </PrivacyPolicyLink>
               .
             </span>
           </Label>

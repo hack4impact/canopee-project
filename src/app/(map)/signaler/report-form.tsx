@@ -11,6 +11,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { Checkbox } from '@/components/ui/checkbox'
+import { PrivacyPolicyLink } from '@/components/privacy-policy-link'
 import { ReportLocationPicker } from '@/components/report-location-picker'
 import { CITIZEN_REPORT_ROUTE } from '@/lib/auth/routes'
 import { SpeciesPicto, type SpeciesPictoName } from '@/components/species-picto'
@@ -717,13 +718,9 @@ function ReportWizard({
               >
                 J’accepte que Canopée utilise mon adresse courriel pour
                 m’informer du suivi de mon signalement, conformément à sa{' '}
-                <Link
-                  href="/politique-de-confidentialite"
-                  target="_blank"
-                  className="underline underline-offset-2 hover:text-canopee-forest"
-                >
+                <PrivacyPolicyLink className="underline underline-offset-2 hover:text-canopee-forest">
                   politique de confidentialité
-                </Link>
+                </PrivacyPolicyLink>
                 .
               </label>
             </div>
