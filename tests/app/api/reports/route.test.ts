@@ -60,6 +60,61 @@ describe('GET /api/reports', () => {
     expect(response.status).toBe(200)
     expect(listReportPins).toHaveBeenCalled()
   })
+
+  it('lets an admin pick the creation dates', async () => {
+    getCurrentUserProfile.mockResolvedValue({
+      role: 'admin',
+      status: 'approved',
+    })
+    listReportPins.mockResolvedValue([])
+
+    await GET(
+      requestFor(
+        'http://localhost/api/reports?startDate=2025-01-01&endDate=2025-03-31',
+      ),
+    )
+
+    const [, , range] = listReportPins.mock.calls[0]
+    expect(range.start.toISOString()).toBe('2025-01-01T00:00:00.000Z')
+    expect(range.end.toISOString()).toBe('2025-03-31T23:59:59.999Z')
+  })
+
+  it('keeps a volunteer on the last two months whatever dates are sent', async () => {
+    getCurrentUserProfile.mockResolvedValue({
+      role: 'volunteer',
+      status: 'approved',
+    })
+    listReportPins.mockResolvedValue([])
+
+    await GET(
+      requestFor(
+        'http://localhost/api/reports?startDate=2020-01-01&endDate=2020-02-01',
+      ),
+    )
+
+    const [, , range] = listReportPins.mock.calls[0]
+    const twoMonthsAgo = new Date()
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2)
+    expect(range.start.getTime()).toBeGreaterThan(
+      twoMonthsAgo.getTime() - 2 * 24 * 60 * 60 * 1000,
+    )
+  })
+
+  it('returns 400 when an admin sends a start date after the end date', async () => {
+    getCurrentUserProfile.mockResolvedValue({
+      role: 'admin',
+      status: 'approved',
+    })
+
+    const response = await GET(
+      requestFor(
+        'http://localhost/api/reports?startDate=2025-03-31&endDate=2025-01-01',
+      ),
+    )
+
+    expect(response.status).toBe(400)
+    expect(listReportPins).not.toHaveBeenCalled()
+  })
 })
 
 describe('POST /api/reports', () => {

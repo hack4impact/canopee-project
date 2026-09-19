@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { getCurrentUserProfile } from '@/lib/auth/current-user'
-import { canAccess } from '@/lib/auth/roles'
+import { canAccess, isAdmin } from '@/lib/auth/roles'
+import { mapDateRange } from '@/lib/reports/date-range'
 import { listReportPins } from '@/lib/reports/queries'
 import { createReport } from '@/lib/reports/submit'
 import {
@@ -42,7 +43,21 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const reports = await listReportPins(parsed.status, selected.categories)
+  const dateRange = mapDateRange(
+    request.nextUrl.searchParams.get('startDate'),
+    request.nextUrl.searchParams.get('endDate'),
+    isAdmin(profile),
+  )
+
+  if (!dateRange.ok) {
+    return Response.json({ error: dateRange.error }, { status: 400 })
+  }
+
+  const reports = await listReportPins(
+    parsed.status,
+    selected.categories,
+    dateRange.range,
+  )
 
   return Response.json({
     status: parsed.status,

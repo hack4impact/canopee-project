@@ -175,6 +175,7 @@ export async function listAllReports(
 export async function listReportPins(
   status: ReportStatus,
   categories: readonly ReportCategory[] = PIN_CATEGORIES,
+  dateRange?: DateRange,
 ): Promise<ReportPin[]> {
   if (categories.length === 0) return []
   const rows = await db
@@ -198,6 +199,8 @@ export async function listReportPins(
             )
           : isNotNull(reports.resolvedAt),
         inArray(reports.category, [...categories]),
+        dateRange?.start ? gte(reports.createdAt, dateRange.start) : undefined,
+        dateRange?.end ? lte(reports.createdAt, dateRange.end) : undefined,
       ),
     )
     .orderBy(desc(reports.createdAt))

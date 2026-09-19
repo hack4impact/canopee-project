@@ -11,6 +11,10 @@ vi.mock('@/lib/observations/queries', () => ({ listObservations }))
 
 const { GET } = await import('@/app/api/observations/route')
 
+function requestFor(url = 'http://localhost/api/observations') {
+  return { nextUrl: new URL(url) } as unknown as Parameters<typeof GET>[0]
+}
+
 const OBSERVATION: Observation = {
   id: '3f7c1a92-5d64-4f0b-9a21-8c5e7b04d113',
   eventNumber: 12,
@@ -51,7 +55,7 @@ describe('GET /api/observations', () => {
       getCurrentUserProfile.mockResolvedValue(profile)
       listObservations.mockResolvedValue([OBSERVATION])
 
-      const response = await GET()
+      const response = await GET(requestFor())
 
       expect(response.status).toBe(403)
       expect(listObservations).not.toHaveBeenCalled()
@@ -61,7 +65,7 @@ describe('GET /api/observations', () => {
       getCurrentUserProfile.mockResolvedValue(profile)
       listObservations.mockResolvedValue([OBSERVATION])
 
-      const body = await (await GET()).text()
+      const body = await (await GET(requestFor())).text()
 
       expect(body).not.toContain(OBSERVATION.id)
       expect(body).not.toContain(OBSERVATION.category)
@@ -73,13 +77,13 @@ describe('GET /api/observations', () => {
 
   it('refuses a citizen and a volunteer in the same terms', async () => {
     getCurrentUserProfile.mockResolvedValue(null)
-    const citizen = await GET()
+    const citizen = await GET(requestFor())
 
     getCurrentUserProfile.mockResolvedValue({
       role: 'volunteer',
       status: 'approved',
     })
-    const volunteer = await GET()
+    const volunteer = await GET(requestFor())
 
     expect(citizen.status).toBe(volunteer.status)
     expect(await citizen.json()).toEqual(await volunteer.json())
@@ -89,7 +93,7 @@ describe('GET /api/observations', () => {
     getCurrentUserProfile.mockResolvedValue({ role: 'pro', status: 'approved' })
     listObservations.mockResolvedValue([OBSERVATION])
 
-    const response = await GET()
+    const response = await GET(requestFor())
 
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({
@@ -125,7 +129,7 @@ describe('GET /api/observations', () => {
     })
     listObservations.mockResolvedValue([OBSERVATION])
 
-    const response = await GET()
+    const response = await GET(requestFor())
     const payload = (await response.json()) as {
       observations: { features: unknown[] }
     }
@@ -138,7 +142,7 @@ describe('GET /api/observations', () => {
     getCurrentUserProfile.mockResolvedValue({ role: 'pro', status: 'approved' })
     listObservations.mockResolvedValue([])
 
-    const response = await GET()
+    const response = await GET(requestFor())
     const payload = (await response.json()) as {
       observations: { type: string; features: unknown[] }
     }
@@ -154,8 +158,44 @@ describe('GET /api/observations', () => {
     getCurrentUserProfile.mockResolvedValue(profile)
     listObservations.mockResolvedValue([])
 
-    await GET()
+    await GET(requestFor())
 
-    expect(listObservations).toHaveBeenCalledWith(profile)
+    expect(listObservations).toHaveBeenCalledWith(profile, expect.anything())
+  })
+
+  it('lets an admin pick the creation dates', async () => {
+    getCurrentUserProfile.mockResolvedValue({
+      role: 'admin',
+      status: 'approved',
+    })
+    listObservations.mockResolvedValue([])
+
+    await GET(
+      requestFor(
+        'http://localhost/api/observations?startDate=2025-01-01&endDate=2025-03-31',
+      ),
+    )
+
+    const [, range] = listObservations.mock.calls[0]
+    expect(range.start.toISOString()).toBe('2025-01-01T00:00:00.000Z')
+    expect(range.end.toISOString()).toBe('2025-03-31T23:59:59.999Z')
+  })
+
+  it('keeps a pro on the last two months whatever dates are sent', async () => {
+    getCurrentUserProfile.mockResolvedValue({ role: 'pro', status: 'approved' })
+    listObservations.mockResolvedValue([])
+
+    await GET(
+      requestFor(
+        'http://localhost/api/observations?startDate=2020-01-01&endDate=2020-02-01',
+      ),
+    )
+
+    const [, range] = listObservations.mock.calls[0]
+    const twoMonthsAgo = new Date()
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2)
+    expect(range.start.getTime()).toBeGreaterThan(
+      twoMonthsAgo.getTime() - 2 * 24 * 60 * 60 * 1000,
+    )
   })
 })
