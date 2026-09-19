@@ -4,8 +4,11 @@ import { useEffect, useRef } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { useSharedMap } from '@/components/map-provider'
 import { isGeolocationAvailable } from '@/lib/mapbox'
+import { distanceBetweenMetres } from '@/lib/patrols/distance'
 
 const LOCATE_ZOOM = 16
+const FOLLOW_DURATION_MS = 700
+const FOLLOW_MIN_MOVE_METRES = 3
 const LOCATE_TIMEOUT_MS = 10_000
 const LOCATE_CACHE_MAX_AGE_MS = 10_000
 
@@ -21,8 +24,8 @@ function createUserLocationElement(): HTMLDivElement {
 type UserLocationProps = {
   /** Position of the compass button, to clear fixed headers when needed. */
   compassClassName?: string
-  /** Fly the camera to the patroller on arrival; false keeps the current view. */
-  flyToOnLocate?: boolean
+  /** Keep the camera on the patroller as they move; paused when they pan. */
+  follow?: boolean
 }
 
 /**
@@ -32,9 +35,10 @@ type UserLocationProps = {
  */
 export function UserLocation({
   compassClassName = 'absolute top-[calc(1rem+env(safe-area-inset-top))] right-4 z-10',
-  flyToOnLocate = true,
+  follow = true,
 }: UserLocationProps) {
   const map = useSharedMap()
+  const followingRef = useRef(follow)
 
   const lastPositionRef = useRef<{
     longitude: number
@@ -74,15 +78,45 @@ export function UserLocation({
           .addTo(targetMap)
       }
 
-      if (!centred && flyToOnLocate) {
+      if (!followingRef.current) {
+        return
+      }
+
+      if (!centred) {
         centred = true
         targetMap.flyTo({
           center: [longitude, latitude],
           zoom: LOCATE_ZOOM,
           essential: true,
         })
+
+        return
+      }
+
+      const centre = targetMap.getCenter()
+      const moved = distanceBetweenMetres(
+        { latitude: centre.lat, longitude: centre.lng },
+        { latitude, longitude },
+      )
+
+      if (moved < FOLLOW_MIN_MOVE_METRES) {
+        return
+      }
+
+      targetMap.easeTo({
+        center: [longitude, latitude],
+        duration: FOLLOW_DURATION_MS,
+        essential: true,
+      })
+    }
+
+    function releaseFollow(event: { originalEvent?: unknown }) {
+      if (event.originalEvent) {
+        followingRef.current = false
       }
     }
+
+    targetMap.on('movestart', releaseFollow)
 
     navigator.geolocation.getCurrentPosition(placeMarker, () => {}, {
       enableHighAccuracy: false,
@@ -99,15 +133,17 @@ export function UserLocation({
     return () => {
       cancelled = true
       navigator.geolocation.clearWatch(watchId)
+      targetMap.off('movestart', releaseFollow)
       marker?.remove()
       marker = null
     }
-  }, [map, flyToOnLocate])
+  }, [map])
 
   return (
     <CompassButton
       map={map}
       lastPositionRef={lastPositionRef}
+      followingRef={followingRef}
       className={compassClassName}
     />
   )
@@ -117,6 +153,7 @@ export function UserLocation({
 function CompassButton({
   map,
   lastPositionRef,
+  followingRef,
   className,
 }: {
   map: mapboxgl.Map | null
@@ -124,12 +161,15 @@ function CompassButton({
     longitude: number
     latitude: number
   } | null>
+  followingRef: React.RefObject<boolean>
   className: string
 }) {
   function handleClick() {
     if (!map) {
       return
     }
+
+    followingRef.current = true
 
     const lastPosition = lastPositionRef.current
 
