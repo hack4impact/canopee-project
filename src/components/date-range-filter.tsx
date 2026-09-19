@@ -12,6 +12,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { lastTwoMonthsRange, toDateParam } from '@/lib/reports/date-range'
+import { cn } from '@/lib/utils'
 
 const dateFormatter = new Intl.DateTimeFormat('fr-CA', {
   day: 'numeric',
@@ -29,6 +30,8 @@ export interface DateRangeValue {
 interface DateRangeFilterProps {
   value: DateRangeValue
   onChange: (range: DateRangeValue) => void
+  className?: string
+  contentClassName?: string
 }
 
 function formatDateParam(value: string): string {
@@ -41,7 +44,12 @@ function defaultRange(): DateRangeValue {
   return { from: toDateParam(from), to: toDateParam(to) }
 }
 
-export function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
+export function DateRangeFilter({
+  value,
+  onChange,
+  className,
+  contentClassName,
+}: DateRangeFilterProps) {
   const [draft, setDraft] = useState<DateRangeValue>(value)
 
   const isValidRange =
@@ -62,12 +70,15 @@ export function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="text-canopee-forest">
+        <Button
+          variant="outline"
+          className={cn('text-canopee-forest', className)}
+        >
           <CalendarIcon data-icon="inline-start" />
           {formatDateParam(value.from)} – {formatDateParam(value.to)}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto" align="start">
+      <PopoverContent className={cn('w-auto', contentClassName)} align="start">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="date-range-from">Du</Label>
           <Input
