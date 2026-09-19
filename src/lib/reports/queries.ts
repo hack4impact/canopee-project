@@ -108,15 +108,24 @@ function woodedAreaLabel(latitude: number, longitude: number): string {
 }
 
 export async function listAllReports(
-  options: { sortBy?: ReportSortBy; statusFilter?: ReportStatusFilter } = {},
+  options: {
+    sortBy?: ReportSortBy
+    statusFilter?: ReportStatusFilter
+    dateRange?: DateRange
+  } = {},
 ): Promise<ReportListItem[]> {
-  const { sortBy = 'wooded', statusFilter = 'all' } = options
-  const whereClause =
+  const { sortBy = 'wooded', statusFilter = 'all', dateRange } = options
+  const statusCondition =
     statusFilter === 'open'
       ? isNull(reports.resolvedAt)
       : statusFilter === 'resolved'
         ? isNotNull(reports.resolvedAt)
         : undefined
+  const whereClause = and(
+    statusCondition,
+    dateRange?.start ? gte(reports.createdAt, dateRange.start) : undefined,
+    dateRange?.end ? lte(reports.createdAt, dateRange.end) : undefined,
+  )
   const orderByClause =
     sortBy === 'wooded' ? desc(reports.createdAt) : desc(reports.createdAt)
 

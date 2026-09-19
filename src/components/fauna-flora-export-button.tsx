@@ -3,11 +3,10 @@
 import { useState } from 'react'
 import { DownloadIcon } from 'lucide-react'
 import {
-  DateRangePicker,
-  currentYearRange,
-  toDateParam,
-  type DateRange,
-} from '@/components/date-range-picker'
+  DateRangeFilter,
+  type DateRangeValue,
+} from '@/components/date-range-filter'
+import { lastTwoMonthsRange, toDateParam } from '@/lib/reports/date-range'
 
 const EXPORT_URL = '/api/fauna-flora/export'
 
@@ -17,12 +16,21 @@ function fileNameFromResponse(response: Response): string {
   return match?.[1] ?? 'signalements-faune-flore.csv'
 }
 
+function defaultRange(): DateRangeValue {
+  const { from, to } = lastTwoMonthsRange()
+  return { from: toDateParam(from), to: toDateParam(to) }
+}
+
 export function FaunaFloraExportButton({
   columnCount,
+  initialRange,
 }: {
   columnCount: number
+  initialRange?: DateRangeValue
 }) {
-  const [range, setRange] = useState<DateRange>(currentYearRange)
+  const [range, setRange] = useState<DateRangeValue>(
+    () => initialRange ?? defaultRange(),
+  )
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -31,9 +39,10 @@ export function FaunaFloraExportButton({
     setError(null)
 
     try {
-      const params = new URLSearchParams()
-      params.set('startDate', toDateParam(range.from))
-      params.set('endDate', toDateParam(range.to))
+      const params = new URLSearchParams({
+        startDate: range.from,
+        endDate: range.to,
+      })
 
       const response = await fetch(`${EXPORT_URL}?${params}`, {
         redirect: 'manual',
@@ -60,7 +69,7 @@ export function FaunaFloraExportButton({
   return (
     <div className="rounded-2xl border border-canopee-forest/10 bg-white/70 shadow-sm">
       <div className="border-b border-canopee-forest/10 px-3 py-2.5">
-        <DateRangePicker value={range} onChange={setRange} />
+        <DateRangeFilter value={range} onChange={setRange} />
       </div>
 
       <div className="flex items-center gap-2 p-2 pl-3">

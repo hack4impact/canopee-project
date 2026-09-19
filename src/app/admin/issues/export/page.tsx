@@ -18,8 +18,18 @@ const SECTION_TITLE =
 
 const SECTION_HINT = 'text-sm text-canopee-forest/70'
 
-export default async function AdminIssuesExportPage() {
+export default async function AdminIssuesExportPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ startDate?: string; endDate?: string }>
+}) {
   await requireApprovedAccess('pro')
+
+  const params = await searchParams
+  const initialRange =
+    params.startDate && params.endDate
+      ? { from: params.startDate, to: params.endDate }
+      : undefined
 
   return (
     <div className="flex min-h-dvh w-full flex-col bg-canopee-cream">
@@ -36,7 +46,7 @@ export default async function AdminIssuesExportPage() {
           <p className={SECTION_HINT}>
             Choisissez les colonnes à inclure, puis téléchargez le fichier CSV.
           </p>
-          <ReportsCsvExport />
+          <ReportsCsvExport initialRange={initialRange} />
         </section>
 
         <section className="flex flex-col gap-1.5">
@@ -45,7 +55,10 @@ export default async function AdminIssuesExportPage() {
             Les observations partent avec les colonnes attendues par le
             ministère.
           </p>
-          <FaunaFloraExportButton columnCount={MINISTRY_COLUMNS.length} />
+          <FaunaFloraExportButton
+            columnCount={MINISTRY_COLUMNS.length}
+            initialRange={initialRange}
+          />
         </section>
       </main>
 
