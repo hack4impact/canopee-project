@@ -6,30 +6,40 @@ export const HEATMAP_LAYER_ID = 'patrol-heatmap-density'
 
 const LOW_ZOOM = 10
 
+const MID_ZOOM = 13
+
 const HIGH_ZOOM = 16
 
 export function weightCeiling(maxPoints: number): number {
   return Math.log10(Math.max(1, maxPoints) + 1)
 }
 
-export function heatmapPaint(
+type HeatmapPaint = NonNullable<HeatmapLayerSpecification['paint']>
+
+export function heatmapWeight(
   maxPoints: number,
-): HeatmapLayerSpecification['paint'] {
+): HeatmapPaint['heatmap-weight'] {
+  return [
+    'interpolate',
+    ['linear'],
+    ['log10', ['+', ['get', 'points'], 1]],
+    0,
+    0,
+    weightCeiling(maxPoints),
+    1,
+  ]
+}
+
+export function heatmapPaint(maxPoints: number): HeatmapPaint {
   return {
-    'heatmap-weight': [
-      'interpolate',
-      ['linear'],
-      ['log10', ['+', ['get', 'points'], 1]],
-      0,
-      0,
-      weightCeiling(maxPoints),
-      1,
-    ],
+    'heatmap-weight': heatmapWeight(maxPoints),
     'heatmap-intensity': [
       'interpolate',
       ['linear'],
       ['zoom'],
       LOW_ZOOM,
+      0.5,
+      MID_ZOOM,
       1,
       HIGH_ZOOM,
       2,
@@ -54,7 +64,9 @@ export function heatmapPaint(
       ['exponential', 2],
       ['zoom'],
       LOW_ZOOM,
-      4,
+      14,
+      MID_ZOOM,
+      22,
       HIGH_ZOOM,
       48,
     ],
