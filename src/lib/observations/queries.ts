@@ -15,6 +15,7 @@ import type { DateRange } from '@/lib/reports/date-range'
 
 export async function listObservations(
   viewer: ObservationViewer,
+  range?: DateRange,
 ): Promise<Observation[]> {
   if (!canViewObservations(viewer)) {
     console.debug('[observations] Unauthorized access attempt', { viewer })
@@ -40,6 +41,8 @@ export async function listObservations(
       and(
         inArray(reports.category, [...OBSERVATION_CATEGORIES]),
         or(isNull(reports.resolvedAt), gte(reports.resolvedAt, cutoff)),
+        range?.start ? gte(reports.createdAt, range.start) : undefined,
+        range?.end ? lte(reports.createdAt, range.end) : undefined,
       ),
     )
     .orderBy(desc(reports.createdAt))

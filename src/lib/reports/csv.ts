@@ -31,7 +31,6 @@ export const CSV_HEADERS = [
   'date_observation',
   'statut_signalement',
   'date_resolution',
-  'categorie',
   'libelle_categorie',
   'commentaires',
   'typologie',
@@ -54,8 +53,7 @@ export const CSV_HEADER_LABELS: Record<CsvColumn, string> = {
   date_observation: "Date de l'observation",
   statut_signalement: 'Statut du signalement',
   date_resolution: 'Date de résolution',
-  categorie: 'Catégorie',
-  libelle_categorie: 'Libellé de la catégorie',
+  libelle_categorie: 'Catégorie',
   commentaires: 'Commentaires',
   typologie: 'Typologie',
   nombre_observe: 'Nombre observé',
@@ -78,7 +76,6 @@ export const CSV_COLUMN_GROUPS: {
     label: 'Identification',
     columns: [
       'numero_signalement',
-      'categorie',
       'libelle_categorie',
       'typologie',
       'nombre_observe',
@@ -133,10 +130,18 @@ export function parseColumnsParam(
   }
 }
 
-/** Excel and LibreOffice need it to read the French labels as UTF-8. */
+/**
+ * Excel picks ',' or ';' as the field delimiter based on the OS regional
+ * settings (not the app language), so no fixed delimiter opens correctly
+ * for everyone \u2014 and the "sep=" directive trick turned out to break UTF-8
+ * BOM detection instead. A tab is never a decimal separator, and Excel
+ * auto-detects both a UTF-16 BOM and tab-delimited columns reliably on
+ * Mac and Windows regardless of locale, so we use that instead.
+ */
 export const CSV_BOM = '\uFEFF'
 const ROW_SEPARATOR = '\r\n'
-const NEEDS_QUOTING = /["\n\r,]/
+const CSV_DELIMITER = '\t'
+const NEEDS_QUOTING = /["\n\r\t]/
 const FORMULA_PREFIXES = ['=', '+', '-', '@', '\t', '\r']
 
 function defuse(value: string): string {
@@ -155,16 +160,19 @@ export function toCell(value: CsvValue): string {
 }
 
 export function toCsvRow(values: readonly CsvValue[]): string {
-  return values.map(toCell).join(',')
+  return values.map(toCell).join(CSV_DELIMITER)
+}
+
+function toDateOnly(date: Date): string {
+  return date.toISOString().slice(0, 10)
 }
 
 export function reportToCsvValues(report: ReportExportRow): CsvValue[] {
   return [
     report.eventNumber,
-    report.createdAt.toISOString(),
+    toDateOnly(report.createdAt),
     report.resolvedAt ? 'Résolu' : 'En attente',
-    report.resolvedAt ? report.resolvedAt.toISOString() : null,
-    report.category,
+    report.resolvedAt ? toDateOnly(report.resolvedAt) : null,
     REPORT_CATEGORY_LABELS[report.category] ?? report.category,
     report.description,
     report.typology === null ? null : reportTypologyLabel(report.typology),

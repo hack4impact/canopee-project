@@ -6,7 +6,7 @@ import { ReportPinsLayer } from '@/components/report-pins-layer'
 import { TopPanel } from '@/components/top-panel'
 import { UserLocation } from '@/components/user-location'
 import { getCurrentUserProfile } from '@/lib/auth/current-user'
-import { canAccess } from '@/lib/auth/roles'
+import { canAccess, isAdmin } from '@/lib/auth/roles'
 import { canViewObservations } from '@/lib/observations/access'
 
 export const metadata: Metadata = {
@@ -22,7 +22,10 @@ export default async function CartePage() {
   const canOpenDetail = canAccess(profile, 'pro')
 
   return (
-    <MapFiltersProvider observations={observations}>
+    <MapFiltersProvider
+      observations={observations}
+      canPickDates={isAdmin(profile)}
+    >
       <TopPanel />
       <HeatmapLayer />
       <ReportPinsLayer canOpenDetail={canOpenDetail} />

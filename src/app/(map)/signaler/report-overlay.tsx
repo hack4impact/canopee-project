@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import type { Role } from '@/lib/auth/roles'
 import { drainQueuedReports, pendingReportCount } from '@/lib/reports/send'
 import { ReportFlow } from './report-flow'
 
-export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
+export function ReportOverlay({ role }: { role: Role }) {
   const router = useRouter()
   const [pendingReports, setPendingReports] = useState(0)
   const [filling, setFilling] = useState(false)
@@ -121,7 +122,7 @@ export function ReportOverlay({ photoRequired }: { photoRequired: boolean }) {
         )}
 
         <ReportFlow
-          photoRequired={photoRequired}
+          audience={role}
           onFillingChange={setFilling}
           onBackChange={handleBackChange}
         />

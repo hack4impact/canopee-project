@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import { DateRangeFilter } from '@/components/date-range-filter'
 import { useMapFilters } from '@/components/map-filters-provider'
 import {
   REPORT_CATEGORY_LABELS,
@@ -20,6 +21,9 @@ export function ReportFilters() {
     heatmapVisible,
     heatmapAvailable,
     onToggleHeatmap,
+    canPickDates,
+    dateRange,
+    onDateRangeChange,
   } = useMapFilters()
   const [open, setOpen] = useState(false)
   const [expanded, setExpanded] = useState<ReportGroup | null>(null)
@@ -160,6 +164,17 @@ export function ReportFilters() {
               </div>
             )
           })}
+
+          {canPickDates && (
+            <div className="mt-2 border-t border-white/10 pt-3">
+              <DateRangeFilter
+                value={dateRange}
+                onChange={onDateRangeChange}
+                className="w-full px-2.5 text-xs"
+                contentClassName="w-(--radix-popover-trigger-width)"
+              />
+            </div>
+          )}
 
           {heatmapAvailable && (
             <div className="mt-2 border-t border-white/10 pt-3">

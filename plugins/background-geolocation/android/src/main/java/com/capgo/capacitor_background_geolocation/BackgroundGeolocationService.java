@@ -1,6 +1,7 @@
 package com.capgo.capacitor_background_geolocation;
 
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
@@ -9,6 +10,7 @@ import android.content.pm.ServiceInfo;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.graphics.Color;
+import android.graphics.drawable.Icon;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.media.MediaPlayer;
@@ -21,6 +23,7 @@ import android.os.Looper;
 import android.os.PowerManager;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.getcapacitor.Logger;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,6 +41,7 @@ public class BackgroundGeolocationService extends Service {
 
     // Must be unique for this application.
     private static final int NOTIFICATION_ID = 28351;
+    private static final long NOTIFICATION_REFRESH_MS = 10_000L;
 
     private String callbackId;
 
@@ -53,6 +57,14 @@ public class BackgroundGeolocationService extends Service {
     private Runnable restartRunnable;
     private float currentDistanceFilter;
     private long currentMinIntervalMs;
+    private long foregroundStartedAtMs = 0L;
+    private double distanceMeters = 0.0;
+    private android.location.Location lastDistanceFix;
+    private long lastNotificationRefreshMs = 0L;
+    private String notificationTitle;
+    private String notificationMessage;
+    private static volatile boolean patrolPaused = false;
+    private static volatile BackgroundGeolocationService activeInstance;
     private PatrolStepFilter stepFilter;
     private PowerManager.WakeLock wakeLock;
 
@@ -239,6 +251,8 @@ public class BackgroundGeolocationService extends Service {
             return;
         }
 
+        accumulateDistance(location);
+
         if (nativePostUrl != null) {
             postLocationNatively(location);
         }
@@ -338,6 +352,13 @@ public class BackgroundGeolocationService extends Service {
     // it appears that 'startForeground' is idempotent, so we just call it repeatedly
     // each time a background watcher is added.
     private void promoteToForeground(String notificationTitle, String notificationMessage) {
+        activeInstance = this;
+        this.notificationTitle = notificationTitle;
+        this.notificationMessage = notificationMessage;
+
+        if (foregroundStartedAtMs == 0L) {
+            foregroundStartedAtMs = System.currentTimeMillis();
+        }
         try {
             // This method has been known to fail due to weird
             // permission bugs, so we prevent any exceptions from
@@ -414,6 +435,12 @@ public class BackgroundGeolocationService extends Service {
             }
             client.removeUpdates(locationCallback);
             stopForeground(true);
+            foregroundStartedAtMs = 0L;
+            distanceMeters = 0.0;
+            lastDistanceFix = null;
+            lastNotificationRefreshMs = 0L;
+            activeInstance = null;
+            patrolPaused = false;
             stopSelf();
             releaseMediaPlayer();
             releaseWakeLock();
@@ -454,12 +481,23 @@ public class BackgroundGeolocationService extends Service {
     }
 
     private Notification createBackgroundNotification(String backgroundTitle, String backgroundMessage) {
+        long startedAtMs = foregroundStartedAtMs == 0L ? System.currentTimeMillis() : foregroundStartedAtMs;
+        String contentText = lastDistanceFix == null ? backgroundMessage : formatDistance(distanceMeters);
+
         Notification.Builder builder = new Notification.Builder(getApplicationContext())
             .setContentTitle(backgroundTitle)
-            .setContentText(backgroundMessage)
+            .setContentText(contentText)
             .setOngoing(true)
             .setPriority(Notification.PRIORITY_HIGH)
-            .setWhen(System.currentTimeMillis());
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
+            .setWhen(startedAtMs)
+            .setShowWhen(true)
+            .setUsesChronometer(true);
+
+        applyPromotedOngoing(builder, startedAtMs);
+
+        builder.addAction(buildAction(patrolPaused ? "Reprendre" : "Pause", getPackageName() + ".PATROL_TOGGLE"));
+        builder.addAction(buildAction("Terminer", getPackageName() + ".PATROL_STOP"));
 
         try {
             String name = getAppString("capacitor_background_geolocation_notification_icon", "mipmap/ic_launcher", getApplicationContext());
@@ -502,6 +540,86 @@ public class BackgroundGeolocationService extends Service {
         }
 
         return builder.build();
+    }
+
+    public static void setPatrolPaused(android.content.Context context, boolean paused) {
+        patrolPaused = paused;
+
+        BackgroundGeolocationService service = activeInstance;
+        if (service != null) {
+            service.refreshNotification();
+        }
+    }
+
+    private Notification.Action buildAction(String title, String action) {
+        Intent intent = new Intent(action).setPackage(getPackageName());
+
+        PendingIntent pending = PendingIntent.getBroadcast(
+            getApplicationContext(),
+            action.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        return new Notification.Action.Builder((Icon) null, title, pending).build();
+    }
+
+    private void accumulateDistance(android.location.Location location) {
+        if (lastDistanceFix != null) {
+            distanceMeters += lastDistanceFix.distanceTo(location);
+        }
+        lastDistanceFix = location;
+
+        long now = System.currentTimeMillis();
+        if (now - lastNotificationRefreshMs < NOTIFICATION_REFRESH_MS) {
+            return;
+        }
+        lastNotificationRefreshMs = now;
+        refreshNotification();
+    }
+
+    private void refreshNotification() {
+        if (notificationTitle == null) {
+            return;
+        }
+
+        try {
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.notify(NOTIFICATION_ID, createBackgroundNotification(notificationTitle, notificationMessage));
+            }
+        } catch (Exception exception) {
+            Logger.error("Failed to refresh notification", exception);
+        }
+    }
+
+    private static String formatDistance(double meters) {
+        if (meters < 1000.0) {
+            return Math.round(meters) + " m";
+        }
+        return String.format(Locale.getDefault(), "%.1f km", meters / 1000.0);
+    }
+
+    private void applyPromotedOngoing(Notification.Builder builder, long startedAtMs) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.BAKLAVA) {
+            return;
+        }
+
+        Bundle promoted = new Bundle();
+        promoted.putBoolean("android.requestPromotedOngoing", true);
+        builder.addExtras(promoted);
+
+        builder.setShortCriticalText(formatElapsed(System.currentTimeMillis() - startedAtMs));
+    }
+
+    private static String formatElapsed(long elapsedMs) {
+        long totalMinutes = Math.max(0L, elapsedMs) / 60000L;
+        long hours = totalMinutes / 60L;
+        long minutes = totalMinutes % 60L;
+        if (hours > 0L) {
+            return hours + "h" + (minutes < 10L ? "0" + minutes : String.valueOf(minutes));
+        }
+        return minutes + "min";
     }
 
     // Gets the identifier of the app's resource by name, returning 0 if not found.

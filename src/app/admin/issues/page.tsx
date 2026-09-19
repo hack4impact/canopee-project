@@ -2,6 +2,11 @@ import type { Metadata } from 'next'
 import { BackButton } from '@/components/back-button'
 import { BottomNav } from '@/components/bottom-nav'
 import { requireApprovedAccess } from '@/lib/auth/current-user'
+import {
+  lastTwoMonthsRange,
+  parseDateRangeParams,
+  toDateParam,
+} from '@/lib/reports/date-range'
 import { getReportPhotoUrl } from '@/lib/reports/photo'
 import {
   listAllReports,
@@ -20,7 +25,12 @@ export const dynamic = 'force-dynamic'
 export default async function AdminIssuesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sortBy?: string; statusFilter?: string }>
+  searchParams: Promise<{
+    sortBy?: string
+    statusFilter?: string
+    startDate?: string
+    endDate?: string
+  }>
 }) {
   await requireApprovedAccess('pro')
 
@@ -31,7 +41,18 @@ export default async function AdminIssuesPage({
       ? params.statusFilter
       : 'all'
 
-  const all = await listAllReports({ sortBy })
+  const defaultRange = lastTwoMonthsRange()
+  const startDateParam = params.startDate || toDateParam(defaultRange.from)
+  const endDateParam = params.endDate || toDateParam(defaultRange.to)
+  const parsedRange = parseDateRangeParams(startDateParam, endDateParam)
+  const dateRange = parsedRange.ok
+    ? parsedRange.range
+    : { start: defaultRange.from, end: defaultRange.to }
+  const dateRangeValue = parsedRange.ok
+    ? { from: startDateParam, to: endDateParam }
+    : { from: toDateParam(defaultRange.from), to: toDateParam(defaultRange.to) }
+
+  const all = await listAllReports({ sortBy, dateRange })
 
   const counts = {
     all: all.length,
@@ -71,6 +92,7 @@ export default async function AdminIssuesPage({
           sortBy={sortBy}
           statusFilter={statusFilter}
           counts={counts}
+          dateRange={dateRangeValue}
         />
       </main>
 

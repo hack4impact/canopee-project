@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo } from 'react'
+import type { Map as MapboxMap } from 'mapbox-gl'
 import type {
   FeatureCollection,
   MultiPolygon,
@@ -76,8 +77,11 @@ function buildWoodedAreaLabels(): FeatureCollection<Point, { NOM: string }> {
   }
 }
 
-export function WoodedAreasLayer() {
-  const map = useSharedMap()
+export function WoodedAreasLayer({
+  map: mapProp,
+}: { map?: MapboxMap | null } = {}) {
+  const sharedMap = useSharedMap()
+  const map = mapProp ?? sharedMap
   const labels = useMemo(() => buildWoodedAreaLabels(), [])
 
   useEffect(() => {

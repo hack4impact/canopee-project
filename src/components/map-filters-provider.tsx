@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import type { DateRangeValue } from '@/components/date-range-filter'
+import { lastTwoMonthsRange, toDateParam } from '@/lib/reports/date-range'
 import {
   REPORT_GROUPS,
   type ReportCategory,
@@ -33,6 +35,9 @@ type MapFiltersValue = {
   heatmapAvailable: boolean
   onToggleHeatmap: () => void
   onHeatmapAvailable: (available: boolean) => void
+  canPickDates: boolean
+  dateRange: DateRangeValue
+  onDateRangeChange: (range: DateRangeValue) => void
 }
 
 const MapFiltersContext = createContext<MapFiltersValue | null>(null)
@@ -49,9 +54,11 @@ export function useMapFilters(): MapFiltersValue {
 
 export function MapFiltersProvider({
   observations,
+  canPickDates = false,
   children,
 }: {
   observations: boolean
+  canPickDates?: boolean
   children: ReactNode
 }) {
   const router = useRouter()
@@ -79,6 +86,10 @@ export function MapFiltersProvider({
 
   const [heatmapVisible, setHeatmapVisible] = useState(true)
   const [heatmapAvailable, setHeatmapAvailable] = useState(false)
+  const [dateRange, setDateRange] = useState<DateRangeValue>(() => {
+    const { from, to } = lastTwoMonthsRange()
+    return { from: toDateParam(from), to: toDateParam(to) }
+  })
 
   const onHeatmapAvailable = useCallback(
     (available: boolean) => setHeatmapAvailable(available),
@@ -100,6 +111,9 @@ export function MapFiltersProvider({
       heatmapAvailable,
       onToggleHeatmap: () => setHeatmapVisible((current) => !current),
       onHeatmapAvailable,
+      canPickDates,
+      dateRange,
+      onDateRangeChange: setDateRange,
     }),
     [
       observations,
@@ -107,6 +121,8 @@ export function MapFiltersProvider({
       heatmapVisible,
       heatmapAvailable,
       onHeatmapAvailable,
+      canPickDates,
+      dateRange,
     ],
   )
 

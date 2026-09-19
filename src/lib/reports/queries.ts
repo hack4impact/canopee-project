@@ -108,15 +108,24 @@ function woodedAreaLabel(latitude: number, longitude: number): string {
 }
 
 export async function listAllReports(
-  options: { sortBy?: ReportSortBy; statusFilter?: ReportStatusFilter } = {},
+  options: {
+    sortBy?: ReportSortBy
+    statusFilter?: ReportStatusFilter
+    dateRange?: DateRange
+  } = {},
 ): Promise<ReportListItem[]> {
-  const { sortBy = 'wooded', statusFilter = 'all' } = options
-  const whereClause =
+  const { sortBy = 'wooded', statusFilter = 'all', dateRange } = options
+  const statusCondition =
     statusFilter === 'open'
       ? isNull(reports.resolvedAt)
       : statusFilter === 'resolved'
         ? isNotNull(reports.resolvedAt)
         : undefined
+  const whereClause = and(
+    statusCondition,
+    dateRange?.start ? gte(reports.createdAt, dateRange.start) : undefined,
+    dateRange?.end ? lte(reports.createdAt, dateRange.end) : undefined,
+  )
   const orderByClause =
     sortBy === 'wooded' ? desc(reports.createdAt) : desc(reports.createdAt)
 
@@ -166,6 +175,7 @@ export async function listAllReports(
 export async function listReportPins(
   status: ReportStatus,
   categories: readonly ReportCategory[] = PIN_CATEGORIES,
+  dateRange?: DateRange,
 ): Promise<ReportPin[]> {
   if (categories.length === 0) return []
   const rows = await db
@@ -189,6 +199,8 @@ export async function listReportPins(
             )
           : isNotNull(reports.resolvedAt),
         inArray(reports.category, [...categories]),
+        dateRange?.start ? gte(reports.createdAt, dateRange.start) : undefined,
+        dateRange?.end ? lte(reports.createdAt, dateRange.end) : undefined,
       ),
     )
     .orderBy(desc(reports.createdAt))

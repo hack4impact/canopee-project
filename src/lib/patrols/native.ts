@@ -119,6 +119,29 @@ export async function flushNativeQueue(): Promise<void> {
   }
 }
 
+async function ensureNotificationPermission(): Promise<void> {
+  try {
+    const permissions = await BackgroundGeolocation.checkPermissions()
+    debugLog('native.permissions', { ...permissions })
+
+    if (
+      Capacitor.getPlatform() !== 'android' ||
+      permissions.notification === 'granted'
+    ) {
+      return
+    }
+
+    const updated = await BackgroundGeolocation.requestPermissions({
+      permissions: ['notification'],
+    })
+    debugLog('native.permissions.notification', {
+      notification: updated.notification,
+    })
+  } catch (cause) {
+    debugLog('native.permissions.failed', describeError(cause))
+  }
+}
+
 export async function startNativeWatch(
   onPoint: (point: RecordedPoint, accuracy: number | null) => void,
   onError: (error: Error) => void,
@@ -134,12 +157,7 @@ export async function startNativeWatch(
     nativeUpload: token !== null,
   })
 
-  try {
-    const permissions = await BackgroundGeolocation.checkPermissions()
-    debugLog('native.permissions', { ...permissions })
-  } catch (cause) {
-    debugLog('native.permissions.failed', describeError(cause))
-  }
+  await ensureNotificationPermission()
 
   await BackgroundGeolocation.start(options, (location, error) => {
     if (error) {
