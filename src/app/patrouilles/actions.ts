@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { db, patrolPoints, patrols } from '@/db'
 import { requireApprovedAccess } from '@/lib/auth/current-user'
 import { totalDistanceMetres } from '@/lib/patrols/distance'
+import { isPatrolTooShort } from '@/lib/patrols/points'
 import { getActivePatrol } from '@/lib/patrols/queries'
 
 export type StartPatrolState = {
@@ -21,8 +22,12 @@ export type PatrolSummary = {
 
 export type EndPatrolState = {
   message?: string
+  discarded?: boolean
   summary?: PatrolSummary
 }
+
+const DISCARDED_MESSAGE =
+  'Patrouille trop courte, elle n’a pas été enregistrée.'
 
 /** Opens a patrol. Timestamps are left to the database, not the phone's clock. */
 export async function startPatrol(): Promise<StartPatrolState> {
@@ -84,6 +89,18 @@ export async function endPatrol(): Promise<EndPatrolState> {
       ),
     )
 
+    const durationSeconds = Math.round(
+      (endedAt.getTime() - active.startedAt.getTime()) / 1000,
+    )
+
+    if (isPatrolTooShort(distanceMeters, durationSeconds)) {
+      await db.delete(patrols).where(eq(patrols.id, active.id))
+
+      revalidatePath('/carte')
+
+      return { discarded: true, message: DISCARDED_MESSAGE }
+    }
+
     await db
       .update(patrols)
       .set({ endedAt, distanceMeters })
@@ -93,9 +110,7 @@ export async function endPatrol(): Promise<EndPatrolState> {
       id: active.id,
       startedAt: active.startedAt.toISOString(),
       endedAt: endedAt.toISOString(),
-      durationSeconds: Math.round(
-        (endedAt.getTime() - active.startedAt.getTime()) / 1000,
-      ),
+      durationSeconds,
       distanceMetres: distanceMeters,
     }
   } catch (cause) {
