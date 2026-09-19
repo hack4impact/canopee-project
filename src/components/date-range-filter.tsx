@@ -31,6 +31,7 @@ interface DateRangeFilterProps {
   value: DateRangeValue
   onChange: (range: DateRangeValue) => void
   className?: string
+  contentClassName?: string
 }
 
 function formatDateParam(value: string): string {
@@ -47,6 +48,7 @@ export function DateRangeFilter({
   value,
   onChange,
   className,
+  contentClassName,
 }: DateRangeFilterProps) {
   const [draft, setDraft] = useState<DateRangeValue>(value)
 
@@ -76,7 +78,7 @@ export function DateRangeFilter({
           {formatDateParam(value.from)} – {formatDateParam(value.to)}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto" align="start">
+      <PopoverContent className={cn('w-auto', contentClassName)} align="start">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="date-range-from">Du</Label>
           <Input

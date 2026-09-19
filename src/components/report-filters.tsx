@@ -171,6 +171,7 @@ export function ReportFilters() {
                 value={dateRange}
                 onChange={onDateRangeChange}
                 className="w-full px-2.5 text-xs"
+                contentClassName="w-(--radix-popover-trigger-width)"
               />
             </div>
           )}
