@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { BaseMap } from '@/components/base-map'
+import { WoodedAreasLayer } from '@/components/wooded-areas-layer'
 import { type ReportGroup } from '@/lib/reports/categories'
 import { REPORT_PIN_SIZE, reportPinSvg } from '@/lib/reports/group-style'
 import { clampToLavalBounds, type ReportPosition } from '@/lib/reports/location'
@@ -128,11 +129,14 @@ export function ReportLocationPicker({
   }, [map])
 
   return (
-    <BaseMap
-      className={`h-40 w-full overflow-hidden rounded-lg border border-canopee-green/30 sm:h-56 ${className ?? ''}`}
-      mapClassName={disabled ? 'touch-none opacity-60' : 'touch-none'}
-      ariaLabel="Carte pour situer le signalement. Touchez la carte ou faites glisser le repère pour ajuster la position."
-      onMapReady={handleMapReady}
-    />
+    <>
+      <BaseMap
+        className={`h-40 w-full overflow-hidden rounded-lg border border-canopee-green/30 sm:h-56 ${className ?? ''}`}
+        mapClassName={disabled ? 'touch-none opacity-60' : 'touch-none'}
+        ariaLabel="Carte pour situer le signalement. Touchez la carte ou faites glisser le repère pour ajuster la position."
+        onMapReady={handleMapReady}
+      />
+      <WoodedAreasLayer map={map} />
+    </>
   )
 }
