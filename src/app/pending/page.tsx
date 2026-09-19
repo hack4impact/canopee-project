@@ -16,12 +16,12 @@ export const dynamic = 'force-dynamic'
 
 const PENDING_COPY = {
   heading: "Votre compte est en attente d'approbation",
-  body: "Un administrateur examine chaque nouveau compte. Vous recevrez un courriel dès qu'il sera approuvé.",
+  body: "Vous recevrez un courriel dès qu'il sera approuvé.",
 }
 
 const REJECTED_COPY = {
   heading: "Votre compte n'a pas été approuvé",
-  body: "Un administrateur a examiné votre compte et ne l'a pas approuvé. Si vous pensez qu'il s'agit d'une erreur, répondez au courriel que vous avez reçu ou contactez Canopée.",
+  body: "Si vous pensez qu'il s'agit d'une erreur, répondez au courriel reçu ou contactez Canopée.",
 }
 
 export default async function PendingPage() {

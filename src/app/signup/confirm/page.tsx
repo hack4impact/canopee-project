@@ -36,15 +36,9 @@ export default async function SignupConfirmPage(
 
           <div className="mt-6 flex flex-col gap-4 text-center text-sm text-canopee-forest/80">
             <p>
-              Un courriel de confirmation a été envoyé à{' '}
-              <span className="font-medium text-canopee-forest">{sentTo}</span>.
-            </p>
-            <p>
-              Cliquez sur le lien qu&apos;il contient pour activer votre compte.
-            </p>
-            <p>
-              Si vous ne voyez pas le courriel, vérifiez vos courriels
-              indésirables.
+              Cliquez sur le lien envoyé à{' '}
+              <span className="font-medium text-canopee-forest">{sentTo}</span>{' '}
+              pour activer votre compte.
             </p>
           </div>
 

@@ -32,8 +32,7 @@ export default function ForgotPasswordPage() {
               Mot de passe oublié
             </h1>
             <p className="text-center text-sm text-canopee-forest/80">
-              Si un compte est associé à cette adresse, vous recevrez un lien
-              pour choisir un nouveau mot de passe.
+              Vous recevrez un lien pour choisir un nouveau mot de passe.
             </p>
           </header>
 

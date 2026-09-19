@@ -20,8 +20,7 @@ export function DeleteAccountForm({ className }: { className?: string }) {
     <form action={submit} className={className}>
       <p className="text-xs leading-snug text-canopee-forest">
         Vos patrouilles et leurs trajets seront supprimés définitivement. Vos
-        signalements sont conservés pour Canopée, mais ne seront plus liés à
-        votre compte. Cette action est irréversible.
+        signalements sont conservés, mais ne seront plus liés à votre compte.
       </p>
 
       <label className="flex flex-col gap-1">
