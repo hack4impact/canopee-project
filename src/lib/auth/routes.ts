@@ -11,6 +11,7 @@ const PUBLIC_ROUTES = [
   LOGIN_ROUTE,
   '/signup',
   '/auth/confirm',
+  '/politique-de-confidentialite',
   CITIZEN_REPORT_ROUTE,
   '/api/cron',
   '/api/public',

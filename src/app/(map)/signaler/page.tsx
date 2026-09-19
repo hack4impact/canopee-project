@@ -12,5 +12,5 @@ export const dynamic = 'force-dynamic'
 export default async function SignalerPage() {
   const profile = await requireApprovedUser()
 
-  return <ReportOverlay photoRequired={profile.role !== 'admin'} />
+  return <ReportOverlay role={profile.role} />
 }

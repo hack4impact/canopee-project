@@ -179,9 +179,19 @@ export function SignupForm() {
             name="law25Consent"
             value={input.law25Consent ? 'true' : ''}
           />
-          <Label htmlFor="law25Consent" className="font-normal">
-            J’accepte que Canopée utilise mon nom et mon courriel pour créer et
-            gérer mon compte.
+          <Label htmlFor="law25Consent" className="font-normal leading-normal">
+            <span>
+              J’accepte que Canopée utilise mon nom et mon adresse courriel pour
+              créer et gérer mon compte, conformément à sa{' '}
+              <Link
+                href="/politique-de-confidentialite"
+                target="_blank"
+                className="underline underline-offset-2 hover:text-canopee-forest"
+              >
+                politique de confidentialité
+              </Link>
+              .
+            </span>
           </Label>
         </div>
         {errors.law25Consent && (

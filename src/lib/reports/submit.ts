@@ -3,10 +3,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { after } from 'next/server'
 import { db, reports } from '@/db'
 import type { UserProfile } from '@/lib/auth/current-user'
-import {
-  isReportCategory,
-  reportGroupOfCategory,
-} from '@/lib/reports/categories'
+import { isReportCategory, type ReportAudience } from '@/lib/reports/categories'
 import { uploadReportPhotoToDrive } from '@/lib/reports/google-drive'
 import {
   CITIZEN_PHOTO_FOLDER,
@@ -228,7 +225,9 @@ async function submitReport(
     statut: String(formData.get('statut') ?? ''),
   }
 
-  const errors = validateReport(input)
+  const audience: ReportAudience =
+    reporter.kind === 'user' ? reporter.profile.role : 'citizen'
+  const errors = validateReport(input, audience)
   const photo = readPhoto(formData)
   const photoError = validatePhoto(photo)
 
@@ -253,17 +252,6 @@ async function submitReport(
     input.longitude === null
   ) {
     return { errors }
-  }
-
-  if (
-    reporter.kind === 'citizen' &&
-    reportGroupOfCategory(input.category) === 'faune_flore'
-  ) {
-    return {
-      errors: {
-        category: 'Ce type de signalement est réservé aux patrouilleurs.',
-      },
-    }
   }
 
   let photoPath: string | null = null
@@ -300,8 +288,8 @@ async function submitReport(
               reporterLaw25ConsentedAt: new Date(),
             }),
         category: input.category,
-        description: input.description.trim(),
-        typology: input.typology.trim() || null,
+        description: input.description.trim() || null,
+        typology: audience === 'citizen' ? null : input.typology.trim() || null,
         quantity: parseQuantity(input.quantity),
         species: input.species.trim() || null,
         unit: input.unit.trim() || null,

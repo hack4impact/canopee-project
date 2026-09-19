@@ -1,12 +1,18 @@
-import { isWithinLaval } from '@/lib/mapbox/config'
 import {
+  canReportCategory,
   isReportCategory,
   isReportTypology,
   reportGroupOfCategory,
+  reportTypologies,
   REPORT_UNITS,
+  type ReportAudience,
 } from '@/lib/reports/categories'
+import { isWithinLavalBounds } from '@/lib/reports/location'
 
 export const MAX_DESCRIPTION_LENGTH = 500
+
+export const OUT_OF_BOUNDS_MESSAGE =
+  'Cette position est hors de Laval. Les signalements doivent être situés sur le territoire de Laval.'
 
 export const MAX_PHOTO_BYTES = 2 * 1024 * 1024
 
@@ -46,20 +52,23 @@ export type ReportErrors = Partial<
   >
 >
 
-export function validateReport(input: ReportInput): ReportErrors {
+export function validateReport(
+  input: ReportInput,
+  audience: ReportAudience = 'pro',
+): ReportErrors {
   const errors: ReportErrors = {}
 
   if (!input.category) {
     errors.category = 'Choisissez une catégorie.'
   } else if (!isReportCategory(input.category)) {
     errors.category = 'Cette catégorie n’existe pas.'
+  } else if (!canReportCategory(input.category, audience)) {
+    errors.category = 'Cette catégorie n’est pas disponible pour votre compte.'
   }
 
   const description = input.description.trim()
 
-  if (!description) {
-    errors.description = 'Décrivez ce que vous avez observé.'
-  } else if (description.length > MAX_DESCRIPTION_LENGTH) {
+  if (description.length > MAX_DESCRIPTION_LENGTH) {
     errors.description = `Utilisez au plus ${MAX_DESCRIPTION_LENGTH} caractères.`
   }
 
@@ -69,16 +78,20 @@ export function validateReport(input: ReportInput): ReportErrors {
   ) {
     errors.latitude =
       'Une position est nécessaire pour situer le signalement. Autorisez la localisation, ou placez le repère sur la carte.'
-  } else if (!isWithinLaval(input.latitude, input.longitude)) {
-    errors.latitude =
-      'Les signalements sont limités au territoire de Laval. Placez le repère à l’intérieur de la zone.'
+  } else if (
+    !isWithinLavalBounds({
+      latitude: input.latitude,
+      longitude: input.longitude,
+    })
+  ) {
+    errors.latitude = OUT_OF_BOUNDS_MESSAGE
   }
 
   if (isReportCategory(input.category)) {
     const group = reportGroupOfCategory(input.category)
 
-    if (group === 'entretien') {
-      validateTypology(input.typology, errors)
+    if (group === 'entretien' && audience !== 'citizen') {
+      validateTypology(input.typology, audience, errors)
     }
 
     if (group === 'faune_flore') {
@@ -98,11 +111,17 @@ export function validateReport(input: ReportInput): ReportErrors {
   return errors
 }
 
-function validateTypology(value: string | undefined, errors: ReportErrors) {
+function validateTypology(
+  value: string | undefined,
+  audience: ReportAudience,
+  errors: ReportErrors,
+) {
   if (!value) {
     errors.typology = 'Choisissez la typologie.'
   } else if (!isReportTypology(value)) {
     errors.typology = 'Cette typologie n’existe pas.'
+  } else if (!reportTypologies(audience).includes(value)) {
+    errors.typology = 'Cette typologie n’est pas disponible pour votre compte.'
   }
 }
 

@@ -54,10 +54,10 @@ export default async function RootPage() {
         <header className="flex flex-col items-center">
           <h1>
             <Image
-              src="/logos/canopee-logo.png"
+              src="/logos/canopee-logo-hd.png"
               alt="Canopée"
-              width={260}
-              height={140}
+              width={375}
+              height={102}
               priority
               className="h-auto w-64"
             />

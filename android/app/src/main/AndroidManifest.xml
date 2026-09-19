@@ -39,6 +39,15 @@
 
         </activity>
 
+        <receiver
+            android:name=".PatrolActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="org.reseaucanopee.app.PATROL_TOGGLE" />
+                <action android:name="org.reseaucanopee.app.PATROL_STOP" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -50,7 +59,17 @@
         </provider>
     </application>
 
+    <!-- Android 11+ hides other apps from resolveActivity, so without this the
+    camera intent never resolves and Capacitor falls back to the file picker. -->
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+    </queries>
+
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 </manifest>

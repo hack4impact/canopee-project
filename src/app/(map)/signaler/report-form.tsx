@@ -16,18 +16,19 @@ import { CITIZEN_REPORT_ROUTE } from '@/lib/auth/routes'
 import { SpeciesPicto, type SpeciesPictoName } from '@/components/species-picto'
 import { SpeciesCombobox } from '@/components/species-combobox'
 import { Spinner } from '@/components/spinner'
-import { isGeolocationAvailable, isWithinLaval } from '@/lib/mapbox'
+import { isGeolocationAvailable } from '@/lib/mapbox'
 import {
   REPORT_CATEGORY_LABELS,
-  REPORT_GROUP_CATEGORIES,
   REPORT_GROUP_LABELS,
-  REPORT_TYPOLOGIES,
   REPORT_TYPOLOGY_LABELS,
   REPORT_UNITS,
   REPORT_UNIT_LABELS,
   REPORT_FAUNE_CATEGORIES,
   REPORT_FLORE_CATEGORIES,
   isReportCategory,
+  reportGroupCategories,
+  reportTypologies,
+  type ReportAudience,
   type ReportGroup,
 } from '@/lib/reports/categories'
 import {
@@ -35,11 +36,15 @@ import {
   validateReporterEmail,
 } from '@/lib/reports/citizen'
 import { downscalePhoto } from '@/lib/reports/downscale'
-import { type ReportPosition } from '@/lib/reports/location'
+import {
+  isWithinLavalBounds,
+  type ReportPosition,
+} from '@/lib/reports/location'
 import {
   isValidReport,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUANTITY,
+  OUT_OF_BOUNDS_MESSAGE,
   validatePhoto,
   validateReport,
   type ReportErrors,
@@ -97,15 +102,15 @@ export function ReportForm({
   group,
   onBack,
   onBackChange,
-  photoRequired,
-  citizen = false,
+  audience,
 }: {
   group: ReportGroup
   onBack: () => void
   onBackChange?: (handler: (() => void) | null) => void
-  photoRequired: boolean
-  citizen?: boolean
+  audience: ReportAudience
 }) {
+  const citizen = audience === 'citizen'
+
   const [state, formAction, pending] = useActionState(
     citizen ? sendCitizenReport : sendReport,
     initialState,
@@ -135,8 +140,7 @@ export function ReportForm({
         group={group}
         onExit={onBack}
         onBackChange={onBackChange}
-        photoRequired={photoRequired}
-        citizen={citizen}
+        audience={audience}
         formAction={formAction}
         pending={pending}
         serverErrors={state.errors}
@@ -256,8 +260,7 @@ type ReportWizardProps = {
   group: ReportGroup
   onExit: () => void
   onBackChange?: (handler: (() => void) | null) => void
-  photoRequired: boolean
-  citizen: boolean
+  audience: ReportAudience
   formAction: (formData: FormData) => void
   pending: boolean
   serverErrors?: ReportErrors
@@ -284,7 +287,7 @@ const STEP_TITLES: Record<StepKey, string> = {
   nombre: 'Combien ?',
   espece: 'Quelle espèce avez-vous observé ?',
   details: 'Détails',
-  commentaire: 'Commentaire',
+  commentaire: 'Commentaire (facultatif)',
   position: 'Où exactement ?',
 }
 
@@ -318,13 +321,15 @@ function ReportWizard({
   group,
   onExit,
   onBackChange,
-  photoRequired,
-  citizen,
+  audience,
   formAction,
   pending,
   serverErrors,
 }: ReportWizardProps) {
   const theme = REPORT_THEMES[group]
+  const citizen = audience === 'citizen'
+  const photoRequired = audience !== 'admin' && !citizen
+  const typologies = reportTypologies(audience)
   const [stepIndex, setStepIndex] = useState(0)
   const [direction, setDirection] = useState<'forward' | 'back'>('forward')
   const [reporterEmail, setReporterEmail] = useState('')
@@ -358,9 +363,6 @@ function ReportWizard({
   const position: ReportPosition | null =
     override ?? (gpsFix.status === 'ready' ? gpsFix.position : null)
 
-  const positionInLaval =
-    position !== null && isWithinLaval(position.latitude, position.longitude)
-
   const errors = { ...serverErrors, ...clientErrors }
 
   const speciesMatch = useMemo(
@@ -368,10 +370,15 @@ function ReportWizard({
       findSpecies(species, isReportCategory(category) ? category : undefined),
     [species, category],
   )
+  const speciesIsFreeText = category === 'faune_flore_other'
+  const outOfBounds = position !== null && !isWithinLavalBounds(position)
 
-  const steps = citizen
-    ? (['courriel', ...GROUP_STEPS[group]] as readonly StepKey[])
-    : GROUP_STEPS[group]
+  const groupSteps = GROUP_STEPS[group].filter(
+    (key) => key !== 'typologie' || typologies.length > 0,
+  )
+  const steps: readonly StepKey[] = citizen
+    ? ['courriel', ...groupSteps]
+    : groupSteps
   const step = steps[stepIndex]
   const isFauneFlore = group === 'faune_flore'
 
@@ -482,17 +489,19 @@ function ReportWizard({
       case 'nombre':
         return quantity === '' || Number.isInteger(Number(quantity))
       case 'espece':
-        return speciesMatch !== undefined
+        return speciesIsFreeText
+          ? species.trim() !== ''
+          : speciesMatch !== undefined
       case 'details':
         return (
-          description.trim() !== '' &&
+          description.trim().length <= MAX_DESCRIPTION_LENGTH &&
           quantityIsValid() &&
           (quantity.trim() === '' || unit !== '')
         )
       case 'commentaire':
-        return description.trim() !== ''
+        return description.trim().length <= MAX_DESCRIPTION_LENGTH
       case 'position':
-        return positionInLaval
+        return position !== null && !outOfBounds
     }
   }
 
@@ -544,17 +553,20 @@ function ReportWizard({
   }, [onBackChange])
 
   function submit(formData: FormData) {
-    const found = validateReport({
-      category,
-      description,
-      latitude: position?.latitude ?? null,
-      longitude: position?.longitude ?? null,
-      typology,
-      quantity,
-      species,
-      unit,
-      habitat,
-    })
+    const found = validateReport(
+      {
+        category,
+        description,
+        latitude: position?.latitude ?? null,
+        longitude: position?.longitude ?? null,
+        typology,
+        quantity,
+        species,
+        unit,
+        habitat,
+      },
+      audience,
+    )
 
     const emailError = citizen ? validateReporterEmail(reporterEmail) : null
     const consentError = citizen
@@ -703,8 +715,16 @@ function ReportWizard({
                 htmlFor="reporterConsent"
                 className="text-xs text-canopee-forest/80"
               >
-                J’accepte que Canopée utilise mon courriel pour m’informer du
-                suivi de mon signalement.
+                J’accepte que Canopée utilise mon adresse courriel pour
+                m’informer du suivi de mon signalement, conformément à sa{' '}
+                <Link
+                  href="/politique-de-confidentialite"
+                  target="_blank"
+                  className="underline underline-offset-2 hover:text-canopee-forest"
+                >
+                  politique de confidentialité
+                </Link>
+                .
               </label>
             </div>
             {errors.reporterConsent && (
@@ -717,7 +737,7 @@ function ReportWizard({
 
         {step === 'constate' && (
           <div className="grid gap-2 sm:grid-cols-2">
-            {REPORT_GROUP_CATEGORIES[group].map((value) => (
+            {reportGroupCategories(group, audience).map((value) => (
               <button
                 key={value}
                 type="button"
@@ -740,7 +760,7 @@ function ReportWizard({
 
         {step === 'typologie' && (
           <div className="grid gap-2 sm:grid-cols-2">
-            {REPORT_TYPOLOGIES.map((value) => (
+            {typologies.map((value) => (
               <button
                 key={value}
                 type="button"
@@ -853,7 +873,8 @@ function ReportWizard({
               </p>
             ) : (
               species.trim() !== '' &&
-              !speciesMatch && (
+              !speciesMatch &&
+              !speciesIsFreeText && (
                 <p className="text-sm text-canopee-forest/60">
                   Choisissez une espèce dans la liste.
                 </p>
@@ -877,7 +898,15 @@ function ReportWizard({
             />
 
             <div className="flex items-center justify-between gap-3">
-              <span className={LABEL}>Veuillez ajouter une photo</span>
+              <span className={LABEL}>
+                Veuillez ajouter une photo
+                {!photoRequired && (
+                  <span className="font-normal text-canopee-forest/60">
+                    {' '}
+                    (facultatif)
+                  </span>
+                )}
+              </span>
 
               <button
                 type="button"
@@ -1092,17 +1121,16 @@ function ReportWizard({
               </p>
             )}
 
-            {position !== null && !positionInLaval && (
-              <p role="alert" className={ERROR}>
-                Les signalements sont limités au territoire de Laval. Placez le
-                repère à l’intérieur de la zone.
+            {outOfBounds ? (
+              <p id="latitude-error" role="alert" className={ERROR}>
+                {OUT_OF_BOUNDS_MESSAGE} Placez le repère sur la carte.
               </p>
-            )}
-
-            {errors.latitude && (
-              <p id="latitude-error" className={ERROR}>
-                {errors.latitude}
-              </p>
+            ) : (
+              errors.latitude && (
+                <p id="latitude-error" className={ERROR}>
+                  {errors.latitude}
+                </p>
+              )
             )}
           </div>
         )}
@@ -1166,7 +1194,7 @@ function CommentField({
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor="description" className={hideLabel ? 'sr-only' : LABEL}>
-        Commentaire
+        Commentaire (facultatif)
       </label>
       <textarea
         id="description"

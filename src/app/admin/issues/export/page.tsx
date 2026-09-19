@@ -32,7 +32,7 @@ export default async function AdminIssuesExportPage() {
         </header>
 
         <section className="flex flex-col gap-1.5">
-          <h2 className={SECTION_TITLE}>Entretien et intervention</h2>
+          <h2 className={SECTION_TITLE}>Entretien et activité humaine</h2>
           <p className={SECTION_HINT}>
             Choisissez les colonnes à inclure, puis téléchargez le fichier CSV.
           </p>

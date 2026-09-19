@@ -45,18 +45,26 @@ describe('CSV helpers', () => {
 
   it('writes French typology labels instead of raw keys', () => {
     expect(
-      reportToCsvValues({ ...REPORT, typology: 'intervention_urgente' })[7],
+      reportToCsvValues({ ...REPORT, typology: 'intervention_urgente' })[6],
     ).toBe('Intervention urgente')
   })
 
-  it('derives status and resolved date', () => {
+  it('derives status and resolved date without timestamps', () => {
+    expect(reportToCsvValues(REPORT)[1]).toBe('2026-03-04')
     expect(reportToCsvValues(REPORT)[2]).toBe('En attente')
+    expect(reportToCsvValues(REPORT)[3]).toBeNull()
     expect(
       reportToCsvValues({
         ...REPORT,
         resolvedAt: new Date('2026-03-05T09:00:00.000Z'),
       })[2],
     ).toBe('Résolu')
+    expect(
+      reportToCsvValues({
+        ...REPORT,
+        resolvedAt: new Date('2026-03-05T09:00:00.000Z'),
+      })[3],
+    ).toBe('2026-03-05')
   })
 
   it('parses and validates selected columns', () => {
@@ -89,7 +97,7 @@ describe('CSV helpers', () => {
       'Numéro de signalement unique,Statut du signalement,Latitude',
       '12,En attente,45.588',
     ])
-    expect(CSV_HEADER_LABELS.categorie).toBe('Catégorie')
+    expect(CSV_HEADER_LABELS.libelle_categorie).toBe('Catégorie')
   })
 
   it('exports all columns by default and keeps the filename date', () => {
