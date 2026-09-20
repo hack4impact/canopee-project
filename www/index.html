@@ -274,6 +274,15 @@
 
     <script>
       ;(function () {
+        try {
+          var plugins = window.Capacitor && window.Capacitor.Plugins
+          var splash = plugins && plugins.SplashScreen
+
+          if (splash && typeof splash.hide === 'function') {
+            splash.hide()
+          }
+        } catch (error) {}
+
         var button = document.getElementById('retry')
         var label = document.getElementById('retry-label')
         var retrying = false
@@ -320,7 +329,9 @@
         }
 
         document.addEventListener('gesturestart', blockZoom, { passive: false })
-        document.addEventListener('gesturechange', blockZoom, { passive: false })
+        document.addEventListener('gesturechange', blockZoom, {
+          passive: false,
+        })
         document.addEventListener('gestureend', blockZoom, { passive: false })
 
         function blockTouchOutsideButton(event) {
