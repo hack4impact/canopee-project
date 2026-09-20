@@ -30,6 +30,8 @@ const ROLE_LABELS: Record<Role, string> = {
   admin: 'Administrateur',
 }
 
+const SUPPORT_EMAIL = 'direction@reseaucanopee.org'
+
 const dateFormatter = new Intl.DateTimeFormat('fr-CA', {
   dateStyle: 'long',
   timeZone: 'America/Toronto',
@@ -64,7 +66,7 @@ export default async function ProfilPage() {
 
   return (
     <div className="flex min-h-dvh w-full flex-col bg-canopee-cream">
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-36 sm:px-6">
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-bottom-nav sm:px-6">
         <div className="flex flex-col gap-0.5">
           <h1 className="font-heading text-3xl text-canopee-forest">Profil</h1>
           <p className="text-lg font-bold text-canopee-forest">
@@ -232,6 +234,17 @@ export default async function ProfilPage() {
         )}
 
         <AccountSection />
+
+        <section className="flex flex-col gap-1.5">
+          <h2 className="text-sm font-extrabold tracking-[0.08em] text-canopee-forest/50 uppercase">
+            Aide et contact
+          </h2>
+
+          <a href={`mailto:${SUPPORT_EMAIL}`} className={ADMIN_ROW}>
+            <span className="flex-1">{SUPPORT_EMAIL}</span>
+            <ChevronRightIcon className="size-3.5 shrink-0 opacity-45" />
+          </a>
+        </section>
       </main>
 
       <BottomNav />

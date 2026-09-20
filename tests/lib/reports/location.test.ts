@@ -35,8 +35,12 @@ describe('isWithinLavalBounds', () => {
     expect(isWithinLavalBounds(INSIDE)).toBe(true)
   })
 
-  it('accepts a position exactly on the bounds', () => {
-    expect(isWithinLavalBounds({ latitude: north, longitude: west })).toBe(true)
+  it('rejects a position on the far shore, even inside the loose bounding rectangle', () => {
+    // Rosemère, across the Rivière des Mille Îles: inside LAVAL_BOUNDS but not in Laval.
+    const rosemere = { latitude: 45.637, longitude: -73.798 }
+
+    expect(isWithinLavalBounds(rosemere)).toBe(false)
+    expect(isWithinLavalBounds(clampToLavalBounds(rosemere))).toBe(false)
   })
 
   it('rejects a position outside Laval', () => {

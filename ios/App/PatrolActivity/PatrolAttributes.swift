@@ -33,7 +33,7 @@ public struct PatrolAttributes: ActivityAttributes {
 }
 
 public enum PatrolActivityBridge {
-    public static let appGroup = "group.org.reseaucanopee.org"
+    public static let appGroup = "group.org.reseaucanopee.shared"
     public static let commandKey = "patrol.command"
     public static let commandAtKey = "patrol.commandAt"
     public static let darwinNotification = "org.reseaucanopee.app.patrol.command"

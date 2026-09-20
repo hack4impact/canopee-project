@@ -93,6 +93,10 @@ html body[data-scroll-locked] {
   }
 }
 
+@utility pb-bottom-nav {
+  padding-bottom: calc(9rem + env(safe-area-inset-bottom));
+}
+
 ::view-transition-group(.morph) {
   animation-duration: 320ms;
   animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);

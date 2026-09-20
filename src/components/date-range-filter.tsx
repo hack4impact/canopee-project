@@ -73,21 +73,29 @@ export function DateRangeFilter({
         <Button
           variant="outline"
           className={cn(
-            'text-canopee-forest dark:border-border dark:bg-background dark:hover:bg-muted',
+            'w-full min-w-0 justify-start text-canopee-forest dark:border-border dark:bg-background dark:hover:bg-muted',
             className,
           )}
         >
           <CalendarIcon data-icon="inline-start" />
-          {formatDateParam(value.from)} – {formatDateParam(value.to)}
+          <span className="truncate">
+            {formatDateParam(value.from)} – {formatDateParam(value.to)}
+          </span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className={cn('w-auto', contentClassName)} align="start">
+      <PopoverContent
+        className={cn(
+          'w-auto min-w-60 max-w-[calc(100vw-1.5rem)]',
+          contentClassName,
+        )}
+        align="start"
+      >
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="date-range-from">Du</Label>
           <Input
-            className="dark:bg-white"
             id="date-range-from"
             type="date"
+            className="block w-full min-w-0 appearance-none dark:bg-white"
             value={draft.from}
             max={draft.to}
             onChange={(event) => commit({ ...draft, from: event.target.value })}
@@ -96,9 +104,9 @@ export function DateRangeFilter({
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="date-range-to">Au</Label>
           <Input
-            className="dark:bg-white"
             id="date-range-to"
             type="date"
+            className="block w-full min-w-0 appearance-none dark:bg-white"
             value={draft.to}
             min={draft.from}
             onChange={(event) => commit({ ...draft, to: event.target.value })}

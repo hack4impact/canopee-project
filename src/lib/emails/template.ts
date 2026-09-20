@@ -28,7 +28,7 @@ export type EmailContent = {
   logoUrl?: string
 }
 
-const DEFAULT_SITE_URL = 'https://canopee-project.vercel.app'
+const DEFAULT_SITE_URL = 'https://app.reseaucanopee.org'
 
 function logoUrl(): string {
   const base = (process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL).replace(

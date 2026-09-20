@@ -5,8 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Canopée',
   webDir: 'www',
   server: {
-    url:
-      process.env.CAPACITOR_SERVER_URL ?? 'https://canopee-project.vercel.app',
+    url: process.env.CAPACITOR_SERVER_URL ?? 'https://app.reseaucanopee.org',
     errorPath: 'index.html',
   },
   android: {

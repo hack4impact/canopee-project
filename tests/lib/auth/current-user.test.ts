@@ -37,8 +37,12 @@ vi.mock('@/db', () => ({
   },
 }))
 
-const { getCurrentUserProfile, requireApprovedAccess, requireApprovedUser } =
-  await import('@/lib/auth/current-user')
+const {
+  getCurrentUserProfile,
+  requireApprovedAccess,
+  requireApprovedUser,
+  requireSignedInUser,
+} = await import('@/lib/auth/current-user')
 
 function signedInAs(role: Role, status: Status) {
   getUser.mockResolvedValue({ data: { user: { id: 'auth-1' } } })
@@ -183,5 +187,42 @@ describe('requireApprovedAccess (endpoint gate)', () => {
   it('surfaces a lookup failure rather than 403ing a legitimate caller', async () => {
     databaseUnavailable()
     await expect(requireApprovedAccess()).rejects.not.toThrow(ForbiddenError)
+  })
+})
+
+describe('requireSignedInUser (account gate)', () => {
+  it('sends a signed-out visitor to the login form', async () => {
+    signedOut()
+    await expect(requireSignedInUser()).rejects.toThrow(
+      new RedirectError('/login'),
+    )
+  })
+
+  it('sends a signed-in caller with no users row to the login form', async () => {
+    signedInWithoutProfile()
+    await expect(requireSignedInUser()).rejects.toThrow(
+      new RedirectError('/login'),
+    )
+  })
+
+  it('lets a pending volunteer through so they can delete their account', async () => {
+    signedInAs('volunteer', 'pending')
+    await expect(requireSignedInUser()).resolves.toMatchObject({
+      status: 'pending',
+    })
+  })
+
+  it('lets a rejected volunteer through too', async () => {
+    signedInAs('volunteer', 'rejected')
+    await expect(requireSignedInUser()).resolves.toMatchObject({
+      status: 'rejected',
+    })
+  })
+
+  it('lets an approved volunteer through', async () => {
+    signedInAs('volunteer', 'approved')
+    await expect(requireSignedInUser()).resolves.toMatchObject({
+      status: 'approved',
+    })
   })
 })

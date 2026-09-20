@@ -151,7 +151,7 @@ export function pinPopupContent(
     REPORT_CATEGORY_LABELS[properties.category] ?? properties.category
 
   const meta = document.createElement('p')
-  meta.className = 'text-xs text-canopee-forest/65'
+  meta.className = 'font-sans text-xs text-canopee-forest/65'
   meta.textContent = [
     formatPinDate(properties.createdAt),
     formatEventNumber(Number(properties.eventNumber)),

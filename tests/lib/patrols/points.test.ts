@@ -3,6 +3,9 @@ import {
   capBuffer,
   classifySyncResponse,
   isAccurateEnough,
+  isPatrolTooShort,
+  MIN_PATROL_DISTANCE_METRES,
+  MIN_PATROL_DURATION_SECONDS,
   isPlausibleStep,
   MAX_ACCURACY_METRES,
   describeSignalGap,
@@ -561,5 +564,25 @@ describe('groupPointsByPatrol', () => {
     )
 
     expect(dropped).toBe(1)
+  })
+})
+
+describe('isPatrolTooShort', () => {
+  it('discards a tap that went nowhere', () => {
+    expect(isPatrolTooShort(12, 20)).toBe(true)
+  })
+
+  it('keeps a short walk that lasted long enough to be deliberate', () => {
+    expect(isPatrolTooShort(40, 600)).toBe(false)
+  })
+
+  it('keeps a quick walk that still covered ground', () => {
+    expect(isPatrolTooShort(450, 90)).toBe(false)
+  })
+
+  it('keeps a patrol sitting exactly on both thresholds', () => {
+    expect(
+      isPatrolTooShort(MIN_PATROL_DISTANCE_METRES, MIN_PATROL_DURATION_SECONDS),
+    ).toBe(false)
   })
 })

@@ -5,7 +5,10 @@ import {
   canDeleteAccounts,
   deleteAccount as removeAccount,
 } from '@/lib/auth/delete-account'
-import { requireApprovedUser } from '@/lib/auth/current-user'
+import {
+  requireApprovedUser,
+  requireSignedInUser,
+} from '@/lib/auth/current-user'
 import {
   isValid,
   validatePasswordChange,
@@ -67,7 +70,7 @@ export async function deleteAccount(
   _previous: DeleteAccountState,
   formData: FormData,
 ): Promise<DeleteAccountState> {
-  const profile = await requireApprovedUser()
+  const profile = await requireSignedInUser()
 
   if (String(formData.get('confirmation') ?? '').trim() !== 'SUPPRIMER') {
     return { message: 'Saisissez SUPPRIMER pour confirmer.' }

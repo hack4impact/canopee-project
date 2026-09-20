@@ -30,10 +30,7 @@ export default async function CartePage() {
       <HeatmapLayer />
       <ReportPinsLayer canOpenDetail={canOpenDetail} />
       {observations && <ObservationsLayer canOpenDetail={canOpenDetail} />}
-      <UserLocation
-        flyToOnLocate={false}
-        compassClassName="absolute top-[calc(1rem+env(safe-area-inset-top))] left-4 z-10"
-      />
+      <UserLocation compassClassName="absolute top-[calc(1rem+env(safe-area-inset-top))] left-4 z-10" />
     </MapFiltersProvider>
   )
 }

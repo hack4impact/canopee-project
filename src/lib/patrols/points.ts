@@ -180,6 +180,20 @@ function isCoordinate(value: unknown, limit: number): value is number {
 
 export const MAX_ACCURACY_METRES = 50
 
+export const MIN_PATROL_DISTANCE_METRES = 100
+
+export const MIN_PATROL_DURATION_SECONDS = 180
+
+export function isPatrolTooShort(
+  distanceMetres: number,
+  durationSeconds: number,
+): boolean {
+  return (
+    distanceMetres < MIN_PATROL_DISTANCE_METRES &&
+    durationSeconds < MIN_PATROL_DURATION_SECONDS
+  )
+}
+
 export const MAX_STEP_SPEED_MPS = 8
 
 export const STEP_NOISE_TOLERANCE_METRES = 25

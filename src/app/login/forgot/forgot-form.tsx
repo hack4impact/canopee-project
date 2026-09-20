@@ -44,7 +44,7 @@ export function ForgotForm() {
           className="rounded-lg bg-canopee-green/10 px-3 py-2.5 text-center text-sm font-medium text-canopee-forest"
         >
           Si un compte est associé à cette adresse, un courriel vient d’être
-          envoyé. Vérifiez vos courriels indésirables si vous ne le voyez pas.
+          envoyé.
         </p>
 
         <Link

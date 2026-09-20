@@ -254,13 +254,20 @@ describe('validateReport', () => {
     ).toBeDefined()
   })
 
-  it('rejects a position outside Laval', () => {
+  it('rejects a position outside Laval for a citizen report', () => {
+    expect(
+      validateReport(input({ latitude: 0, longitude: 0 }), 'citizen').latitude,
+    ).toBeDefined()
+    expect(
+      validateReport(input({ latitude: 45.5017, longitude: -73.4 }), 'citizen')
+        .latitude,
+    ).toBeDefined()
+  })
+
+  it('does not enforce the Laval boundary for a pro/patrol report', () => {
     expect(
       validateReport(input({ latitude: 0, longitude: 0 })).latitude,
-    ).toBeDefined()
-    expect(
-      validateReport(input({ latitude: 45.5017, longitude: -73.4 })).latitude,
-    ).toBeDefined()
+    ).toBeUndefined()
   })
 
   it('accepts the Faune/flore Autre category with a free-text species', () => {

@@ -54,7 +54,7 @@ export default async function PatrouillesHistoryPage({
 
   return (
     <div className="flex min-h-dvh w-full flex-col bg-canopee-cream">
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 pb-32 sm:px-6">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 pb-bottom-nav sm:px-6">
         <header className="sticky top-0 z-30 -mx-4 bg-canopee-cream/95 px-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-3 backdrop-blur-sm sm:-mx-6 sm:px-6 flex items-center gap-3">
           <BackButton fallback={ORIGINS[origin].href} />
           <h1 className="font-heading text-2xl text-canopee-forest sm:text-3xl">
