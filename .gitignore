@@ -54,3 +54,12 @@ next-env.d.ts
 # Chapter documents, not part of the project
 /documents
 /docs/chapitre
+
+# Local data files, not part of the project
+/boises-canopee.geojson
+/sad-bois-d-interet-municipal.geojson
+/src/lib/patrols/boises-canopee.json
+/src/lib/patrols/wooded-areas.json
+
+# Android build cache
+plugins/background-geolocation/android/.gradle/

@@ -7,6 +7,7 @@ import { PatrolSync } from '@/components/patrol-sync'
 import { ReportSync } from '@/components/report-sync'
 import { DeepLink } from '@/components/deep-link'
 import { PortraitLock } from '@/components/portrait-lock'
+import { SplashScreen } from '@/components/splash-screen'
 import { getCurrentUserProfile } from '@/lib/auth/current-user'
 import { getActivePatrol } from '@/lib/patrols/queries'
 import './globals.css'
@@ -106,6 +107,7 @@ export default async function RootLayout({
         <PatrolSync />
         <ReportSync />
         <DeepLink />
+        <SplashScreen />
       </body>
     </html>
   )

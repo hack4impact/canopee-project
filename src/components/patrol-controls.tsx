@@ -89,6 +89,8 @@ function getServerClock(): null {
  * The pause survives client-side navigation: a paused patrol must stay paused
  * when the user visits another page and comes back.
  */
+const DISCARD_NOTICE_MS = 6_000
+
 const PAUSE_STORAGE_PREFIX = 'canopee-patrol-pause:'
 
 type StoredPause = {
@@ -140,14 +142,37 @@ export function PatrolControls() {
   const router = useRouter()
   const pathname = usePathname()
   const { state, refresh, dock } = usePatrol()
+  const [discardNotice, setDiscardNotice] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!discardNotice) {
+      return
+    }
+
+    const timer = window.setTimeout(
+      () => setDiscardNotice(null),
+      DISCARD_NOTICE_MS,
+    )
+
+    return () => window.clearTimeout(timer)
+  }, [discardNotice])
 
   // Auth pages must never show the controls, even when a session is active.
   if (isPublicRoute(pathname)) {
     return null
   }
 
+  const notice = discardNotice ? (
+    <p
+      role="status"
+      className="fixed bottom-[calc(7rem+env(safe-area-inset-bottom))] left-1/2 z-[60] w-max max-w-72 -translate-x-1/2 rounded-2xl bg-canopee-cream/90 px-3.5 py-1.5 text-center text-xs leading-snug font-medium text-canopee-forest shadow-md ring-1 ring-black/5 backdrop-blur-sm"
+    >
+      {discardNotice}
+    </p>
+  ) : null
+
   if (state.status !== 'active') {
-    return null
+    return notice
   }
 
   const shell = (
@@ -156,16 +181,29 @@ export function PatrolControls() {
       startedAt={state.startedAt}
       patrolId={state.id}
       hidden={isReportRoute(pathname)}
-      onEnded={(summary) => {
+      onEnded={(summary, endNotice) => {
         void refresh()
-        router.push(`/patrouilles/${summary.id}?from=patrouille`)
+
+        if (endNotice) {
+          setDiscardNotice(endNotice)
+          return
+        }
+
+        if (summary) {
+          router.push(`/patrouilles/${summary.id}?from=patrouille`)
+        }
       }}
     />
   )
 
   // The bottom nav owns the slot wherever it is mounted. Pages without a nav
   // (the admin screens) keep the floating shell so recording is never lost.
-  return dock ? createPortal(shell, dock) : shell
+  return (
+    <>
+      {dock ? createPortal(shell, dock) : shell}
+      {notice}
+    </>
+  )
 }
 
 const SHELL_BASE =
@@ -215,7 +253,7 @@ function EndPatrolButton({
 }: {
   flushAndStop: () => Promise<void>
   onError: (message: string) => void
-  onPatrolEnded?: (summary?: PatrolSummary) => void
+  onPatrolEnded?: (summary?: PatrolSummary, notice?: string) => void
 }) {
   const [pending, startTransition] = useTransition()
 
@@ -225,12 +263,12 @@ function EndPatrolButton({
     startTransition(async () => {
       const result = await runEndPatrol(flushAndStop)
 
-      if (result.message) {
+      if (result.message && !result.discarded) {
         onError(result.message)
         return
       }
 
-      onPatrolEnded?.(result.summary)
+      onPatrolEnded?.(result.summary, result.message)
     })
   }
 
@@ -257,7 +295,7 @@ function ActivePatrol({
   startedAt: string
   patrolId: string | null
   hidden: boolean
-  onEnded: (summary: PatrolSummary) => void
+  onEnded: (summary?: PatrolSummary, notice?: string) => void
 }) {
   const [pause, setPause] = useState<StoredPause>({
     paused: false,
@@ -308,12 +346,12 @@ function ActivePatrol({
       }
 
       void runEndPatrol(flushAndStop).then((result) => {
-        if (result.message) {
+        if (result.message && !result.discarded) {
           setEndError(result.message)
           return
         }
 
-        onEnded(result.summary as PatrolSummary)
+        onEnded(result.summary, result.message)
       })
     }
   })
@@ -497,12 +535,9 @@ function ActivePatrol({
               <EndPatrolButton
                 flushAndStop={flushAndStop}
                 onError={setEndError}
-                onPatrolEnded={(summary) => {
+                onPatrolEnded={(summary, notice) => {
                   clearStoredPause(startedAt)
-
-                  if (summary) {
-                    onEnded(summary)
-                  }
+                  onEnded(summary, notice)
                 }}
               />
             </div>

@@ -2,12 +2,8 @@
 
 import { useActionState, useState } from 'react'
 import { logout } from '@/app/login/actions'
-import {
-  changePassword,
-  deleteAccount,
-  type DeleteAccountState,
-  type PasswordChangeState,
-} from '@/app/profil/actions'
+import { changePassword, type PasswordChangeState } from '@/app/profil/actions'
+import { DeleteAccountForm } from '@/components/delete-account-form'
 import { MIN_PASSWORD_LENGTH } from '@/lib/auth/validation'
 
 const BOX = 'overflow-hidden rounded-xl border bg-white'
@@ -50,11 +46,6 @@ export function AccountSection() {
     PasswordChangeState,
     FormData
   >(changePassword, {})
-
-  const [deleteState, submitDelete, deletePending] = useActionState<
-    DeleteAccountState,
-    FormData
-  >(deleteAccount, {})
 
   function toggle(panel: 'password' | 'delete') {
     setOpenPanel((current) => (current === panel ? null : panel))
@@ -170,41 +161,7 @@ export function AccountSection() {
         </button>
 
         {deleteOpen && (
-          <form
-            action={submitDelete}
-            className={`${PANEL} border-canopee-coral/25`}
-          >
-            <p className="text-xs leading-snug text-canopee-forest">
-              Vos patrouilles et leurs trajets seront supprimés définitivement.
-              Vos signalements sont conservés pour Canopée, mais ne seront plus
-              liés à votre compte. Cette action est irréversible.
-            </p>
-
-            <label className="flex flex-col gap-1">
-              <span className={LABEL}>Saisissez SUPPRIMER pour confirmer</span>
-              <input
-                type="text"
-                name="confirmation"
-                autoComplete="off"
-                required
-                className={FIELD}
-              />
-            </label>
-
-            {deleteState.message && (
-              <p role="alert" className={ERROR}>
-                {deleteState.message}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={deletePending}
-              className="mt-1 rounded-lg bg-canopee-coral px-3 py-2 text-sm font-extrabold text-white transition-colors hover:bg-canopee-coral-dark focus-visible:ring-2 focus-visible:ring-canopee-coral focus-visible:outline-none disabled:opacity-60"
-            >
-              {deletePending ? 'Suppression…' : 'Supprimer définitivement'}
-            </button>
-          </form>
+          <DeleteAccountForm className={`${PANEL} border-canopee-coral/25`} />
         )}
       </div>
 

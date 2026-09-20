@@ -1,4 +1,4 @@
-const APP_ID = 'HM4NNR63NU.org.reseaucanopee.app'
+const APP_ID = '8C3V6FP6FP.org.reseaucanopee.mobile'
 
 export async function GET() {
   return Response.json(

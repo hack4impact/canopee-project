@@ -52,6 +52,18 @@ export function PrivacyPolicyContent() {
           </li>
           <li>
             <span className="font-medium text-canopee-forest">
+              Patrouilles :
+            </span>{' '}
+            lorsque vous démarrez une patrouille dans l’application mobile, nous
+            enregistrons le tracé GPS de votre parcours, sa durée et sa
+            distance. L’enregistrement se poursuit en arrière-plan, écran
+            verrouillé, jusqu’à ce que vous arrêtiez la patrouille, et
+            l’application lit votre podomètre afin de distinguer une véritable
+            marche d’une dérive du signal GPS. Aucune position n’est enregistrée
+            en dehors d’une patrouille que vous avez démarrée vous-même.
+          </li>
+          <li>
+            <span className="font-medium text-canopee-forest">
               Données techniques :
             </span>{' '}
             les données nécessaires au fonctionnement et à la sécurité de la
@@ -133,6 +145,13 @@ export function PrivacyPolicyContent() {
             </span>{' '}
             les renseignements associés à un signalement sont conservés le temps
             nécessaire au traitement du dossier.
+          </li>
+          <li>
+            <span className="font-medium text-canopee-forest">
+              Données de patrouille :
+            </span>{' '}
+            les tracés de patrouille sont conservés tant que le compte demeure
+            actif et sont supprimés avec celui-ci.
           </li>
         </ul>
 

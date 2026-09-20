@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#004523" />
     <title>Canopée</title>
@@ -48,6 +48,8 @@
         margin: 0;
         padding: 0;
         height: 100%;
+        touch-action: manipulation;
+        -webkit-text-size-adjust: 100%;
       }
 
       body {
@@ -65,50 +67,27 @@
           sans-serif;
         font-weight: 500;
         -webkit-font-smoothing: antialiased;
+        pointer-events: none;
+        touch-action: none;
         padding: calc(2rem + env(safe-area-inset-top)) 1.5rem
           calc(2rem + env(safe-area-inset-bottom));
       }
 
-      .glow {
+      .forest {
         position: absolute;
-        border-radius: 9999px;
+        inset: 0;
+        background-image: url('forest-canopee.jpg');
+        background-position: center;
+        background-size: cover;
+        transform: scale(1.1);
+        filter: blur(8px);
         pointer-events: none;
       }
 
-      .glow-lime {
-        top: -6rem;
-        left: -6rem;
-        width: 24rem;
-        height: 24rem;
-        background: rgba(199, 222, 53, 0.2);
-        filter: blur(64px);
-      }
-
-      .glow-sky {
-        right: -8rem;
-        bottom: -8rem;
-        width: 28rem;
-        height: 28rem;
-        background: rgba(119, 208, 236, 0.2);
-        filter: blur(64px);
-      }
-
-      .glow-green {
-        top: 33%;
-        right: 12%;
-        width: 11rem;
-        height: 11rem;
-        background: rgba(23, 170, 85, 0.25);
-        filter: blur(40px);
-      }
-
-      .watermark {
+      .forest-tint {
         position: absolute;
-        right: -3rem;
-        bottom: -4rem;
-        width: 22rem;
-        color: var(--cream);
-        opacity: 0.05;
+        inset: 0;
+        background: rgba(0, 69, 35, 0.4);
         pointer-events: none;
       }
 
@@ -204,7 +183,8 @@
         font-size: 1rem;
         line-height: 1.5rem;
         cursor: pointer;
-        touch-action: manipulation;
+        pointer-events: auto;
+        touch-action: none;
         -webkit-tap-highlight-color: transparent;
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         transition: background-color 150ms ease-out;
@@ -247,20 +227,8 @@
     </style>
   </head>
   <body>
-    <div aria-hidden="true" class="glow glow-lime"></div>
-    <div aria-hidden="true" class="glow glow-sky"></div>
-    <div aria-hidden="true" class="glow glow-green"></div>
-
-    <svg
-      aria-hidden="true"
-      class="watermark"
-      viewBox="0 0 512 512"
-      fill="currentColor"
-    >
-      <path
-        d="M149.9 27.2L34.25 56.74v76.76L157.8 93.85l46.7-44.67-54.6-21.98zm132.8 57c-7.4.18-10.1 1.88.9 7.13C346.9 121.6 441.7 206.8 391.3 216.9 232.2 249 130.4 292.3 48.51 390.8 25.42 418.6 18 494.8 18 494.8h432.6s-139-21.1-147.8-75.7c-14.9-92.2 194.5-102.7 196.5-199.9.9-43.2-88.3-124.99-184.4-132.52-5.6-.44-22.7-2.71-32.2-2.48zm-163.5 40.9l-32.69 10.5v122.2l35.99-10-3.3-122.7z"
-      />
-    </svg>
+    <div aria-hidden="true" class="forest"></div>
+    <div aria-hidden="true" class="forest-tint"></div>
 
     <main class="card">
       <img class="logo" src="logo.png" alt="Canopée" width="260" height="140" />
@@ -306,9 +274,41 @@
 
     <script>
       ;(function () {
+        try {
+          var plugins = window.Capacitor && window.Capacitor.Plugins
+          var splash = plugins && plugins.SplashScreen
+
+          if (splash && typeof splash.hide === 'function') {
+            splash.hide()
+          }
+        } catch (error) {}
+
         var button = document.getElementById('retry')
         var label = document.getElementById('retry-label')
         var retrying = false
+
+        function serverUrl() {
+          try {
+            var bridge = window.Capacitor
+
+            if (bridge && typeof bridge.getServerUrl === 'function') {
+              var fromBridge = bridge.getServerUrl()
+
+              if (fromBridge && fromBridge.indexOf('http') === 0) {
+                return fromBridge
+              }
+            }
+          } catch (error) {}
+
+          if (
+            typeof window.WEBVIEW_SERVER_URL === 'string' &&
+            window.WEBVIEW_SERVER_URL.indexOf('http') === 0
+          ) {
+            return window.WEBVIEW_SERVER_URL
+          }
+
+          return 'https://canopee-project.vercel.app'
+        }
 
         function retry() {
           if (retrying) {
@@ -320,9 +320,32 @@
           label.textContent = 'Reconnexion…'
 
           window.setTimeout(function () {
-            window.location.reload()
+            window.location.replace(serverUrl())
           }, 250)
         }
+
+        function blockZoom(event) {
+          event.preventDefault()
+        }
+
+        document.addEventListener('gesturestart', blockZoom, { passive: false })
+        document.addEventListener('gesturechange', blockZoom, {
+          passive: false,
+        })
+        document.addEventListener('gestureend', blockZoom, { passive: false })
+
+        function blockTouchOutsideButton(event) {
+          if (!button.contains(event.target)) {
+            event.preventDefault()
+          }
+        }
+
+        document.addEventListener('touchstart', blockTouchOutsideButton, {
+          passive: false,
+        })
+        document.addEventListener('touchmove', blockTouchOutsideButton, {
+          passive: false,
+        })
 
         button.addEventListener('click', retry)
         window.addEventListener('online', retry)

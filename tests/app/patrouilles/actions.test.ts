@@ -15,6 +15,8 @@ const {
   update,
   set,
   whereUpdate,
+  remove,
+  whereDelete,
   patrolsTable,
   patrolPointsTable,
   requireApprovedAccess,
@@ -31,6 +33,9 @@ const {
   const set = vi.fn(() => ({ where: whereUpdate }))
   const update = vi.fn(() => ({ set }))
 
+  const whereDelete = vi.fn()
+  const remove = vi.fn(() => ({ where: whereDelete }))
+
   return {
     values,
     insert: vi.fn(() => ({ values })),
@@ -39,6 +44,8 @@ const {
     update,
     set,
     whereUpdate,
+    remove,
+    whereDelete,
     getActivePatrol: vi.fn(),
     requireApprovedAccess: vi.fn(),
     revalidatePath: vi.fn(),
@@ -48,7 +55,7 @@ const {
 })
 
 vi.mock('@/db', () => ({
-  db: { insert, select, update },
+  db: { insert, select, update, delete: remove },
   patrols: patrolsTable,
   patrolPoints: patrolPointsTable,
 }))
@@ -74,6 +81,7 @@ beforeEach(() => {
   values.mockResolvedValue(undefined)
   orderBy.mockResolvedValue([])
   whereUpdate.mockResolvedValue(undefined)
+  whereDelete.mockResolvedValue(undefined)
 })
 
 afterEach(() => {
@@ -201,7 +209,10 @@ describe('endPatrol with no running patrol', () => {
 
 describe('endPatrol closing a patrol', () => {
   beforeEach(() => {
-    getActivePatrol.mockResolvedValue({ id: 'patrol-1', startedAt: new Date() })
+    getActivePatrol.mockResolvedValue({
+      id: 'patrol-1',
+      startedAt: new Date(Date.now() - 10 * 60_000),
+    })
   })
 
   it('reads the points for that patrol, ordered', async () => {
@@ -263,7 +274,10 @@ describe('endPatrol closing a patrol', () => {
 
 describe('endPatrol when the update fails', () => {
   beforeEach(() => {
-    getActivePatrol.mockResolvedValue({ id: 'patrol-1', startedAt: new Date() })
+    getActivePatrol.mockResolvedValue({
+      id: 'patrol-1',
+      startedAt: new Date(Date.now() - 10 * 60_000),
+    })
     whereUpdate.mockRejectedValue(new Error('connection lost'))
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
@@ -278,5 +292,57 @@ describe('endPatrol when the update fails', () => {
     await endPatrol()
 
     expect(revalidatePath).not.toHaveBeenCalled()
+  })
+})
+
+describe('endPatrol discarding an accidental patrol', () => {
+  it('deletes a patrol that went nowhere in seconds', async () => {
+    getActivePatrol.mockResolvedValue({ id: 'patrol-1', startedAt: new Date() })
+    orderBy.mockResolvedValue([])
+
+    const { discarded, message, summary } = await endPatrol()
+
+    expect(remove).toHaveBeenCalled()
+    expect(update).not.toHaveBeenCalled()
+    expect(discarded).toBe(true)
+    expect(message).toBeTruthy()
+    expect(summary).toBeUndefined()
+  })
+
+  it('still refreshes the map, so the button replaces the badge', async () => {
+    getActivePatrol.mockResolvedValue({ id: 'patrol-1', startedAt: new Date() })
+    orderBy.mockResolvedValue([])
+
+    await endPatrol()
+
+    expect(revalidatePath).toHaveBeenCalledWith('/carte')
+  })
+
+  it('keeps a long stationary watch, which covers no ground on purpose', async () => {
+    getActivePatrol.mockResolvedValue({
+      id: 'patrol-1',
+      startedAt: new Date(Date.now() - 10 * 60_000),
+    })
+    orderBy.mockResolvedValue([])
+
+    const { discarded } = await endPatrol()
+
+    expect(remove).not.toHaveBeenCalled()
+    expect(lastUpdate().distanceMeters).toBe(0)
+    expect(discarded).toBeUndefined()
+  })
+
+  it('keeps a quick walk that still covered ground', async () => {
+    getActivePatrol.mockResolvedValue({ id: 'patrol-1', startedAt: new Date() })
+    orderBy.mockResolvedValue([
+      { latitude: '45.500000', longitude: '-73.600000' },
+      { latitude: '45.510000', longitude: '-73.600000' },
+    ])
+
+    const { discarded } = await endPatrol()
+
+    expect(remove).not.toHaveBeenCalled()
+    expect(update).toHaveBeenCalled()
+    expect(discarded).toBeUndefined()
   })
 })
