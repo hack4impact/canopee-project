@@ -30,6 +30,8 @@ const ROLE_LABELS: Record<Role, string> = {
   admin: 'Administrateur',
 }
 
+const SUPPORT_EMAIL = 'direction@reseaucanopee.org'
+
 const dateFormatter = new Intl.DateTimeFormat('fr-CA', {
   dateStyle: 'long',
   timeZone: 'America/Toronto',
@@ -232,6 +234,17 @@ export default async function ProfilPage() {
         )}
 
         <AccountSection />
+
+        <section className="flex flex-col gap-1.5">
+          <h2 className="text-sm font-extrabold tracking-[0.08em] text-canopee-forest/50 uppercase">
+            Aide et contact
+          </h2>
+
+          <a href={`mailto:${SUPPORT_EMAIL}`} className={ADMIN_ROW}>
+            <span className="flex-1">{SUPPORT_EMAIL}</span>
+            <ChevronRightIcon className="size-3.5 shrink-0 opacity-45" />
+          </a>
+        </section>
       </main>
 
       <BottomNav />
