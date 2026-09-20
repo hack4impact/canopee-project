@@ -97,7 +97,7 @@ describe('plunk email helpers', () => {
 
     const [payload] = sendMock.mock.calls[0]
     expect(payload.body).toContain(
-      'src="https://canopee-project.vercel.app/canopee_blanc.png"',
+      'src="https://app.reseaucanopee.org/canopee_blanc.png"',
     )
   })
 
