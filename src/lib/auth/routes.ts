@@ -16,6 +16,7 @@ const PUBLIC_ROUTES = [
   '/api/cron',
   '/api/public',
   '/.well-known',
+  '/google3e8dee0a71593efe.html',
 ] as const
 
 export function isPublicRoute(pathname: string): boolean {
