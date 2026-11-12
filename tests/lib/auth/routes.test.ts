@@ -33,6 +33,10 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute(CITIZEN_REPORT_ROUTE)).toBe(true)
   })
 
+  it('allows the account deletion instructions', () => {
+    expect(isPublicRoute('/suppression-de-compte')).toBe(true)
+  })
+
   it('gates everything else', () => {
     expect(isPublicRoute('/admin/volunteers')).toBe(false)
     expect(isPublicRoute('/map')).toBe(false)

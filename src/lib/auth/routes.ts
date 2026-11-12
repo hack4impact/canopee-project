@@ -12,6 +12,7 @@ const PUBLIC_ROUTES = [
   '/signup',
   '/auth/confirm',
   '/politique-de-confidentialite',
+  '/suppression-de-compte',
   CITIZEN_REPORT_ROUTE,
   '/api/cron',
   '/api/public',
