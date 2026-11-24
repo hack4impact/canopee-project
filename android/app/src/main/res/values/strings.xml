@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Canopée</string>
-    <string name="title_activity_main">Canopée</string>
+    <string name="app_name">maCANOPÉE</string>
+    <string name="title_activity_main">maCANOPÉE</string>
     <string name="package_name">org.reseaucanopee.app</string>
     <string name="custom_url_scheme">org.reseaucanopee.app</string>
     <string name="capacitor_background_geolocation_notification_channel_name">Suivi de patrouille</string>
