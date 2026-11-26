@@ -138,15 +138,34 @@ const CITIZEN_GROUP_CATEGORIES: Record<
   ],
 }
 
+/** Volunteers only report invasive plants, as agreed with Canopée. */
+const VOLUNTEER_FAUNE_FLORE_CATEGORIES = [
+  'espece_exotique',
+] as const satisfies readonly ReportCategory[]
+
 export function reportGroupCategories(
   group: ReportGroup,
   audience: ReportAudience,
 ): readonly ReportCategory[] {
-  if (audience !== 'citizen') {
-    return REPORT_GROUP_CATEGORIES[group]
+  switch (audience) {
+    case 'citizen':
+      return group === 'faune_flore' ? [] : CITIZEN_GROUP_CATEGORIES[group]
+    case 'volunteer':
+      return group === 'faune_flore'
+        ? VOLUNTEER_FAUNE_FLORE_CATEGORIES
+        : REPORT_GROUP_CATEGORIES[group]
+    default:
+      return REPORT_GROUP_CATEGORIES[group]
   }
+}
 
-  return group === 'faune_flore' ? [] : CITIZEN_GROUP_CATEGORIES[group]
+export function reportGroupLabel(
+  group: ReportGroup,
+  audience: ReportAudience,
+): string {
+  return group === 'faune_flore' && audience === 'volunteer'
+    ? 'Plantes envahissantes'
+    : REPORT_GROUP_LABELS[group]
 }
 
 export function canReportCategory(

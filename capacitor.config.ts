@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
   appId: 'org.reseaucanopee.app',
-  appName: 'Canopée',
+  appName: 'maCANOPÉE',
   webDir: 'www',
   server: {
     url: process.env.CAPACITOR_SERVER_URL ?? 'https://app.reseaucanopee.org',

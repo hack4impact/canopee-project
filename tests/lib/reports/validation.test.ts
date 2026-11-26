@@ -310,12 +310,78 @@ describe('validateReport by audience', () => {
     ).toBeDefined()
   })
 
-  it('keeps every category open to patrollers', () => {
+  it('keeps every Entretien and Citoyen category open to volunteers', () => {
     expect(
       isValidReport(
         validateReport(input({ category: 'signage_fix' }), 'volunteer'),
       ),
     ).toBe(true)
+    expect(
+      isValidReport(
+        validateReport(
+          input({ category: 'foraging', typology: undefined }),
+          'volunteer',
+        ),
+      ),
+    ).toBe(true)
+  })
+
+  it('limits volunteers to invasive plants in Faune/flore', () => {
+    for (const [category, species] of [
+      ['oiseau', 'Oiseau inconnu'],
+      ['espece_menacee', 'Espèce menacée inconnue'],
+      ['faune_flore_other', 'Tortue à identifier'],
+    ]) {
+      expect(
+        validateReport(
+          input({ category, typology: undefined, species }),
+          'volunteer',
+        ).category,
+      ).toBeDefined()
+    }
+
+    expect(
+      isValidReport(
+        validateReport(
+          input({
+            category: 'espece_exotique',
+            typology: undefined,
+            species: 'Renouée du Japon',
+          }),
+          'volunteer',
+        ),
+      ),
+    ).toBe(true)
+  })
+
+  it('rejects a volunteer species that is not on the invasive list', () => {
+    expect(
+      validateReport(
+        input({
+          category: 'espece_exotique',
+          typology: undefined,
+          species: 'Salamandre sombre du Nord',
+        }),
+        'volunteer',
+      ).species,
+    ).toBeDefined()
+  })
+
+  it('keeps every Faune/flore category open to pros and admins', () => {
+    for (const audience of ['pro', 'admin'] as const) {
+      expect(
+        isValidReport(
+          validateReport(
+            input({
+              category: 'oiseau',
+              typology: undefined,
+              species: 'Oiseau inconnu',
+            }),
+            audience,
+          ),
+        ),
+      ).toBe(true)
+    }
   })
 
   it('rejects Début de correction from volunteers only', () => {
