@@ -8,6 +8,7 @@ import {
   type ReportAudience,
 } from '@/lib/reports/categories'
 import { isWithinLavalBounds } from '@/lib/reports/location'
+import { findSpecies } from '@/lib/reports/species'
 
 export const MAX_DESCRIPTION_LENGTH = 500
 
@@ -97,6 +98,15 @@ export function validateReport(
 
     if (group === 'faune_flore') {
       validateSpecies(input.species, errors)
+
+      if (
+        audience === 'volunteer' &&
+        !errors.category &&
+        !errors.species &&
+        !findSpecies(input.species ?? '', input.category)
+      ) {
+        errors.species = 'Choisissez une plante envahissante dans la liste.'
+      }
     }
 
     if (group === 'citoyen' || group === 'faune_flore') {

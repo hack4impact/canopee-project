@@ -20,7 +20,7 @@ import { Spinner } from '@/components/spinner'
 import { isGeolocationAvailable } from '@/lib/mapbox'
 import {
   REPORT_CATEGORY_LABELS,
-  REPORT_GROUP_LABELS,
+  reportGroupLabel,
   REPORT_TYPOLOGY_LABELS,
   REPORT_UNITS,
   REPORT_UNIT_LABELS,
@@ -128,7 +128,7 @@ export function ReportForm({
   return (
     <div className="flex min-h-[min(36rem,calc(100vw_-_2rem),calc(100dvh_-_9rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)))] flex-1 flex-col gap-2">
       <h2 className={`font-heading text-lg ${REPORT_THEMES[group].accent}`}>
-        {REPORT_GROUP_LABELS[group]}
+        {reportGroupLabel(group, audience)}
       </h2>
 
       {state.message && (
@@ -331,11 +331,15 @@ function ReportWizard({
   const citizen = audience === 'citizen'
   const photoRequired = audience !== 'admin' && !citizen
   const typologies = reportTypologies(audience)
+  const isFauneFlore = group === 'faune_flore'
+  const allowedCategories = reportGroupCategories(group, audience)
+  const onlyCategory =
+    isFauneFlore && allowedCategories.length === 1 ? allowedCategories[0] : null
   const [stepIndex, setStepIndex] = useState(0)
   const [direction, setDirection] = useState<'forward' | 'back'>('forward')
   const [reporterEmail, setReporterEmail] = useState('')
   const [reporterConsent, setReporterConsent] = useState(false)
-  const [category, setCategory] = useState('')
+  const [category, setCategory] = useState<string>(onlyCategory ?? '')
   const [typology, setTypology] = useState('')
   const [description, setDescription] = useState('')
   const [quantity, setQuantity] = useState('')
@@ -376,13 +380,21 @@ function ReportWizard({
     citizen && position !== null && !isWithinLavalBounds(position)
 
   const groupSteps = GROUP_STEPS[group].filter(
-    (key) => key !== 'typologie' || typologies.length > 0,
+    (key) =>
+      (key !== 'typologie' || typologies.length > 0) &&
+      (key !== 'categorie' || onlyCategory === null),
   )
   const steps: readonly StepKey[] = citizen
     ? ['courriel', ...groupSteps]
     : groupSteps
   const step = steps[stepIndex]
-  const isFauneFlore = group === 'faune_flore'
+  const fauneCategories = REPORT_FAUNE_CATEGORIES.filter((value) =>
+    allowedCategories.includes(value),
+  )
+  const floreCategories = REPORT_FLORE_CATEGORIES.filter((value) =>
+    allowedCategories.includes(value),
+  )
+  const canReportOther = allowedCategories.includes('faune_flore_other')
 
   useEffect(() => {
     if (!isSupported) {
@@ -781,70 +793,76 @@ function ReportWizard({
 
         {step === 'categorie' && isFauneFlore && (
           <div className="flex flex-col gap-4">
-            <div>
-              <p className="mb-2 text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
-                Faune
-              </p>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {REPORT_FAUNE_CATEGORIES.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setCategory(value)}
-                    aria-pressed={category === value}
-                    className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
-                      category === value ? theme.optionActive : theme.option
-                    }`}
-                  >
-                    <SpeciesPicto
-                      name={value}
-                      className={`mx-auto mb-1 h-6 w-6 ${theme.accent}`}
-                    />
-                    {REPORT_CATEGORY_LABELS[value]}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setCategory('faune_flore_other')}
-                  aria-pressed={category === 'faune_flore_other'}
-                  className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
-                    category === 'faune_flore_other'
-                      ? theme.optionActive
-                      : theme.option
-                  }`}
-                >
-                  <SpeciesPicto
-                    name="autre"
-                    className={`mx-auto mb-1 h-6 w-6 ${theme.accent}`}
-                  />
-                  {REPORT_CATEGORY_LABELS.faune_flore_other}
-                </button>
+            {(fauneCategories.length > 0 || canReportOther) && (
+              <div>
+                <p className="mb-2 text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
+                  Faune
+                </p>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {fauneCategories.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setCategory(value)}
+                      aria-pressed={category === value}
+                      className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
+                        category === value ? theme.optionActive : theme.option
+                      }`}
+                    >
+                      <SpeciesPicto
+                        name={value}
+                        className={`mx-auto mb-1 h-6 w-6 ${theme.accent}`}
+                      />
+                      {REPORT_CATEGORY_LABELS[value]}
+                    </button>
+                  ))}
+                  {canReportOther && (
+                    <button
+                      type="button"
+                      onClick={() => setCategory('faune_flore_other')}
+                      aria-pressed={category === 'faune_flore_other'}
+                      className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
+                        category === 'faune_flore_other'
+                          ? theme.optionActive
+                          : theme.option
+                      }`}
+                    >
+                      <SpeciesPicto
+                        name="autre"
+                        className={`mx-auto mb-1 h-6 w-6 ${theme.accent}`}
+                      />
+                      {REPORT_CATEGORY_LABELS.faune_flore_other}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-            <div>
-              <p className="mb-2 text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
-                Flore
-              </p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {REPORT_FLORE_CATEGORIES.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setCategory(value)}
-                    aria-pressed={category === value}
-                    className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
-                      category === value ? theme.optionActive : theme.option
-                    }`}
-                  >
-                    <SpeciesPicto
-                      name={FLORE_PICTOS[value]}
-                      className={`mx-auto mb-1 h-6 w-6 ${theme.accent}`}
-                    />
-                    {REPORT_CATEGORY_LABELS[value]}
-                  </button>
-                ))}
+            )}
+            {floreCategories.length > 0 && (
+              <div>
+                <p className="mb-2 text-xs font-semibold tracking-wide text-canopee-forest/60 uppercase">
+                  Flore
+                </p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {floreCategories.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setCategory(value)}
+                      aria-pressed={category === value}
+                      className={`rounded-xl border px-2 py-3 text-center text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${theme.ring} ${
+                        category === value ? theme.optionActive : theme.option
+                      }`}
+                    >
+                      <SpeciesPicto
+                        name={FLORE_PICTOS[value]}
+                        className={`mx-auto mb-1 h-6 w-6 ${theme.accent}`}
+                      />
+                      {REPORT_CATEGORY_LABELS[value]}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             {errors.category && (
               <p id="category-error" className={ERROR}>
                 {errors.category}

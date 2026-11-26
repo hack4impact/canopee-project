@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import {
   CITIZEN_REPORT_GROUPS,
   REPORT_GROUP_LABELS,
+  reportGroupLabel,
   type ReportAudience,
   type ReportGroup,
 } from '@/lib/reports/categories'
@@ -85,7 +86,17 @@ export function ReportFlow({
       ? GROUPS.filter(({ group: value }) =>
           (CITIZEN_REPORT_GROUPS as readonly ReportGroup[]).includes(value),
         )
-      : GROUPS
+      : audience === 'volunteer'
+        ? GROUPS.map((option) =>
+            option.group === 'faune_flore'
+              ? {
+                  ...option,
+                  title: reportGroupLabel('faune_flore', audience),
+                  description: 'Espèces végétales exotiques envahissantes',
+                }
+              : option,
+          )
+        : GROUPS
 
   useEffect(() => {
     if (group === null) {
